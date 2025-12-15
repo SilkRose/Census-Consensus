@@ -34,12 +34,12 @@ async fn main() -> std::io::Result<()> {
 				let leptos_options = leptos_options.clone();
 				move || shell(&leptos_options)
 			})
-			.app_data(Data::new(leptos_options.to_owned()))
+			.app_data(Data::new(leptos_options.clone()))
 			.wrap(Compress::default())
 	})
-	.bind(&addr)?
-	.run()
-	.await
+		.bind(&addr)?
+		.run()
+		.await
 }
 
 #[cfg(not(feature = "ssr"))]
