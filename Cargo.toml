@@ -5,14 +5,21 @@ edition = "2024"
 publish = false
 
 [dependencies]
+anyhow = "1.0.100"
 actix-files = { version = "0.6.9", optional = true }
-actix-web = { version = "4.12.1", features = ["macros"], optional = true }
+actix-web = { version = "4.12.1", optional = true, features = ["macros"] }
 console-error-panic-hook = { package = "console_error_panic_hook", version = "0.1.7" }
+dotenvy = "0.15.7"
 leptos = { version = "0.8.14", features = ["nightly"] }
 leptos-actix = { package = "leptos_actix", version = "0.8.6", optional = true }
 leptos-meta = { package = "leptos_meta", version = "0.8.5" }
 leptos-mview = { version = "0.4.4", features = ["nightly"] }
 leptos-router = { package = "leptos_router", version = "0.8.10", features = ["nightly"] }
+sqlx = { version = "0.8.6", optional = true, features = [
+	"postgres",
+	"runtime-tokio",
+	"tls-rustls"
+] }
 wasm-bindgen = "=0.2.106"
 
 [features]
@@ -23,6 +30,7 @@ ssr = [
 	"dep:actix-files",
 	"dep:actix-web",
 	"dep:leptos-actix",
+	"dep:sqlx",
 	"leptos/ssr",
 	"leptos-meta/ssr",
 	"leptos-router/ssr",

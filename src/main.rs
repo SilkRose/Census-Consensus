@@ -4,18 +4,28 @@ mod ssr_imports {
 	pub use actix_web::{ App as ActixApp, HttpServer };
 	pub use actix_web::middleware::Compress;
 	pub use actix_web::web::Data;
+	pub use anyhow::Result;
+	pub use april_fools_2026::{ App, shell };
+	pub use april_fools_2026::database::Db;
 	pub use leptos::config::get_configuration;
 	pub use leptos_actix::{ generate_route_list, LeptosRoutes };
-	pub use april_fools_2026::{ App, shell };
+	pub use std::env;
 }
 #[cfg(feature = "ssr")]
 use ssr_imports::*;
 
 #[cfg(feature = "ssr")]
 #[actix_web::main]
-async fn main() -> std::io::Result<()> {
+async fn main() -> Result<()> {
+	if let Err(err) = dotenvy::dotenv() {
+		eprintln!("dotenv failed to load: {err:?}");
+	}
+
 	let conf = get_configuration(None).unwrap();
 	let addr = conf.leptos_options.site_addr;
+
+	let database_url = env::var("POSTGRES_URL").expect("POSTGRES_URL is not set");
+	let db = Db::new(&database_url).await?;
 
 	println!("listening on http://{}", &addr);
 
@@ -35,15 +45,17 @@ async fn main() -> std::io::Result<()> {
 				move || shell(&leptos_options)
 			})
 			.app_data(Data::new(leptos_options.clone()))
+			.app_data(Data::new(db.clone()))
 			.wrap(Compress::default())
 	})
 		.bind(&addr)?
 		.run()
-		.await
+		.await?;
+
+	Ok(())
 }
 
 #[cfg(not(feature = "ssr"))]
 pub fn main() {
 	panic!("ssr feature is not enabled for server binary; exploding")
-
 }

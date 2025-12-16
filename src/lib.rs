@@ -5,6 +5,9 @@ use leptos_meta::{ Stylesheet, Title, provide_meta_context };
 use leptos_router::path;
 use leptos_router::components::{ Route, Router, Routes };
 
+#[cfg(feature = "ssr")]
+pub mod database;
+
 #[cfg(feature = "hydrate")]
 #[wasm_bindgen::prelude::wasm_bindgen]
 pub fn hydrate() {
