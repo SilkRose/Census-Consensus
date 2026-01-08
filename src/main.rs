@@ -5,8 +5,9 @@ mod ssr_imports {
 	pub use actix_web::middleware::Compress;
 	pub use actix_web::web::Data;
 	pub use anyhow::Result;
-	pub use april_fools_2026::{ App, env_vars, server_config, shell };
-	pub use april_fools_2026::database::Db;
+	pub use april_fools_2026::{ App, env_vars, shell };
+	pub use april_fools_2026::database::{ Db, DbData };
+	pub use april_fools_2026::server_config::{ Fimfic, FimficData };
 	pub use leptos::config::get_configuration;
 	pub use leptos_actix::{ generate_route_list, LeptosRoutes };
 }
@@ -29,38 +30,37 @@ async fn async_main() -> Result<()> {
 	env_vars::check();
 
 	let conf = get_configuration(None).unwrap();
-	let addr = conf.leptos_options.site_addr;
+	let leptos_options = Data::new(conf.leptos_options.clone());
+	let site_root = String::from(&*leptos_options.site_root);
+	let site_addr = leptos_options.site_addr;
+	let routes = generate_route_list(App);
 
 	let db = Db::new(&env_vars::postgres_url()).await?;
-	let fimfic = server_config::Fimfic {
+	let db = DbData::new(db);
+
+	let fimfic = Fimfic {
 		client_id: env_vars::fimfic_client_id(),
 		client_secret: env_vars::fimfic_client_secret(),
 		oauth_redirect_url: env_vars::fimfic_oauth_redirect_url()
-	}.wrap();
+	};
+	let fimfic = FimficData::new(fimfic);
 
-	println!("listening on http://{}", &addr);
+	println!("listening on http://{}", &site_addr);
 
 	HttpServer::new(move || {
-		// Generate the list of routes in your Leptos App
-		let routes = generate_route_list(App);
-		let leptos_options = &conf.leptos_options;
-		let site_root = leptos_options.site_root.clone().to_string();
-
 		ActixApp::new()
-			// serve JS/WASM/CSS from `pkg`
 			.service(Files::new("/_", format!("{site_root}/_")))
-			// serve other assets from the `assets` directory
-			.service(Files::new("/assets", site_root))
-			.leptos_routes(routes, {
+			.service(Files::new("/assets", site_root.clone()))
+			.leptos_routes(routes.clone(), {
 				let leptos_options = leptos_options.clone();
 				move || shell(&leptos_options)
 			})
-			.app_data(Data::new(leptos_options.clone()))
-			.app_data(Data::new(db.clone()))
-			.app_data(Data::new(fimfic.clone()))
+			.app_data(leptos_options.clone())
+			.app_data(db.clone())
+			.app_data(fimfic.clone())
 			.wrap(Compress::default())
 	})
-		.bind(&addr)?
+		.bind(site_addr)?
 		.run()
 		.await?;
 

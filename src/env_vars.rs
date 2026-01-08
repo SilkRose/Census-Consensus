@@ -43,9 +43,10 @@ macro_rules! declare_env_fn {
 
 		$(
 			$(#[$meta])*
-			pub fn $fn_name() -> String {
+			pub fn $fn_name() -> Box<str> {
 				std::env::var($env_name)
 					.expect(concat!("environment variable `", $env_name, "` is not set"))
+					.into_boxed_str()
 			}
 		)*
 	}

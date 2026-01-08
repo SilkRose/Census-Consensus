@@ -1,8 +1,9 @@
+use actix_web::web::Data;
 use anyhow::Result;
 use sqlx::{ Pool, Postgres };
 use sqlx::postgres::PgPoolOptions;
 
-#[derive(Clone)]
+pub type DbData = Data<Db>;
 pub struct Db {
 	pool: Pool<Postgres>
 }
