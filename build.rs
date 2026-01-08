@@ -3,6 +3,7 @@ use std::io::{ self, Read as _, Write as _ };
 use std::process::{ Command, Stdio };
 
 fn main() {
+	println!("cargo::rerun-if-changed=db-migrations");
 	println!("cargo::rerun-if-changed=src");
 	println!("cargo::rerun-if-changed=target/unoptimised.css");
 
