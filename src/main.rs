@@ -5,7 +5,7 @@ mod ssr_imports {
 	pub use actix_web::middleware::Compress;
 	pub use actix_web::web::Data;
 	pub use anyhow::Result;
-	pub use april_fools_2026::{ App, env_vars, shell };
+	pub use april_fools_2026::{ App, env_vars, server_config, shell };
 	pub use april_fools_2026::database::Db;
 	pub use leptos::config::get_configuration;
 	pub use leptos_actix::{ generate_route_list, LeptosRoutes };
@@ -32,6 +32,11 @@ async fn async_main() -> Result<()> {
 	let addr = conf.leptos_options.site_addr;
 
 	let db = Db::new(&env_vars::postgres_url()).await?;
+	let fimfic = server_config::Fimfic {
+		client_id: env_vars::fimfic_client_id(),
+		client_secret: env_vars::fimfic_client_secret(),
+		oauth_redirect_url: env_vars::fimfic_oauth_redirect_url()
+	}.wrap();
 
 	println!("listening on http://{}", &addr);
 
@@ -52,6 +57,7 @@ async fn async_main() -> Result<()> {
 			})
 			.app_data(Data::new(leptos_options.clone()))
 			.app_data(Data::new(db.clone()))
+			.app_data(Data::new(fimfic.clone()))
 			.wrap(Compress::default())
 	})
 		.bind(&addr)?
