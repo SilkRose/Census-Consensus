@@ -5,11 +5,10 @@ mod ssr_imports {
 	pub use actix_web::middleware::Compress;
 	pub use actix_web::web::Data;
 	pub use anyhow::Result;
-	pub use april_fools_2026::{ App, shell };
+	pub use april_fools_2026::{ App, env_vars, shell };
 	pub use april_fools_2026::database::Db;
 	pub use leptos::config::get_configuration;
 	pub use leptos_actix::{ generate_route_list, LeptosRoutes };
-	pub use std::env;
 }
 #[cfg(feature = "ssr")]
 use ssr_imports::*;
@@ -18,14 +17,7 @@ use ssr_imports::*;
 fn main() -> Result<()> {
 	// SAFETY: we do this before doing anything else in the program, including
 	// before creating an actix runtime, so this should be fine :3
-	unsafe {
-		set_vars_if_not_present([
-			("LEPTOS_SITE_ROOT", "site"),
-			// this wasn't meant to be a vivid/stasis reference I swear
-			("LEPTOS_SITE_PKG_DIR", "_"),
-			("LEPTOS_SITE_ADDR", "127.0.0.1:3000")
-		])
-	}
+	unsafe { env_vars::set_required_vars() }
 
 	async_main()
 }
@@ -33,15 +25,13 @@ fn main() -> Result<()> {
 #[cfg(feature = "ssr")]
 #[actix_web::main]
 async fn async_main() -> Result<()> {
-	if let Err(err) = dotenvy::dotenv() {
-		eprintln!("dotenv failed to load: {err:?}");
-	}
+	env_vars::load_dotenv();
+	env_vars::check();
 
 	let conf = get_configuration(None).unwrap();
 	let addr = conf.leptos_options.site_addr;
 
-	let database_url = env::var("POSTGRES_URL").expect("POSTGRES_URL is not set");
-	let db = Db::new(&database_url).await?;
+	let db = Db::new(&env_vars::postgres_url()).await?;
 
 	println!("listening on http://{}", &addr);
 
@@ -74,20 +64,4 @@ async fn async_main() -> Result<()> {
 #[cfg(not(feature = "ssr"))]
 pub fn main() {
 	panic!("ssr feature is not enabled for server binary; exploding")
-}
-
-/// Sets the provided environment variables, if they are not already present and
-/// valid UTF-8
-///
-/// # Safety
-///
-/// Follow the safety requirements of [`env::set_var`].
-#[cfg(feature = "ssr")]
-unsafe fn set_vars_if_not_present(vars: impl IntoIterator<Item = (&'static str, &'static str)>) {
-	for (k, v) in vars {
-		if env::var(k).is_err() {
-			// SAFETY: caller of this function satisfies the thread safety requirement
-			unsafe { env::set_var(k, v) }
-		}
-	}
 }

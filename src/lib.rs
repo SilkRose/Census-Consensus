@@ -7,6 +7,8 @@ use leptos_router::components::{ Route, Router, Routes };
 
 #[cfg(feature = "ssr")]
 pub mod database;
+#[cfg(feature = "ssr")]
+pub mod env_vars;
 
 #[cfg(feature = "hydrate")]
 #[wasm_bindgen::prelude::wasm_bindgen]
