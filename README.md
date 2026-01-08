@@ -1,72 +1,44 @@
-<picture>
-    <source srcset="https://raw.githubusercontent.com/leptos-rs/leptos/main/docs/logos/Leptos_logo_Solid_White.svg" media="(prefers-color-scheme: dark)">
-    <img src="https://raw.githubusercontent.com/leptos-rs/leptos/main/docs/logos/Leptos_logo_RGB.svg" alt="Leptos Logo">
-</picture>
+# April Fools 2026
 
-# Leptos Starter Template
+Hi .3c
 
-This is a template for use with the [Leptos](https://github.com/leptos-rs/leptos) web framework and the [cargo-leptos](https://github.com/akesson/cargo-leptos) tool.
+## Dependencies setup
 
-## Creating your template repo
+You need:
 
-If you don't have `cargo-leptos` installed you can install it with
+- a rust compiler toolchain installed via [rustup](https://rustup.rs)
+  - Once installed, running any rust command in this directory will cause rustc to automatically install (if needed) and run the right version of the tool. You will know if rustup is installing something.
+- [pnpm](https://pnpm.io)
+- [cargo-leptos](https://crates.io/crates/cargo-leptos)
+  - To install: `cargo install --locked cargo-leptos`
+- a [postgres](https://www.postgresql.org) instance set up and available
 
-`cargo install cargo-leptos --locked`
+## Environment setup
 
-Then run
+This project has a dotenv implementation configured, so you may use a `.env` file in the root of the project directory to configure environment variables.
 
-`cargo leptos new --git leptos-rs/start-actix`
+Environment variables:
 
-to generate a new project template (you will be prompted to enter a project name).
+- `POSTGRES_URL`: postgres connection URL, in the format of `postgres://<username>:<password>@<hostname>:<port>/<databasename>`
+  - ex. `postgres://postgres:root@localhost:5432/aprilfools`, with username "postgres", password "root", hostname "localhost", port "5432", database name "aprilfools"
 
-`cd {projectname}`
+## Running development server
 
-to go to your newly created project.
+Run the command `cargo leptos watch`, and a development server should start at `localhost:3000` with a live reload server.
 
-Of course, you should explore around the project structure, but the best place to start with your application code is in `src/app.rs`.
+## Building
 
-## Running your project
+Run `cargo leptos build` for a debug build, or `cargo leptos build -r` for a release build.
 
-`cargo leptos watch`  
-By default, you can access your local project at `http://localhost:3000`
+## Deploying
 
-## Installing Additional Tools
+Move the following files to a directory on your deployment server:
 
-By default, `cargo-leptos` uses `nightly` Rust, `cargo-generate`, and `sass`. If you run into any trouble, you may need to install one or more of these tools.
+- the server binary at `target/release/april-fools-2026` to `/april-fools-2026`
+- the site dir at `target/site` to `/site`
 
-1. `rustup toolchain install nightly --allow-downgrade` - make sure you have Rust nightly
-2. `rustup target add wasm32-unknown-unknown` - add the ability to compile Rust to WebAssembly
-3. `cargo install cargo-generate` - install `cargo-generate` binary (should be installed automatically in future)
-4. `npm install -g sass` - install `dart-sass` (should be optional in future)
+Add the following environment variables:
 
-## Executing a Server on a Remote Machine Without the Toolchain
-After running a `cargo leptos build --release` the minimum files needed are:
+- `POSTGRES_URL`: postgres connection URL (see [above](#environment-setup))
 
-1. The server binary located in `target/server/release`
-2. The `site` directory and all files within located in `target/site`
-
-Copy these files to your remote server. The directory structure should be:
-```text
-leptos_start
-site/
-```
-Set the following environment variables (updating for your project as needed):
-```sh
-export LEPTOS_OUTPUT_NAME="leptos_start"
-export LEPTOS_SITE_ROOT="site"
-export LEPTOS_SITE_PKG_DIR="pkg"
-export LEPTOS_SITE_ADDR="127.0.0.1:3000"
-export LEPTOS_RELOAD_PORT="3001"
-```
-Finally, run the server binary.
-
-## Notes about CSR and Trunk:
-Although it is not recommended, you can also run your project without server integration using the feature `csr` and `trunk serve`:
-
-`trunk serve --open --features csr`
-
-This may be useful for integrating external tools which require a static site, e.g. `tauri`.
-
-## Licensing
-
-This template itself is released under the Unlicense. You should replace the LICENSE for your own application with an appropriate license if you plan to release it publicly.
+Then, run the server binary inside of this dir (`./april-fools-2026`).
