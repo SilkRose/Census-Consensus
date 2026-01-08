@@ -7,7 +7,7 @@ mod ssr_imports {
 	pub use anyhow::Result;
 	pub use april_fools_2026::{ App, env_vars, shell };
 	pub use april_fools_2026::database::{ Db, DbData };
-	pub use april_fools_2026::server_config::{ Fimfic, FimficData };
+	pub use april_fools_2026::fimfic_config::{ self, Fimfic, FimficData };
 	pub use leptos::config::get_configuration;
 	pub use leptos_actix::{ generate_route_list, LeptosRoutes };
 }
@@ -38,10 +38,14 @@ async fn async_main() -> Result<()> {
 	let db = Db::new(&env_vars::postgres_url()).await?;
 	let db = DbData::new(db);
 
+	let client_id = env_vars::fimfic_client_id();
+	let oauth_redirect_url = env_vars::fimfic_oauth_redirect_url();
+	let login_url = fimfic_config::make_login_url(&client_id, &oauth_redirect_url);
 	let fimfic = Fimfic {
-		client_id: env_vars::fimfic_client_id(),
+		client_id,
 		client_secret: env_vars::fimfic_client_secret(),
-		oauth_redirect_url: env_vars::fimfic_oauth_redirect_url()
+		oauth_redirect_url,
+		login_url
 	};
 	let fimfic = FimficData::new(fimfic);
 

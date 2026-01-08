@@ -10,7 +10,7 @@ pub mod database;
 #[cfg(feature = "ssr")]
 pub mod env_vars;
 #[cfg(feature = "ssr")]
-pub mod server_config;
+pub mod fimfic_config;
 
 #[cfg(feature = "hydrate")]
 #[wasm_bindgen::prelude::wasm_bindgen]
