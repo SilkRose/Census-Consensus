@@ -4,6 +4,8 @@ pub struct FimficCfg {
 	pub client_id: Box<str>,
 	pub client_secret: Box<str>,
 	pub oauth_redirect_url: Box<str>,
+	/// Login URL except missing state (ie. `format!("{url}&state={state}")` to
+	/// get a complete URL)
 	pub login_url: Box<str>
 }
 
