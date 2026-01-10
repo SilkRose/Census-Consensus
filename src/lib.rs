@@ -5,6 +5,7 @@ use leptos_meta::{ Stylesheet, Title, provide_meta_context };
 use leptos_router::path;
 use leptos_router::components::{ Route, Router, Routes };
 
+pub mod auth;
 #[cfg(feature = "ssr")]
 pub mod database;
 #[cfg(feature = "ssr")]
@@ -66,6 +67,26 @@ fn HomePage() -> impl IntoView {
 		h1 { "Welcome to Leptos!" }
 		button on:click={ on_click } {
 			"Click Me: " { count }
+		}
+		br;
+
+		Await
+			future={ auth::login_url() }
+		|url| {
+			{{
+				// todo what is this spaghetti, fix this later I hate this ~sf
+				let url = url.clone();
+				move || url.clone().map(|url| mview! {
+					"hardcoded state: nya"
+					br;
+					a
+						class="underline text-purple-400"
+						href=f["{url}&state=nya"]
+					{
+						"evil whimsical login button"
+					}
+				})
+			}}
 		}
 	}
 }
