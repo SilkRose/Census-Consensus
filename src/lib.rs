@@ -11,7 +11,9 @@ pub mod database;
 #[cfg(feature = "ssr")]
 pub mod env_vars;
 #[cfg(feature = "ssr")]
-pub mod fimfic_config;
+pub mod fimfic_cfg;
+#[cfg(feature = "ssr")]
+pub mod rand;
 
 #[cfg(feature = "hydrate")]
 #[wasm_bindgen::prelude::wasm_bindgen]
@@ -70,24 +72,24 @@ fn HomePage() -> impl IntoView {
 		}
 		br;
 
-		Await
-			future={ auth::login_url() }
-		|url| {
-			{{
-				// todo what is this spaghetti, fix this later I hate this ~sf
-				let url = url.clone();
-				move || url.clone().map(|url| mview! {
-					"hardcoded state: nya"
-					br;
-					a
-						class="underline text-purple-400"
-						href=f["{url}&state=nya"]
-					{
-						"evil whimsical login button"
-					}
-				})
-			}}
-		}
+		// Await
+		// 	future={ auth::login_url() }
+		// |url| {
+		// 	{{
+		// 		// todo what is this spaghetti, fix this later I hate this ~sf
+		// 		let url = url.clone();
+		// 		move || url.clone().map(|url| mview! {
+		// 			"hardcoded state: nya"
+		// 			br;
+		// 			a
+		// 				class="underline text-purple-400"
+		// 				href=f["{url}&state=nya"]
+		// 			{
+		// 				"evil whimsical login button"
+		// 			}
+		// 		})
+		// 	}}
+		// }
 	}
 }
 

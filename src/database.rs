@@ -3,7 +3,6 @@ use anyhow::Result;
 use sqlx::{ Pool, Postgres };
 use sqlx::postgres::PgPoolOptions;
 
-pub type DbData = Data<Db>;
 pub struct Db {
 	pool: Pool<Postgres>
 }

@@ -6,8 +6,9 @@ mod ssr_imports {
 	pub use actix_web::web::Data;
 	pub use anyhow::Result;
 	pub use april_fools_2026::{ App, env_vars, shell };
-	pub use april_fools_2026::database::{ Db, DbData };
-	pub use april_fools_2026::fimfic_config::{ self, Fimfic, FimficData };
+	pub use april_fools_2026::auth::fimfic_auth;
+	pub use april_fools_2026::database::Db;
+	pub use april_fools_2026::fimfic_cfg::{ self, FimficCfg };
 	pub use leptos::config::get_configuration;
 	pub use leptos_actix::{ generate_route_list, LeptosRoutes };
 }
@@ -36,18 +37,18 @@ async fn async_main() -> Result<()> {
 	let routes = generate_route_list(App);
 
 	let db = Db::new(&env_vars::postgres_url()).await?;
-	let db = DbData::new(db);
+	let db = Data::new(db);
 
 	let client_id = env_vars::fimfic_client_id();
 	let oauth_redirect_url = env_vars::fimfic_oauth_redirect_url();
-	let login_url = fimfic_config::make_login_url(&client_id, &oauth_redirect_url);
-	let fimfic = Fimfic {
+	let login_url = fimfic_cfg::make_login_url(&client_id, &oauth_redirect_url);
+	let fimfic_cfg = FimficCfg {
 		client_id,
 		client_secret: env_vars::fimfic_client_secret(),
 		oauth_redirect_url,
 		login_url
 	};
-	let fimfic = FimficData::new(fimfic);
+	let fimfic = Data::new(fimfic_cfg);
 
 	println!("listening on http://{}", &site_addr);
 
@@ -55,6 +56,7 @@ async fn async_main() -> Result<()> {
 		ActixApp::new()
 			.service(Files::new("/_", format!("{site_root}/_")))
 			.service(Files::new("/assets", site_root.clone()))
+			.service(fimfic_auth)
 			.leptos_routes(routes.clone(), {
 				let leptos_options = leptos_options.clone();
 				move || shell(&leptos_options)
