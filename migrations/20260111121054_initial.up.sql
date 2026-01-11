@@ -33,6 +33,8 @@ CREATE TYPE content_rating AS enum (
 
 CREATE TABLE IF NOT EXISTS Users (
 	id          integer     NOT NULL PRIMARY KEY,
+	name        text        NOT NULL,
+	pfp_url     text        NULL,
 	type        user_type   NOT NULL,
 	token       text        NOT NULL,
 	date_joined timestamptz NOT NULL DEFAULT now()
