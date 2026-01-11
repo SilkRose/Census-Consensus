@@ -1,3 +1,9 @@
+CREATE TYPE user_type AS enum (
+	'admin',
+	'writer',
+	'voter'
+);
+
 CREATE TYPE question_type AS enum (
 	'boolean',
 	'multiple_choice',
@@ -10,6 +16,13 @@ CREATE TYPE question_status AS enum (
 	'claimed',
 	'in_progress',
 	'written'
+);
+
+CREATE TABLE IF NOT EXISTS Users (
+	id          integer     NOT NULL PRIMARY KEY,
+	type        user_type   NOT NULL,
+	token       text        NOT NULL,
+	date_joined timestamptz NOT NULL DEFAULT now()
 );
 
 CREATE TABLE IF NOT EXISTS Questions (
