@@ -32,12 +32,14 @@ CREATE TYPE content_rating AS enum (
 );
 
 CREATE TABLE IF NOT EXISTS Users (
-	id          integer     NOT NULL PRIMARY KEY,
-	name        text        NOT NULL,
-	pfp_url     text        NULL,
-	type        user_type   NOT NULL,
-	token       text        NOT NULL,
-	date_joined timestamptz NOT NULL DEFAULT now()
+	id               integer     NOT NULL PRIMARY KEY,
+	name             text        NOT NULL,
+	pfp_url          text        NULL,
+	type             user_type   NOT NULL,
+	token            text        NOT NULL,
+	feedback_private text        NULL,
+	feedback_public  text        NULL,
+	date_joined      timestamptz NOT NULL DEFAULT now()
 );
 
 CREATE TABLE IF NOT EXISTS Questions (
@@ -48,51 +50,59 @@ CREATE TABLE IF NOT EXISTS Questions (
 	asked_by     text            NOT NULL,
 	created_by   integer         NOT NULL,
 	claimed_by   integer         NULL,
-	date_created timestamptz     NOT NULL DEFAULT now()
+	date_created timestamptz     NOT NULL DEFAULT now(),
+
+	CONSTRAINT questions_created_by_users_fk FOREIGN KEY (created_by)
+		REFERENCES Users (id) ON DELETE CASCADE,
+
+	CONSTRAINT questions_claimed_by_users_fk FOREIGN KEY (claimed_by)
+		REFERENCES Users (id) ON DELETE CASCADE
 );
 
-CREATE TABLE IF NOT EXISTS Boolean_answers (
-	id            integer     NOT NULL PRIMARY KEY,
-	question_id   integer     NOT NULL,
-	bool_option   boolean     NOT NULL,
-	text          text        NOT NULL,
-	date_created  timestamptz NOT NULL DEFAULT now(),
-
-	CONSTRAINT Boolean_answers_fk FOREIGN KEY (question_id)
-		REFERENCES Questions (id) ON DELETE CASCADE
-);
-
-CREATE TABLE IF NOT EXISTS Multiple_choice_answers (
-	id            integer     NOT NULL PRIMARY KEY,
-	question_id   integer     NOT NULL,
-	option_number integer     NOT NULL,
-	text          text        NOT NULL,
-	date_created  timestamptz NOT NULL DEFAULT now(),
-
-	CONSTRAINT Multiple_choice_answers_fk FOREIGN KEY (question_id)
-		REFERENCES Questions (id) ON DELETE CASCADE
-);
-
-CREATE TABLE IF NOT EXISTS Multiselect_answers (
-	id            integer     NOT NULL PRIMARY KEY,
-	question_id   integer     NOT NULL,
-	option_number integer     NOT NULL,
-	text          text        NOT NULL,
-	date_created  timestamptz NOT NULL DEFAULT now(),
-
-	CONSTRAINT Multiselect_answers_fk FOREIGN KEY (question_id)
-		REFERENCES Questions (id) ON DELETE CASCADE
-);
-
-CREATE TABLE IF NOT EXISTS Scale_answers (
+CREATE TABLE IF NOT EXISTS Boolean_options (
 	id           integer     NOT NULL PRIMARY KEY,
 	question_id  integer     NOT NULL,
-	scale_start  integer     NOT NULL,
-	scale_end    integer     NOT NULL,
+	bool_option  boolean     NOT NULL,
 	text         text        NOT NULL,
+	order_rank   integer     NOT NULL,
 	date_created timestamptz NOT NULL DEFAULT now(),
 
-	CONSTRAINT Scale_answers_fk FOREIGN KEY (question_id)
+	CONSTRAINT Boolean_options_questions_fk FOREIGN KEY (question_id)
+		REFERENCES Questions (id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS Multiple_choice_options (
+	id            integer     NOT NULL PRIMARY KEY,
+	question_id   integer     NOT NULL,
+	option_number integer     NOT NULL,
+	text          text        NOT NULL,
+	order_rank    integer     NOT NULL,
+	date_created  timestamptz NOT NULL DEFAULT now(),
+
+	CONSTRAINT Multiple_choice_options_questions_fk FOREIGN KEY (question_id)
+		REFERENCES Questions (id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS Multiselect_options (
+	id            integer     NOT NULL PRIMARY KEY,
+	question_id   integer     NOT NULL,
+	option_number integer     NOT NULL,
+	text          text        NOT NULL,
+	order_rank    integer     NOT NULL,
+	date_created  timestamptz NOT NULL DEFAULT now(),
+
+	CONSTRAINT Multiselect_options_questions_fk FOREIGN KEY (question_id)
+		REFERENCES Questions (id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS Scale_options (
+	id           integer     NOT NULL PRIMARY KEY,
+	question_id  integer     NOT NULL,
+	scale_number integer     NOT NULL,
+	order_rank   integer     NOT NULL,
+	date_created timestamptz NOT NULL DEFAULT now(),
+
+	CONSTRAINT Scale_options_questions_fk FOREIGN KEY (question_id)
 		REFERENCES Questions (id) ON DELETE CASCADE
 );
 
