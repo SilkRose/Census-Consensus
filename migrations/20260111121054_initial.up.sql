@@ -107,3 +107,18 @@ CREATE TABLE IF NOT EXISTS Story_updates (
 	dislikes          integer     NOT NULL,
 	date_cached       timestamptz NOT NULL PRIMARY KEY DEFAULT now()
 );
+
+CREATE TABLE IF NOT EXISTS Votes (
+	voter_id     integer     NOT NULL,
+	question_id  integer     NOT NULL,
+	choice_id    integer     NOT NULL,
+	date_created timestamptz NOT NULL DEFAULT now(),
+
+	CONSTRAINT Votes_Users_fk FOREIGN KEY (voter_id)
+		REFERENCES Users (id) ON DELETE CASCADE,
+
+	CONSTRAINT Votes_Questions_fk FOREIGN KEY (question_id)
+		REFERENCES Questions (id) ON DELETE CASCADE,
+
+	CONSTRAINT Votes_pk PRIMARY KEY (voter_id, question_id)
+);

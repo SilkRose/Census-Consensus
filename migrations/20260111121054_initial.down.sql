@@ -1,3 +1,4 @@
+DROP TABLE IF EXISTS Votes;
 DROP TABLE IF EXISTS Story_updates;
 DROP TABLE IF EXISTS Scale_options;
 DROP TABLE IF EXISTS Multiselect_options;
