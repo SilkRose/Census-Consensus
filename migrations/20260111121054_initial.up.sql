@@ -18,19 +18,6 @@ CREATE TYPE question_status AS enum (
 	'written'
 );
 
-CREATE TYPE completion_status AS enum (
-	'incomplete',
-	'complete',
-	'hiatus',
-	'cancelled'
-);
-
-CREATE TYPE content_rating AS enum (
-	'everyone',
-	'teen',
-	'mature'
-);
-
 CREATE TABLE IF NOT EXISTS Users (
 	id               integer     NOT NULL PRIMARY KEY,
 	name             text        NOT NULL,
@@ -107,33 +94,16 @@ CREATE TABLE IF NOT EXISTS Scale_options (
 );
 
 CREATE TABLE IF NOT EXISTS Story_updates (
-	id                integer           NOT NULL,
-	title             text              NOT NULL,
-	short_description text              NOT NULL,
-	description       text              NOT NULL,
-	published         boolean           NOT NULL,
-	link              text              NOT NULL,
-	cover_url         text              NULL,
-	color_hex         char(6)           NOT NULL,
-	views             integer           NOT NULL,
-	total_views       integer           NOT NULL,
-	words             integer           NOT NULL,
-	chapters          integer           NOT NULL,
-	comments          integer           NOT NULL,
-	rating            integer           NOT NULL,
-	completion_status completion_status NOT NULL,
-	content_rating    content_rating    NOT NULL,
-	--tags            text              NOT NULL,
-	likes             integer           NOT NULL,
-	dislikes          integer           NOT NULL,
-	author_id         integer           NOT NULL,
-	date_modified     timestamptz       NOT NULL,
-	date_updated      timestamptz       NOT NULL,
-	date_published    timestamptz       NOT NULL,
-	date_cached       timestamptz       NOT NULL DEFAULT now(),
-
-	CONSTRAINT stories_author_id_fk FOREIGN KEY (author_id)
-		REFERENCES Users (id) ON DELETE CASCADE,
-
-	CONSTRAINT story_updates_pk PRIMARY KEY (id, date_cached)
+	title             text        NOT NULL,
+	short_description text        NOT NULL,
+	description       text        NOT NULL,
+	views             integer     NOT NULL,
+	total_views       integer     NOT NULL,
+	words             integer     NOT NULL,
+	chapters          integer     NOT NULL,
+	comments          integer     NOT NULL,
+	rating            integer     NOT NULL,
+	likes             integer     NOT NULL,
+	dislikes          integer     NOT NULL,
+	date_cached       timestamptz NOT NULL PRIMARY KEY DEFAULT now()
 );
