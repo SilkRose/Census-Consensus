@@ -1,4 +1,5 @@
 use crate::fimfic_cfg::FimficCfg;
+use crate::database::{ Db, UserType };
 use crate::http::HttpClient;
 use crate::rand::{ gen_auth_state, gen_auth_token };
 use actix_web::get;
@@ -16,10 +17,24 @@ const SESSION_COOKIE_NAME: &str = "fimfic-auth-session";
 const SESSION_COOKIE_MAX_AGE: Duration = Duration::days(14);
 const SESSION_COOKIE_PATH: &str = "/";
 
+#[derive(Deserialize)]
+struct AuthQueryParams {
+	code: Option<String>,
+	state: Option<String>
+}
+
+struct FunctionArgs {
+	req: HttpRequest,
+	db: Data<Db>,
+	fimfic_cfg: Data<FimficCfg>,
+	http_client: Data<HttpClient>
+}
+
 #[get("/login/fimfic")]
 pub async fn fimfic_auth(
 	req: HttpRequest,
-	Query(form): Query<FimficAuthParams>,
+	Query(form): Query<AuthQueryParams>,
+	db: Data<Db>,
 	fimfic_cfg: Data<FimficCfg>,
 	http_client: Data<HttpClient>
 ) -> HttpResponse {
@@ -27,24 +42,33 @@ pub async fn fimfic_auth(
 	// then skip this whole flow and redirect back immediately
 	if let Some(code) = form.code && let Some(state) = form.state {
 		fimfic_auth_return(
-			req,
-			fimfic_cfg,
-			http_client,
 			code,
-			state
+			state,
+			FunctionArgs {
+				req,
+				db,
+				fimfic_cfg,
+				http_client
+			}
 		).await
 	} else {
-		fimfic_auth_redirect(fimfic_cfg).await
+		fimfic_auth_redirect(FunctionArgs {
+			req,
+			db,
+			fimfic_cfg,
+			http_client
+		}).await
 	}
 }
 
-#[derive(Deserialize)]
-struct FimficAuthParams {
-	code: Option<String>,
-	state: Option<String>
-}
-
-async fn fimfic_auth_redirect(fimfic_cfg: Data<FimficCfg>) -> HttpResponse {
+async fn fimfic_auth_redirect(
+	FunctionArgs {
+		req,
+		db,
+		fimfic_cfg,
+		http_client
+	}: FunctionArgs
+) -> HttpResponse {
 	let state = gen_auth_state();
 
 	let login_url = format!("{login_url}&state={state}", login_url = &*fimfic_cfg.login_url);
@@ -63,11 +87,14 @@ async fn fimfic_auth_redirect(fimfic_cfg: Data<FimficCfg>) -> HttpResponse {
 }
 
 async fn fimfic_auth_return(
-	req: HttpRequest,
-	fimfic_cfg: Data<FimficCfg>,
-	http_client: Data<HttpClient>,
 	code: String,
-	state: String
+	state: String,
+	FunctionArgs {
+		req,
+		db,
+		fimfic_cfg,
+		http_client
+	}: FunctionArgs
 ) -> HttpResponse {
 	let Some(state_cookie) = req.cookie(STATE_COOKIE_NAME) else {
 		// todo present an actual error
@@ -96,7 +123,25 @@ async fn fimfic_auth_return(
 
 	let token = gen_auth_token();
 
-	// todo store the stuff in the db
+	let db_result = db.create_or_get_session()
+		.username(&fimfic_token_exchange.name)
+		.id(fimfic_token_exchange.id)
+		// todo do the check on environment variable fimfic token, when that gets implemented
+		.user_type(UserType::Writer)
+		.pfp_link("todo pfp_link")
+		.token(&token)
+		.call()
+		.await;
+
+	let token = match db_result {
+		Ok(tok) => { tok }
+		Err(err) => {
+			// todo present an actual error
+			return HttpResponse::Ok()
+				.content_type("text/plain")
+				.body("db broke")
+		}
+	};
 
 	let state_cookie = Cookie::build(STATE_COOKIE_NAME, "3c")
 		.path(STATE_COOKIE_PATH)

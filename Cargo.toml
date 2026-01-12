@@ -9,6 +9,7 @@ anyhow = "1.0.100"
 actix-files = { version = "0.6.9", optional = true }
 actix-web = { version = "4.12.1", optional = true, features = ["macros"] }
 base64ct = { version = "1.8.2", optional = true, features = ["std"] }
+bon = "3.8.2"
 console-error-panic-hook = { package = "console_error_panic_hook", version = "0.1.7" }
 dotenvy = "0.15.7"
 leptos = { version = "0.8.14", features = ["nightly"] }

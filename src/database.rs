@@ -1,5 +1,6 @@
 use actix_web::web::Data;
 use anyhow::Result;
+use bon::{ bon, builder };
 use sqlx::{ Pool, Postgres };
 use sqlx::postgres::PgPoolOptions;
 
@@ -7,6 +8,7 @@ pub struct Db {
 	pool: Pool<Postgres>
 }
 
+#[bon]
 impl Db {
 	pub async fn new(database_url: &str) -> Result<Self> {
 		let pool = PgPoolOptions::new()
@@ -20,4 +22,24 @@ impl Db {
 
 		Ok(Self { pool })
 	}
+
+	/// Creates a new session for a user in the database, with the provided
+	/// user id and token
+	#[builder]
+	pub async fn create_or_get_session(
+		&self,
+		username: &str,
+		id: u32,
+		user_type: UserType,
+		pfp_link: &str,
+		token: &str
+	) -> Result<String> {
+		todo!()
+	}
+}
+
+pub enum UserType {
+	Admin,
+	Writer,
+	Voter
 }
