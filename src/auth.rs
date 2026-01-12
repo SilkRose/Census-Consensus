@@ -45,19 +45,11 @@ pub async fn fimfic_auth(
 			.call()
 			.await
 	} else {
-		fimfic_auth_redirect()
-			.req(req)
-			.fimfic_cfg(fimfic_cfg)
-			.call()
-			.await
+		fimfic_auth_redirect(fimfic_cfg).await
 	}
 }
 
-#[builder]
-async fn fimfic_auth_redirect(
-	req: HttpRequest,
-	fimfic_cfg: Data<FimficCfg>
-) -> HttpResponse {
+async fn fimfic_auth_redirect(fimfic_cfg: Data<FimficCfg>) -> HttpResponse {
 	let state = gen_auth_state();
 
 	let login_url = format!("{login_url}&state={state}", login_url = &*fimfic_cfg.login_url);
@@ -102,6 +94,7 @@ async fn fimfic_auth_return(
 	let fimfic_token_exchange = match http_client.fimfic_token_exchange(&fimfic_cfg, &code).await {
 		Ok(res) => { res }
 		Err(err) => {
+			eprintln!("error in fimfic token exchange: {err}");
 			// todo present an actual error
 			return HttpResponse::Ok()
 				.content_type("text/plain")
@@ -124,6 +117,7 @@ async fn fimfic_auth_return(
 	let token = match db_result {
 		Ok(tok) => { tok }
 		Err(err) => {
+			eprintln!("error in db storing: {err}");
 			// todo present an actual error
 			return HttpResponse::Ok()
 				.content_type("text/plain")

@@ -1,6 +1,5 @@
-use actix_web::web::Data;
 use anyhow::Result;
-use bon::{ bon, builder };
+use bon::bon;
 use sqlx::{ Pool, Postgres };
 use sqlx::postgres::PgPoolOptions;
 
@@ -34,6 +33,8 @@ impl Db {
 		pfp_link: &str,
 		token: &str
 	) -> Result<String> {
+		let _ = (username, id, user_type, pfp_link, token);
+
 		todo!()
 	}
 }

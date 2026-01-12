@@ -2,8 +2,6 @@ use crate::fimfic_cfg::{ FimficCfg, FIMFIC_TOKEN_EXCHANGE_URL };
 use anyhow::Result;
 use reqwest::Client as ReqwestClient;
 use serde::Deserialize;
-use std::ops::Deref;
-use std::borrow::Cow;
 
 pub struct HttpClient {
 	inner: ReqwestClient

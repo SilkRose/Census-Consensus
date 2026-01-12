@@ -1,5 +1,3 @@
-use actix_web::web::Data;
-
 pub struct FimficCfg {
 	pub client_id: Box<str>,
 	pub client_secret: Box<str>,
