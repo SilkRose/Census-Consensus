@@ -23,7 +23,7 @@ CREATE TABLE IF NOT EXISTS Users (
 	name             text        NOT NULL,
 	pfp_url          text        NULL,
 	type             user_type   NOT NULL,
-	token            text        NOT NULL,
+	tokens           text[]      NOT NULL,
 	feedback_private text        NULL,
 	feedback_public  text        NULL,
 	date_joined      timestamptz NOT NULL DEFAULT now()
