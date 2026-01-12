@@ -7,6 +7,7 @@ use actix_web::{ HttpRequest, HttpResponse };
 use actix_web::cookie::{ Cookie, SameSite };
 use actix_web::cookie::time::Duration;
 use actix_web::web::{ Data, Query };
+use bon::builder;
 use serde::Deserialize;
 
 const STATE_COOKIE_NAME: &str = "fimfic-auth-state";
@@ -23,13 +24,6 @@ struct AuthQueryParams {
 	state: Option<String>
 }
 
-struct FunctionArgs {
-	req: HttpRequest,
-	db: Data<Db>,
-	fimfic_cfg: Data<FimficCfg>,
-	http_client: Data<HttpClient>
-}
-
 #[get("/login/fimfic")]
 pub async fn fimfic_auth(
 	req: HttpRequest,
@@ -41,33 +35,28 @@ pub async fn fimfic_auth(
 	// todo also check that the auth cookie isn't already set, if it is already set
 	// then skip this whole flow and redirect back immediately
 	if let Some(code) = form.code && let Some(state) = form.state {
-		fimfic_auth_return(
-			code,
-			state,
-			FunctionArgs {
-				req,
-				db,
-				fimfic_cfg,
-				http_client
-			}
-		).await
+		fimfic_auth_return()
+			.code(code)
+			.state(state)
+			.req(req)
+			.db(db)
+			.fimfic_cfg(fimfic_cfg)
+			.http_client(http_client)
+			.call()
+			.await
 	} else {
-		fimfic_auth_redirect(FunctionArgs {
-			req,
-			db,
-			fimfic_cfg,
-			http_client
-		}).await
+		fimfic_auth_redirect()
+			.req(req)
+			.fimfic_cfg(fimfic_cfg)
+			.call()
+			.await
 	}
 }
 
+#[builder]
 async fn fimfic_auth_redirect(
-	FunctionArgs {
-		req,
-		db,
-		fimfic_cfg,
-		http_client
-	}: FunctionArgs
+	req: HttpRequest,
+	fimfic_cfg: Data<FimficCfg>
 ) -> HttpResponse {
 	let state = gen_auth_state();
 
@@ -86,15 +75,14 @@ async fn fimfic_auth_redirect(
 		.finish()
 }
 
+#[builder]
 async fn fimfic_auth_return(
+	req: HttpRequest,
+	db: Data<Db>,
+	fimfic_cfg: Data<FimficCfg>,
+	http_client: Data<HttpClient>,
 	code: String,
-	state: String,
-	FunctionArgs {
-		req,
-		db,
-		fimfic_cfg,
-		http_client
-	}: FunctionArgs
+	state: String
 ) -> HttpResponse {
 	let Some(state_cookie) = req.cookie(STATE_COOKIE_NAME) else {
 		// todo present an actual error
