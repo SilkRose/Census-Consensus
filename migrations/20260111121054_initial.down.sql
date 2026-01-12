@@ -5,6 +5,7 @@ DROP TABLE IF EXISTS Multiselect_options;
 DROP TABLE IF EXISTS Multiple_choice_options;
 DROP TABLE IF EXISTS Boolean_options;
 DROP TABLE IF EXISTS Questions;
+DROP TABLE IF EXISTS Tokens;
 DROP TABLE IF EXISTS Users;
 
 DROP TYPE IF EXISTS question_status;

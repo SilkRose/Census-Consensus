@@ -1,3 +1,3 @@
 SELECT
-	id, name, pfp_url, type, tokens, feedback_private, feedback_public, date_cached
+	id, name, pfp_url, type, banned, feedback_private, feedback_public, date_cached
 FROM Users;

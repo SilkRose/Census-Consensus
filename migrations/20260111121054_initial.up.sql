@@ -23,10 +23,19 @@ CREATE TABLE IF NOT EXISTS Users (
 	name             text        NOT NULL,
 	pfp_url          text        NULL,
 	type             user_type   NOT NULL,
-	tokens           text[]      NOT NULL,
+	banned           boolean     NOT NULL DEFAULT false,
 	feedback_private text        NULL,
 	feedback_public  text        NULL,
 	date_joined      timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS Tokens (
+	token        text        NOT NULL PRIMARY KEY,
+	user_id      integer     NOT NULL,
+	date_created timestamptz NOT NULL DEFAULT now(),
+
+	CONSTRAINT Tokens_Users_fk FOREIGN KEY (user_id)
+		REFERENCES Users (id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS Questions (
