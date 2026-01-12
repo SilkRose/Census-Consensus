@@ -14,6 +14,8 @@ pub mod env_vars;
 #[cfg(feature = "ssr")]
 pub mod fimfic_cfg;
 #[cfg(feature = "ssr")]
+pub mod http;
+#[cfg(feature = "ssr")]
 pub mod rand;
 
 #[cfg(feature = "hydrate")]

@@ -9,6 +9,7 @@ mod ssr_imports {
 	pub use april_fools_2026::auth::fimfic_auth;
 	pub use april_fools_2026::database::Db;
 	pub use april_fools_2026::fimfic_cfg::{ self, FimficCfg };
+	pub use april_fools_2026::http::HttpClient;
 	pub use leptos::config::get_configuration;
 	pub use leptos_actix::{ generate_route_list, LeptosRoutes };
 }
@@ -50,9 +51,12 @@ async fn async_main() -> Result<()> {
 	};
 	let fimfic = Data::new(fimfic_cfg);
 
+	let http_client = HttpClient::new()?;
+	let http_client = Data::new(http_client);
+
 	println!("listening on http://{}", &site_addr);
 
-	HttpServer::new(move || {
+	let server = HttpServer::new(move || {
 		ActixApp::new()
 			.service(Files::new("/_", format!("{site_root}/_")))
 			.service(Files::new("/assets", site_root.clone()))
@@ -61,11 +65,15 @@ async fn async_main() -> Result<()> {
 				let leptos_options = leptos_options.clone();
 				move || shell(&leptos_options)
 			})
+
 			.app_data(leptos_options.clone())
 			.app_data(db.clone())
 			.app_data(fimfic.clone())
+			.app_data(http_client.clone())
 			.wrap(Compress::default())
-	})
+	});
+
+	server
 		.bind(site_addr)?
 		.run()
 		.await?;

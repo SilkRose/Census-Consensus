@@ -1,5 +1,6 @@
 use crate::fimfic_cfg::FimficCfg;
-use crate::rand::gen_auth_state;
+use crate::http::HttpClient;
+use crate::rand::{ gen_auth_state, gen_auth_token };
 use actix_web::get;
 use actix_web::{ HttpRequest, HttpResponse };
 use actix_web::cookie::{ Cookie, SameSite };
@@ -19,12 +20,21 @@ const SESSION_COOKIE_PATH: &str = "/";
 pub async fn fimfic_auth(
 	req: HttpRequest,
 	Query(form): Query<FimficAuthParams>,
-	fimfic_data: Data<FimficCfg>
+	fimfic_cfg: Data<FimficCfg>,
+	http_client: Data<HttpClient>
 ) -> HttpResponse {
+	// todo also check that the auth cookie isn't already set, if it is already set
+	// then skip this whole flow and redirect back immediately
 	if let Some(code) = form.code && let Some(state) = form.state {
-		fimfic_auth_return(req, code, state).await
+		fimfic_auth_return(
+			req,
+			fimfic_cfg,
+			http_client,
+			code,
+			state
+		).await
 	} else {
-		fimfic_auth_redirect(fimfic_data).await
+		fimfic_auth_redirect(fimfic_cfg).await
 	}
 }
 
@@ -34,10 +44,10 @@ struct FimficAuthParams {
 	state: Option<String>
 }
 
-async fn fimfic_auth_redirect(fimfic_data: Data<FimficCfg>) -> HttpResponse {
+async fn fimfic_auth_redirect(fimfic_cfg: Data<FimficCfg>) -> HttpResponse {
 	let state = gen_auth_state();
 
-	let login_url = format!("{login_url}&state={state}", login_url = &*fimfic_data.login_url);
+	let login_url = format!("{login_url}&state={state}", login_url = &*fimfic_cfg.login_url);
 	let cookie = Cookie::build(STATE_COOKIE_NAME, state)
 		.max_age(STATE_COOKIE_MAX_AGE)
 		.path(STATE_COOKIE_PATH)
@@ -54,6 +64,8 @@ async fn fimfic_auth_redirect(fimfic_data: Data<FimficCfg>) -> HttpResponse {
 
 async fn fimfic_auth_return(
 	req: HttpRequest,
+	fimfic_cfg: Data<FimficCfg>,
+	http_client: Data<HttpClient>,
 	code: String,
 	state: String
 ) -> HttpResponse {
@@ -72,11 +84,25 @@ async fn fimfic_auth_return(
 			.body(format!("state mismatch\n\nstate param: {state}\nstate cookie: {state_cookie}"))
 	}
 
+	let fimfic_token_exchange = match http_client.fimfic_token_exchange(&fimfic_cfg, &code).await {
+		Ok(res) => { res }
+		Err(err) => {
+			// todo present an actual error
+			return HttpResponse::Ok()
+				.content_type("text/plain")
+				.body("fimfic didn't like your code for some reason")
+		}
+	};
+
+	let token = gen_auth_token();
+
+	// todo store the stuff in the db
+
 	let state_cookie = Cookie::build(STATE_COOKIE_NAME, "3c")
 		.path(STATE_COOKIE_PATH)
 		.max_age(Duration::ZERO)
 		.finish();
-	let session_cookie = Cookie::build(SESSION_COOKIE_NAME, "pretend-this-is-a-token-todo-fix-this")
+	let session_cookie = Cookie::build(SESSION_COOKIE_NAME, &*token)
 		.max_age(SESSION_COOKIE_MAX_AGE)
 		.path(SESSION_COOKIE_PATH)
 		.same_site(SameSite::Lax)
@@ -89,5 +115,5 @@ async fn fimfic_auth_return(
 		.cookie(state_cookie)
 		.cookie(session_cookie)
 		.content_type("text/plain")
-		.body(format!(r#"the return!! code is "{code}" and state (verified) is "{state}""#))
+		.body(format!(r#"the return!! code is "{code}" and state (verified) is "{state}" and token is "{token}""#))
 }

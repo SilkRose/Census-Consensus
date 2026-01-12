@@ -18,7 +18,8 @@ leptos-mview = { version = "0.4.4", features = ["nightly"] }
 leptos-router = { package = "leptos_router", version = "0.8.10", features = ["nightly"] }
 rand = { version = "0.9.2", optional = true }
 rand-chacha = { package = "rand_chacha", version = "0.9.0", optional = true }
-serde = { version = "1.0.228", features = ["derive"] }
+reqwest = { version = "0.13.1", optional = true, features = ["json", "form"] }
+serde = { version = "1.0.228", optional = true, features = ["derive"] }
 sqlx = { version = "0.8.6", optional = true, default-features = false, features = [
 	"macros",
 	"migrate",
@@ -39,6 +40,8 @@ ssr = [
 	"dep:leptos-actix",
 	"dep:rand",
 	"dep:rand-chacha",
+	"dep:reqwest",
+	"dep:serde",
 	"dep:sqlx",
 	"leptos/ssr",
 	"leptos-meta/ssr",
