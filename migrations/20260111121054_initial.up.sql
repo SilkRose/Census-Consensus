@@ -5,7 +5,6 @@ CREATE TYPE user_type AS enum (
 );
 
 CREATE TYPE question_type AS enum (
-	'boolean',
 	'multiple_choice',
 	'multiselect',
 	'scale'
@@ -39,7 +38,7 @@ CREATE TABLE IF NOT EXISTS Tokens (
 );
 
 CREATE TABLE IF NOT EXISTS Questions (
-	id           integer         NOT NULL PRIMARY KEY,
+	id           serial          NOT NULL PRIMARY KEY,
 	text         text            NOT NULL,
 	type         question_type   NOT NULL,
 	status       question_status NOT NULL,
@@ -48,57 +47,22 @@ CREATE TABLE IF NOT EXISTS Questions (
 	claimed_by   integer         NULL,
 	date_created timestamptz     NOT NULL DEFAULT now(),
 
-	CONSTRAINT questions_created_by_users_fk FOREIGN KEY (created_by)
+	CONSTRAINT Questions_created_by_Users_fk FOREIGN KEY (created_by)
 		REFERENCES Users (id) ON DELETE CASCADE,
 
-	CONSTRAINT questions_claimed_by_users_fk FOREIGN KEY (claimed_by)
+	CONSTRAINT Questions_claimed_by_Users_fk FOREIGN KEY (claimed_by)
 		REFERENCES Users (id) ON DELETE CASCADE
 );
 
-CREATE TABLE IF NOT EXISTS Boolean_options (
-	id           integer     NOT NULL PRIMARY KEY,
-	question_id  integer     NOT NULL,
-	bool_option  boolean     NOT NULL,
-	text         text        NOT NULL,
-	order_rank   integer     NOT NULL,
-	date_created timestamptz NOT NULL DEFAULT now(),
-
-	CONSTRAINT Boolean_options_questions_fk FOREIGN KEY (question_id)
-		REFERENCES Questions (id) ON DELETE CASCADE
-);
-
-CREATE TABLE IF NOT EXISTS Multiple_choice_options (
-	id            integer     NOT NULL PRIMARY KEY,
+CREATE TABLE IF NOT EXISTS Options (
+	id            serial      NOT NULL PRIMARY KEY,
 	question_id   integer     NOT NULL,
 	option_number integer     NOT NULL,
 	text          text        NOT NULL,
 	order_rank    integer     NOT NULL,
 	date_created  timestamptz NOT NULL DEFAULT now(),
 
-	CONSTRAINT Multiple_choice_options_questions_fk FOREIGN KEY (question_id)
-		REFERENCES Questions (id) ON DELETE CASCADE
-);
-
-CREATE TABLE IF NOT EXISTS Multiselect_options (
-	id            integer     NOT NULL PRIMARY KEY,
-	question_id   integer     NOT NULL,
-	option_number integer     NOT NULL,
-	text          text        NOT NULL,
-	order_rank    integer     NOT NULL,
-	date_created  timestamptz NOT NULL DEFAULT now(),
-
-	CONSTRAINT Multiselect_options_questions_fk FOREIGN KEY (question_id)
-		REFERENCES Questions (id) ON DELETE CASCADE
-);
-
-CREATE TABLE IF NOT EXISTS Scale_options (
-	id           integer     NOT NULL PRIMARY KEY,
-	question_id  integer     NOT NULL,
-	scale_number integer     NOT NULL,
-	order_rank   integer     NOT NULL,
-	date_created timestamptz NOT NULL DEFAULT now(),
-
-	CONSTRAINT Scale_options_questions_fk FOREIGN KEY (question_id)
+	CONSTRAINT Answer_options_questions_fk FOREIGN KEY (question_id)
 		REFERENCES Questions (id) ON DELETE CASCADE
 );
 
@@ -120,7 +84,7 @@ CREATE TABLE IF NOT EXISTS Story_updates (
 CREATE TABLE IF NOT EXISTS Votes (
 	voter_id     integer     NOT NULL,
 	question_id  integer     NOT NULL,
-	choice_id    integer     NOT NULL,
+	option_id    integer     NOT NULL,
 	date_created timestamptz NOT NULL DEFAULT now(),
 
 	CONSTRAINT Votes_Users_fk FOREIGN KEY (voter_id)
@@ -129,5 +93,8 @@ CREATE TABLE IF NOT EXISTS Votes (
 	CONSTRAINT Votes_Questions_fk FOREIGN KEY (question_id)
 		REFERENCES Questions (id) ON DELETE CASCADE,
 
-	CONSTRAINT Votes_pk PRIMARY KEY (voter_id, question_id)
+	CONSTRAINT Votes_Options_fk FOREIGN KEY (option_id)
+		REFERENCES Options (id) ON DELETE CASCADE,
+
+	CONSTRAINT Votes_pk PRIMARY KEY (voter_id, question_id, option_id)
 );
