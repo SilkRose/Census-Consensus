@@ -42,6 +42,16 @@ CREATE TABLE IF NOT EXISTS Banned_users (
 	date_banned timestamptz NOT NULL DEFAULT now()
 );
 
+CREATE TABLE IF NOT EXISTS Chapters (
+	id             integer     NOT NULL PRIMARY KEY,
+	title          text        NOT NULL,
+	vote_duration  integer     NOT NULL,
+	intro_text     text        NULL,
+	outro_text     text        NULL,
+	date_published timestamptz NULL,
+	date_created   timestamptz NOT NULL DEFAULT now()
+);
+
 CREATE TABLE IF NOT EXISTS Questions (
 	id               serial           NOT NULL PRIMARY KEY,
 	text             text             NOT NULL,
@@ -51,6 +61,8 @@ CREATE TABLE IF NOT EXISTS Questions (
 	asked_by         text             NOT NULL,
 	created_by       integer          NOT NULL,
 	claimed_by       integer          NULL,
+	chapter_id       integer          NULL,
+	chapter_order    integer          NULL,
 	date_created     timestamptz      NOT NULL DEFAULT now(),
 
 	CONSTRAINT Percent_range
@@ -60,7 +72,13 @@ CREATE TABLE IF NOT EXISTS Questions (
 		REFERENCES Users (id) ON DELETE CASCADE,
 
 	CONSTRAINT Questions_claimed_by_Users_fk FOREIGN KEY (claimed_by)
-		REFERENCES Users (id) ON DELETE CASCADE
+		REFERENCES Users (id) ON DELETE CASCADE,
+
+	CONSTRAINT Questions_Chapters_fk FOREIGN KEY (chapter_id)
+		REFERENCES Chapters (id) ON DELETE CASCADE,
+
+	CONSTRAINT Questions_chapter_order_unique
+		UNIQUE (chapter_id, chapter_order)
 );
 
 CREATE TABLE IF NOT EXISTS Options (
