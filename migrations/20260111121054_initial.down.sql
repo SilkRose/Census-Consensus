@@ -1,10 +1,9 @@
 DROP TABLE IF EXISTS Votes;
 DROP TABLE IF EXISTS Story_updates;
-DROP TABLE IF EXISTS Scale_options;
-DROP TABLE IF EXISTS Multiselect_options;
-DROP TABLE IF EXISTS Multiple_choice_options;
-DROP TABLE IF EXISTS Boolean_options;
+DROP TABLE IF EXISTS Options;
 DROP TABLE IF EXISTS Questions;
+DROP TABLE IF EXISTS Chapters;
+DROP TABLE IF EXISTS Banned_users;
 DROP TABLE IF EXISTS Tokens;
 DROP TABLE IF EXISTS Users;
 
