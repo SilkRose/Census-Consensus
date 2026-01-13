@@ -43,14 +43,18 @@ CREATE TABLE IF NOT EXISTS Banned_users (
 );
 
 CREATE TABLE IF NOT EXISTS Questions (
-	id           serial          NOT NULL PRIMARY KEY,
-	text         text            NOT NULL,
-	type         question_type   NOT NULL,
-	status       question_status NOT NULL,
-	asked_by     text            NOT NULL,
-	created_by   integer         NOT NULL,
-	claimed_by   integer         NULL,
-	date_created timestamptz     NOT NULL DEFAULT now(),
+	id               serial           NOT NULL PRIMARY KEY,
+	text             text             NOT NULL,
+	type             question_type    NOT NULL,
+	status           question_status  NOT NULL,
+	response_percent double precision NOT NULL,
+	asked_by         text             NOT NULL,
+	created_by       integer          NOT NULL,
+	claimed_by       integer          NULL,
+	date_created     timestamptz      NOT NULL DEFAULT now(),
+
+	CONSTRAINT Percent_range
+		CHECK (response_percent >= 0 AND response_percent <= 100),
 
 	CONSTRAINT Questions_created_by_Users_fk FOREIGN KEY (created_by)
 		REFERENCES Users (id) ON DELETE CASCADE,
