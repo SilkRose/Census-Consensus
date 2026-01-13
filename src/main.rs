@@ -7,7 +7,7 @@ mod ssr_imports {
 	pub use anyhow::Result;
 	pub use april_fools_2026::{ App, env_vars, shell };
 	pub use april_fools_2026::auth::fimfic_auth;
-	pub use april_fools_2026::database::Db;
+	pub use april_fools_2026::db::Db;
 	pub use april_fools_2026::fimfic_cfg::{ self, FimficCfg };
 	pub use april_fools_2026::http::HttpClient;
 	pub use leptos::config::get_configuration;

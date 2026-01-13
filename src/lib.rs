@@ -8,7 +8,7 @@ use leptos_router::components::{ Route, Router, Routes };
 #[cfg(feature = "ssr")]
 pub mod auth;
 #[cfg(feature = "ssr")]
-pub mod database;
+pub mod db;
 #[cfg(feature = "ssr")]
 pub mod env_vars;
 #[cfg(feature = "ssr")]

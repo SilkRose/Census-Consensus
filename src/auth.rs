@@ -1,5 +1,5 @@
 use crate::fimfic_cfg::FimficCfg;
-use crate::database::{ Db, UserType };
+use crate::db::{ Db, UserType };
 use crate::http::HttpClient;
 use crate::rand::{ gen_auth_state, gen_auth_token };
 use actix_web::get;

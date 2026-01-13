@@ -15,7 +15,7 @@ impl Db {
 			.connect(database_url)
 			.await?;
 
-		sqlx::migrate!("./migrations")
+		sqlx::migrate!("db/migrations")
 			.run(&pool)
 			.await?;
 
