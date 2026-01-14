@@ -83,16 +83,41 @@ CREATE TABLE IF NOT EXISTS Questions (
 		UNIQUE (chapter_id, chapter_order)
 );
 
+CREATE TABLE IF NOT EXISTS Writings (
+	name         text        NOT NULL,
+	question_id  integer     NOT NULL,
+	writing      text        NOT NULL,
+	created_by   integer     NOT NULL,
+	saved_by     integer     NOT NULL,
+	revision_id  integer     NOT NULL,
+	date_created timestamptz NOT NULL DEFAULT now(),
+
+	CONSTRAINT Writings_Questions_fk FOREIGN KEY (question_id)
+		REFERENCES Questions (id) ON DELETE CASCADE,
+
+	CONSTRAINT Writings_created_by_Users_fk FOREIGN KEY (created_by)
+		REFERENCES Users (id) ON DELETE CASCADE,
+
+	CONSTRAINT Writings_saved_by_Users_fk FOREIGN KEY (saved_by)
+		REFERENCES Users (id) ON DELETE CASCADE,
+
+	CONSTRAINT Writings_pk PRIMARY KEY (name, question_id, revision_id)
+);
+
 CREATE TABLE IF NOT EXISTS Options (
 	id            serial      NOT NULL PRIMARY KEY,
 	question_id   integer     NOT NULL,
 	option_number integer     NOT NULL,
 	text          text        NOT NULL,
+	writing_name  text        NULL,
 	order_rank    integer     NOT NULL,
 	date_created  timestamptz NOT NULL DEFAULT now(),
 
 	CONSTRAINT Answer_options_questions_fk FOREIGN KEY (question_id)
-		REFERENCES Questions (id) ON DELETE CASCADE
+		REFERENCES Questions (id) ON DELETE CASCADE,
+
+	CONSTRAINT Options_writing_name_fk FOREIGN KEY (writing_name)
+		REFERENCES Writings (name) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS Story_updates (
@@ -126,28 +151,4 @@ CREATE TABLE IF NOT EXISTS Votes (
 		REFERENCES Options (id) ON DELETE CASCADE,
 
 	CONSTRAINT Votes_pk PRIMARY KEY (voter_id, question_id, option_id)
-);
-
-CREATE TABLE IF NOT EXISTS Writings (
-	question_id  integer     NOT NULL,
-	option_id    integer     NOT NULL,
-	writing      text        NOT NULL,
-	created_by   integer     NOT NULL,
-	saved_by     integer     NOT NULL,
-	revision_id  integer     NOT NULL,
-	date_created timestamptz NOT NULL DEFAULT now(),
-
-	CONSTRAINT Writings_Questions_fk FOREIGN KEY (question_id)
-		REFERENCES Questions (id) ON DELETE CASCADE,
-
-	CONSTRAINT Writings_Options_fk FOREIGN KEY (option_id)
-		REFERENCES Options (id) ON DELETE CASCADE,
-
-	CONSTRAINT Writings_created_by_Users_fk FOREIGN KEY (created_by)
-		REFERENCES Users (id) ON DELETE CASCADE,
-
-	CONSTRAINT Writings_saved_by_Users_fk FOREIGN KEY (saved_by)
-		REFERENCES Users (id) ON DELETE CASCADE,
-
-	CONSTRAINT Writings_pk PRIMARY KEY (question_id, option_id, revision_id)
 );
