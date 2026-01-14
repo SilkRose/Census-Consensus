@@ -127,3 +127,27 @@ CREATE TABLE IF NOT EXISTS Votes (
 
 	CONSTRAINT Votes_pk PRIMARY KEY (voter_id, question_id, option_id)
 );
+
+CREATE TABLE IF NOT EXISTS Writings (
+	question_id  integer     NOT NULL,
+	option_id    integer     NOT NULL,
+	writing      text        NOT NULL,
+	created_by   integer     NOT NULL,
+	saved_by     integer     NOT NULL,
+	revision_id  integer     NOT NULL,
+	date_created timestamptz NOT NULL DEFAULT now(),
+
+	CONSTRAINT Writings_Questions_fk FOREIGN KEY (question_id)
+		REFERENCES Questions (id) ON DELETE CASCADE,
+
+	CONSTRAINT Writings_Options_fk FOREIGN KEY (option_id)
+		REFERENCES Options (id) ON DELETE CASCADE,
+
+	CONSTRAINT Writings_created_by_Users_fk FOREIGN KEY (created_by)
+		REFERENCES Users (id) ON DELETE CASCADE,
+
+	CONSTRAINT Writings_saved_by_Users_fk FOREIGN KEY (saved_by)
+		REFERENCES Users (id) ON DELETE CASCADE,
+
+	CONSTRAINT Writings_pk PRIMARY KEY (question_id, option_id, revision_id)
+);
