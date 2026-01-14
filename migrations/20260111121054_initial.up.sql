@@ -10,13 +10,6 @@ CREATE TYPE question_type AS enum (
 	'scale'
 );
 
-CREATE TYPE question_status AS enum (
-	'unclaimed',
-	'claimed',
-	'in_progress',
-	'written'
-);
-
 CREATE TABLE IF NOT EXISTS Users (
 	id               integer     NOT NULL PRIMARY KEY,
 	name             text        NOT NULL,
@@ -58,7 +51,6 @@ CREATE TABLE IF NOT EXISTS Questions (
 	id               serial           NOT NULL PRIMARY KEY,
 	text             text             NOT NULL,
 	type             question_type    NOT NULL,
-	status           question_status  NOT NULL,
 	response_percent double precision NOT NULL,
 	asked_by         text             NOT NULL,
 	created_by       integer          NOT NULL,

@@ -8,6 +8,5 @@ DROP TABLE IF EXISTS Banned_users;
 DROP TABLE IF EXISTS Tokens;
 DROP TABLE IF EXISTS Users;
 
-DROP TYPE IF EXISTS question_status;
 DROP TYPE IF EXISTS question_type;
 DROP TYPE IF EXISTS user_type;
