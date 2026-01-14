@@ -10,13 +10,6 @@ CREATE TYPE question_type AS enum (
 	'scale'
 );
 
-CREATE TYPE question_status AS enum (
-	'unclaimed',
-	'claimed',
-	'in_progress',
-	'written'
-);
-
 CREATE TABLE IF NOT EXISTS Users (
 	id               integer     NOT NULL PRIMARY KEY,
 	name             text        NOT NULL,
@@ -42,15 +35,28 @@ CREATE TABLE IF NOT EXISTS Banned_users (
 	date_banned timestamptz NOT NULL DEFAULT now()
 );
 
+CREATE TABLE IF NOT EXISTS Chapters (
+	id            serial      NOT NULL PRIMARY KEY,
+	title         text        NOT NULL,
+	vote_duration integer     NOT NULL,
+	minutes_left  integer     NULL,
+	fimfic_ch_id  integer     NULL,
+	intro_text    text        NULL,
+	outro_text    text        NULL,
+	chapter_order integer     NULL     UNIQUE,
+	date_created  timestamptz NOT NULL DEFAULT now()
+);
+
 CREATE TABLE IF NOT EXISTS Questions (
 	id               serial           NOT NULL PRIMARY KEY,
 	text             text             NOT NULL,
 	type             question_type    NOT NULL,
-	status           question_status  NOT NULL,
 	response_percent double precision NOT NULL,
 	asked_by         text             NOT NULL,
 	created_by       integer          NOT NULL,
 	claimed_by       integer          NULL,
+	chapter_id       integer          NULL,
+	chapter_order    integer          NULL,
 	date_created     timestamptz      NOT NULL DEFAULT now(),
 
 	CONSTRAINT Percent_range
@@ -60,7 +66,34 @@ CREATE TABLE IF NOT EXISTS Questions (
 		REFERENCES Users (id) ON DELETE CASCADE,
 
 	CONSTRAINT Questions_claimed_by_Users_fk FOREIGN KEY (claimed_by)
-		REFERENCES Users (id) ON DELETE CASCADE
+		REFERENCES Users (id) ON DELETE CASCADE,
+
+	CONSTRAINT Questions_Chapters_fk FOREIGN KEY (chapter_id)
+		REFERENCES Chapters (id) ON DELETE CASCADE,
+
+	CONSTRAINT Questions_chapter_order_unique
+		UNIQUE (chapter_id, chapter_order)
+);
+
+CREATE TABLE IF NOT EXISTS Writings (
+	name         text        NOT NULL,
+	question_id  integer     NOT NULL,
+	writing      text        NOT NULL,
+	created_by   integer     NOT NULL,
+	saved_by     integer     NOT NULL,
+	revision_id  integer     NOT NULL,
+	date_created timestamptz NOT NULL DEFAULT now(),
+
+	CONSTRAINT Writings_Questions_fk FOREIGN KEY (question_id)
+		REFERENCES Questions (id) ON DELETE CASCADE,
+
+	CONSTRAINT Writings_created_by_Users_fk FOREIGN KEY (created_by)
+		REFERENCES Users (id) ON DELETE CASCADE,
+
+	CONSTRAINT Writings_saved_by_Users_fk FOREIGN KEY (saved_by)
+		REFERENCES Users (id) ON DELETE CASCADE,
+
+	CONSTRAINT Writings_pk PRIMARY KEY (name, question_id, revision_id)
 );
 
 CREATE TABLE IF NOT EXISTS Options (
@@ -68,26 +101,18 @@ CREATE TABLE IF NOT EXISTS Options (
 	question_id   integer     NOT NULL,
 	option_number integer     NOT NULL,
 	text          text        NOT NULL,
+	writing_name  text        NULL,
 	order_rank    integer     NOT NULL,
 	date_created  timestamptz NOT NULL DEFAULT now(),
 
 	CONSTRAINT Answer_options_questions_fk FOREIGN KEY (question_id)
-		REFERENCES Questions (id) ON DELETE CASCADE
-);
+		REFERENCES Questions (id) ON DELETE CASCADE,
 
-CREATE TABLE IF NOT EXISTS Story_updates (
-	title             text        NOT NULL,
-	short_description text        NOT NULL,
-	description       text        NOT NULL,
-	views             integer     NOT NULL,
-	total_views       integer     NOT NULL,
-	words             integer     NOT NULL,
-	chapters          integer     NOT NULL,
-	comments          integer     NOT NULL,
-	rating            integer     NOT NULL,
-	likes             integer     NOT NULL,
-	dislikes          integer     NOT NULL,
-	date_cached       timestamptz NOT NULL PRIMARY KEY DEFAULT now()
+	CONSTRAINT Options_writing_name_fk FOREIGN KEY (writing_name)
+		REFERENCES Writings (name) ON DELETE CASCADE,
+
+	CONSTRAINT Questions_options_unique
+		UNIQUE (question_id, option_number)
 );
 
 CREATE TABLE IF NOT EXISTS Votes (
@@ -106,4 +131,19 @@ CREATE TABLE IF NOT EXISTS Votes (
 		REFERENCES Options (id) ON DELETE CASCADE,
 
 	CONSTRAINT Votes_pk PRIMARY KEY (voter_id, question_id, option_id)
+);
+
+CREATE TABLE IF NOT EXISTS Story_updates (
+	title             text        NOT NULL,
+	short_description text        NOT NULL,
+	description       text        NOT NULL,
+	views             integer     NOT NULL,
+	total_views       integer     NOT NULL,
+	words             integer     NOT NULL,
+	chapters          integer     NOT NULL,
+	comments          integer     NOT NULL,
+	rating            integer     NOT NULL,
+	likes             integer     NOT NULL,
+	dislikes          integer     NOT NULL,
+	date_cached       timestamptz NOT NULL PRIMARY KEY DEFAULT now()
 );
