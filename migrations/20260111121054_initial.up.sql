@@ -94,7 +94,8 @@ CREATE TABLE IF NOT EXISTS Writings (
 	CONSTRAINT Writings_saved_by_Users_fk FOREIGN KEY (saved_by)
 		REFERENCES Users (id) ON DELETE CASCADE,
 
-	CONSTRAINT Writings_pk PRIMARY KEY (name, question_id, revision_id)
+	CONSTRAINT name_question_revison_unique
+		UNIQUE (name, question_id, revision_id)
 );
 
 CREATE TABLE IF NOT EXISTS Options (
