@@ -117,22 +117,10 @@ CREATE TABLE IF NOT EXISTS Options (
 		REFERENCES Questions (id) ON DELETE CASCADE,
 
 	CONSTRAINT Options_writing_name_fk FOREIGN KEY (writing_name)
-		REFERENCES Writings (name) ON DELETE CASCADE
-);
+		REFERENCES Writings (name) ON DELETE CASCADE,
 
-CREATE TABLE IF NOT EXISTS Story_updates (
-	title             text        NOT NULL,
-	short_description text        NOT NULL,
-	description       text        NOT NULL,
-	views             integer     NOT NULL,
-	total_views       integer     NOT NULL,
-	words             integer     NOT NULL,
-	chapters          integer     NOT NULL,
-	comments          integer     NOT NULL,
-	rating            integer     NOT NULL,
-	likes             integer     NOT NULL,
-	dislikes          integer     NOT NULL,
-	date_cached       timestamptz NOT NULL PRIMARY KEY DEFAULT now()
+	CONSTRAINT Questions_options_unique
+		UNIQUE (question_id, option_number)
 );
 
 CREATE TABLE IF NOT EXISTS Votes (
@@ -151,4 +139,19 @@ CREATE TABLE IF NOT EXISTS Votes (
 		REFERENCES Options (id) ON DELETE CASCADE,
 
 	CONSTRAINT Votes_pk PRIMARY KEY (voter_id, question_id, option_id)
+);
+
+CREATE TABLE IF NOT EXISTS Story_updates (
+	title             text        NOT NULL,
+	short_description text        NOT NULL,
+	description       text        NOT NULL,
+	views             integer     NOT NULL,
+	total_views       integer     NOT NULL,
+	words             integer     NOT NULL,
+	chapters          integer     NOT NULL,
+	comments          integer     NOT NULL,
+	rating            integer     NOT NULL,
+	likes             integer     NOT NULL,
+	dislikes          integer     NOT NULL,
+	date_cached       timestamptz NOT NULL PRIMARY KEY DEFAULT now()
 );
