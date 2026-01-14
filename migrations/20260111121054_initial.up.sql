@@ -43,13 +43,15 @@ CREATE TABLE IF NOT EXISTS Banned_users (
 );
 
 CREATE TABLE IF NOT EXISTS Chapters (
-	id             integer     NOT NULL PRIMARY KEY,
-	title          text        NOT NULL,
-	vote_duration  integer     NOT NULL,
-	intro_text     text        NULL,
-	outro_text     text        NULL,
-	date_published timestamptz NULL,
-	date_created   timestamptz NOT NULL DEFAULT now()
+	id            integer     NOT NULL PRIMARY KEY,
+	title         text        NOT NULL,
+	vote_duration integer     NOT NULL,
+	minutes_left  integer     NULL,
+	fimfic_ch_id  integer     NULL,
+	intro_text    text        NULL,
+	outro_text    text        NULL,
+	chapter_order integer     NULL     UNIQUE,
+	date_created  timestamptz NOT NULL DEFAULT now()
 );
 
 CREATE TABLE IF NOT EXISTS Questions (
