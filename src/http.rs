@@ -2,13 +2,14 @@ use crate::fimfic_cfg::{ FimficCfg, FIMFIC_TOKEN_EXCHANGE_URL };
 use anyhow::Result;
 use reqwest::Client as ReqwestClient;
 use serde::Deserialize;
+use std::borrow::Cow;
 
 pub struct HttpClient {
 	inner: ReqwestClient
 }
 
 pub struct FimficTokenExchangeResponse {
-	pub id: u32,
+	pub id: i32,
 	pub name: String
 }
 
@@ -29,13 +30,13 @@ impl HttpClient {
 		// todo is there a better way to do this?
 		// some kind of `path = "user.id"`?
 		#[derive(Deserialize)]
-		struct Res {
-			user: ResUser
+		struct Res<'h> {
+			user: ResUser<'h>
 		}
 
 		#[derive(Deserialize)]
-		struct ResUser {
-			id: String,
+		struct ResUser<'h> {
+			id: Cow<'h, str>,
 			name: String
 		}
 
@@ -51,8 +52,10 @@ impl HttpClient {
 			])
 			.send()
 			.await?
-			.json::<Res>()
+			.bytes()
 			.await?;
+
+		let res = serde_json::from_slice::<Res>(&res)?;
 
 		Ok(FimficTokenExchangeResponse {
 			id: res.user.id.parse()?,

@@ -104,26 +104,23 @@ async fn fimfic_auth_return(
 
 	let token = gen_auth_token();
 
-	let db_result = db.create_or_get_session()
-		.username(&fimfic_token_exchange.name)
+	let db_result = db.create_or_update_user()
 		.id(fimfic_token_exchange.id)
-		// todo do the check on environment variable fimfic token, when that gets implemented
-		.user_type(UserType::Writer)
-		.pfp_link("todo pfp_link")
-		.token(&token)
+		.name(&fimfic_token_exchange.name)
+		// .maybe_pfp_url(todo)
+		.user_type(UserType::Voter)
 		.call()
 		.await;
 
-	let token = match db_result {
-		Ok(tok) => { tok }
-		Err(err) => {
-			eprintln!("error in db storing: {err}");
-			// todo present an actual error
-			return HttpResponse::Ok()
-				.content_type("text/plain")
-				.body("db broke")
-		}
-	};
+	if let Err(err) = db_result {
+		eprintln!("error in db storing: {err}");
+		// todo present an actual error
+		return HttpResponse::Ok()
+			.content_type("text/plain")
+			.body("db broke")
+	}
+
+	// todo still need to store the token
 
 	let state_cookie = Cookie::build(STATE_COOKIE_NAME, "3c")
 		.path(STATE_COOKIE_PATH)
