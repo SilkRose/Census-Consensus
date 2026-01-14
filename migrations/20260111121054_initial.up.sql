@@ -43,7 +43,7 @@ CREATE TABLE IF NOT EXISTS Banned_users (
 );
 
 CREATE TABLE IF NOT EXISTS Chapters (
-	id            integer     NOT NULL PRIMARY KEY,
+	id            serial      NOT NULL PRIMARY KEY,
 	title         text        NOT NULL,
 	vote_duration integer     NOT NULL,
 	minutes_left  integer     NULL,
