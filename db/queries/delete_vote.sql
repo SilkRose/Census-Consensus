@@ -1,0 +1,1 @@
+DELETE FROM Votes WHERE id = $1;
