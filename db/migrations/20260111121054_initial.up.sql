@@ -76,6 +76,7 @@ CREATE TABLE IF NOT EXISTS Questions (
 );
 
 CREATE TABLE IF NOT EXISTS Writings (
+	id           serial      NOT NULL PRIMARY KEY,
 	name         text        NOT NULL,
 	question_id  integer     NOT NULL,
 	writing      text        NOT NULL,
@@ -101,15 +102,15 @@ CREATE TABLE IF NOT EXISTS Options (
 	question_id   integer     NOT NULL,
 	option_number integer     NOT NULL,
 	text          text        NOT NULL,
-	writing_name  text        NULL,
+	writing_id    integer     NULL,
 	order_rank    integer     NOT NULL,
 	date_created  timestamptz NOT NULL DEFAULT now(),
 
 	CONSTRAINT Answer_options_questions_fk FOREIGN KEY (question_id)
 		REFERENCES Questions (id) ON DELETE CASCADE,
 
-	CONSTRAINT Options_writing_name_fk FOREIGN KEY (writing_name)
-		REFERENCES Writings (name) ON DELETE CASCADE,
+	CONSTRAINT Options_writing_id_fk FOREIGN KEY (writing_id)
+		REFERENCES Writings (id) ON DELETE CASCADE,
 
 	CONSTRAINT Questions_options_unique
 		UNIQUE (question_id, option_number)
