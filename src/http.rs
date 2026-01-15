@@ -1,6 +1,6 @@
-use crate::fimfic_cfg::{ FIMFIC_USER_AGENT, FimficCfg };
+use crate::fimfic_cfg::FimficCfg;
 use anyhow::Result;
-use reqwest::Client as ReqwestClient;
+use reqwest::{ Client as ReqwestClient, IntoUrl, RequestBuilder };
 use serde::Deserialize;
 use std::borrow::Cow;
 
@@ -49,9 +49,7 @@ impl HttpClient {
 			size_512: String
 		}
 
-		let res = self.inner.get(format!("https://www.fimfiction.net/api/v2/users/{id}"))
-			.header("user-agent", FIMFIC_USER_AGENT)
-			.header("authorization", format!("Bearer {token}"))
+		let res = self.get(format!("https://www.fimfiction.net/api/v2/users/{id}"), Some(token))
 			.send()
 			.await?
 			.json::<Res>()
@@ -86,8 +84,7 @@ impl HttpClient {
 			name: String
 		}
 
-		let res = self.inner.post("https://www.fimfiction.net/api/v2/token")
-			.header("user-agent", FIMFIC_USER_AGENT)
+		let res = self.post("https://www.fimfiction.net/api/v2/token", None)
 			.form::<[_]>(&[
 				("client_id", &*fimfic_cfg.client_id),
 				("client_secret", &*fimfic_cfg.client_secret),
@@ -108,4 +105,33 @@ impl HttpClient {
 			access_token: res.access_token
 		})
 	}
+}
+
+// internal only helper functions
+fn common_setup(
+	mut builder: RequestBuilder,
+	token: Option<&str>
+) -> RequestBuilder {
+	// todo need real header
+	builder = builder.header("user-agent", "fish");
+
+	if let Some(token) = token {
+		builder = builder.header("authorization", format!("Bearer {token}"));
+	}
+
+	builder
+}
+
+macro_rules! http_methods {
+	($($method:ident)*) => {
+		$(
+			fn $method(&self, url: impl IntoUrl, token: Option<&str>) -> RequestBuilder {
+				common_setup(self.inner.$method(url), token)
+			}
+		)*
+	}
+}
+
+impl HttpClient {
+	http_methods!(get post);
 }
