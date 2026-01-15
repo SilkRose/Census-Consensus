@@ -4,19 +4,9 @@ use crate::http::{ FimficTokenExchangeResponse, HttpClient };
 use crate::rand::{ gen_auth_state, gen_auth_token };
 use actix_web::get;
 use actix_web::{ HttpRequest, HttpResponse };
-use actix_web::cookie::{ Cookie, SameSite };
-use actix_web::cookie::time::Duration;
 use actix_web::web::{ Data, Query };
 use bon::builder;
 use serde::Deserialize;
-
-const STATE_COOKIE_NAME: &str = "fimfic-auth-state";
-const STATE_COOKIE_MAX_AGE: Duration = Duration::hours(1);
-const STATE_COOKIE_PATH: &str = "/login/fimfic";
-
-const SESSION_COOKIE_NAME: &str = "fimfic-auth-session";
-const SESSION_COOKIE_MAX_AGE: Duration = Duration::days(30);
-const SESSION_COOKIE_PATH: &str = "/";
 
 #[derive(Deserialize)]
 struct AuthQueryParams {
@@ -32,8 +22,6 @@ pub async fn fimfic_auth(
 	fimfic_cfg: Data<FimficCfg>,
 	http_client: Data<HttpClient>
 ) -> HttpResponse {
-	// todo also check that the auth cookie isn't already set, if it is already set
-	// then skip this whole flow and redirect back immediately
 	if let Some(code) = form.code && let Some(state) = form.state {
 		fimfic_auth_return()
 			.code(code)
@@ -50,7 +38,7 @@ pub async fn fimfic_auth(
 }
 
 async fn fimfic_auth_redirect(req: HttpRequest, db: Data<Db>, fimfic_cfg: Data<FimficCfg>) -> HttpResponse {
-	if let Some(session_cookie) = req.cookie(SESSION_COOKIE_NAME) {
+	if let Some(session_cookie) = cookie::try_get_session_cookie(&req) {
 		let session = db
 			.get_session_by_token(session_cookie.value())
 			.await;
@@ -59,7 +47,7 @@ async fn fimfic_auth_redirect(req: HttpRequest, db: Data<Db>, fimfic_cfg: Data<F
 			Ok(None) => {
 				// invalid cookie; continue with regular auth flow
 			}
-			Ok(Some(session)) => {
+			Ok(Some(_session)) => {
 				return HttpResponse::Ok()
 					.content_type("text/plain")
 					.body("already have cooki (validated to be valid session)")
@@ -77,17 +65,10 @@ async fn fimfic_auth_redirect(req: HttpRequest, db: Data<Db>, fimfic_cfg: Data<F
 	let state = gen_auth_state();
 
 	let login_url = format!("{login_url}&state={state}", login_url = &*fimfic_cfg.login_url);
-	let cookie = Cookie::build(STATE_COOKIE_NAME, state)
-		.max_age(STATE_COOKIE_MAX_AGE)
-		.path(STATE_COOKIE_PATH)
-		.same_site(SameSite::Lax)
-		.http_only(true)
-		.secure(true)
-		.finish();
 
 	HttpResponse::Found()
 		.append_header(("location", login_url))
-		.cookie(cookie)
+		.cookie(cookie::create_state_cookie(&state))
 		.finish()
 }
 
@@ -100,7 +81,7 @@ async fn fimfic_auth_return(
 	code: String,
 	state: String
 ) -> HttpResponse {
-	let Some(state_cookie) = req.cookie(STATE_COOKIE_NAME) else {
+	let Some(state_cookie) = cookie::try_get_state_cookie(&req) else {
 		// todo present an actual error
 		return HttpResponse::Ok()
 			.content_type("text/plain")
@@ -172,22 +153,57 @@ async fn fimfic_auth_return(
 			.body("storing token in db broke")
 	}
 
-	let state_cookie = Cookie::build(STATE_COOKIE_NAME, "3c")
-		.path(STATE_COOKIE_PATH)
-		.max_age(Duration::ZERO)
-		.finish();
-	let session_cookie = Cookie::build(SESSION_COOKIE_NAME, &*token)
-		.max_age(SESSION_COOKIE_MAX_AGE)
-		.path(SESSION_COOKIE_PATH)
-		.same_site(SameSite::Lax)
-		.http_only(true)
-		.secure(true)
-		.finish();
-
 	// todo redirect to home page or something
 	HttpResponse::Ok()
-		.cookie(state_cookie)
-		.cookie(session_cookie)
+		.cookie(cookie::create_unset_state_cookie())
+		.cookie(cookie::create_session_cookie(&token))
 		.content_type("text/plain")
 		.body(format!(r#"the return!! code is "{code}" and state (verified) is "{state}" and token is "{token}""#))
+}
+
+mod cookie {
+	use super::*;
+
+	use actix_web::cookie::{ Cookie, SameSite };
+	use actix_web::cookie::time::Duration;
+
+	const STATE_COOKIE_NAME: &str = "fimfic-auth-state";
+	const STATE_COOKIE_PATH: &str = "/login/fimfic";
+
+	pub fn create_state_cookie(state: &str) -> Cookie<'_> {
+		Cookie::build(STATE_COOKIE_NAME, state)
+			.max_age(Duration::hours(1))
+			.path(STATE_COOKIE_PATH)
+			.same_site(SameSite::Lax)
+			.http_only(true)
+			.secure(true)
+			.finish()
+	}
+
+	pub fn try_get_state_cookie(req: &HttpRequest) -> Option<Cookie<'_>> {
+		req.cookie(STATE_COOKIE_NAME)
+	}
+
+	pub fn create_unset_state_cookie() -> Cookie<'static> {
+		Cookie::build(STATE_COOKIE_NAME, "3c")
+			.max_age(Duration::ZERO)
+			.path(STATE_COOKIE_PATH)
+			.finish()
+	}
+
+	const SESSION_COOKIE_NAME: &str = "fimfic-auth-session";
+
+	pub fn create_session_cookie(token: &str) -> Cookie<'_> {
+		Cookie::build(SESSION_COOKIE_NAME, token)
+			.max_age(Duration::days(30))
+			.path("/")
+			.same_site(SameSite::Lax)
+			.http_only(true)
+			.secure(true)
+			.finish()
+	}
+
+	pub fn try_get_session_cookie(req: &HttpRequest) -> Option<Cookie<'_>> {
+		req.cookie(SESSION_COOKIE_NAME)
+	}
 }
