@@ -37,7 +37,7 @@ async fn async_main() -> Result<()> {
 	let site_addr = leptos_options.site_addr;
 	let routes = generate_route_list(App);
 
-	let db = Db::new(&env_vars::postgres_url()).await?;
+	let db = Db::new(&env_vars::database_url()).await?;
 	let db = Data::new(db);
 
 	let client_id = env_vars::fimfic_client_id();

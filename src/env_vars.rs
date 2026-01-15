@@ -53,6 +53,9 @@ macro_rules! declare_env_fn {
 }
 
 declare_env_fn! {
+	/// URL to use to connect to postgres
+	database_url() -> "DATABASE_URL"
+
 	/// fimfic oauth2 client id
 	fimfic_client_id() -> "FIMFIC_CLIENT_ID"
 
@@ -61,7 +64,4 @@ declare_env_fn! {
 
 	/// fimfic oauth2 redirect url
 	fimfic_oauth_redirect_url() -> "FIMFIC_OAUTH_REDIRECT_URL"
-
-	/// URL to use to connect to postgres
-	postgres_url() -> "POSTGRES_URL"
 }
