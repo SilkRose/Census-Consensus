@@ -8,47 +8,6 @@ pub struct Db {
 	pool: Pool<Postgres>
 }
 
-#[derive(sqlx::Type)]
-#[sqlx(type_name = "user_type", rename_all = "snake_case")]
-pub enum UserType {
-	Admin,
-	Writer,
-	Voter
-}
-
-#[derive(sqlx::Type)]
-#[sqlx(type_name = "question_type", rename_all = "snake_case")]
-pub enum QuestionType {
-	MultipleChoice,
-	Multiselect,
-	Scale
-}
-
-#[derive(sqlx::Type)]
-#[sqlx(type_name = "question_status", rename_all = "snake_case")]
-pub enum QuestionStatus {
-	Unclaimed,
-	Claimed,
-	InProgress,
-	Written
-}
-
-pub struct Session {
-	token: String,
-	user_id: i32,
-	date_created: DateTime<Local>
-}
-
-pub struct User {
-	id: i32,
-	name: String,
-	pfp_url: Option<String>,
-	user_type: UserType,
-	feedback_private: Option<String>,
-	feedback_public: Option<String>,
-	date_joined: DateTime<Local>
-}
-
 #[bon]
 impl Db {
 	pub async fn new(database_url: &str) -> Result<Self> {
@@ -118,4 +77,45 @@ impl Db {
 			.await
 			.map_err(Into::into)
 	}
+}
+
+#[derive(sqlx::Type)]
+#[sqlx(type_name = "user_type", rename_all = "snake_case")]
+pub enum UserType {
+	Admin,
+	Writer,
+	Voter
+}
+
+#[derive(sqlx::Type)]
+#[sqlx(type_name = "question_type", rename_all = "snake_case")]
+pub enum QuestionType {
+	MultipleChoice,
+	Multiselect,
+	Scale
+}
+
+#[derive(sqlx::Type)]
+#[sqlx(type_name = "question_status", rename_all = "snake_case")]
+pub enum QuestionStatus {
+	Unclaimed,
+	Claimed,
+	InProgress,
+	Written
+}
+
+pub struct Session {
+	token: String,
+	user_id: i32,
+	date_created: DateTime<Local>
+}
+
+pub struct User {
+	id: i32,
+	name: String,
+	pfp_url: Option<String>,
+	user_type: UserType,
+	feedback_private: Option<String>,
+	feedback_public: Option<String>,
+	date_joined: DateTime<Local>
 }
