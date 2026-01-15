@@ -83,6 +83,19 @@ impl Db {
 			.map_err(Into::into)
 	}
 
+	pub async fn get_session_by_token(&self, token: &str) -> Result<Option<Session>> {
+		let query = sqlx::query_file_as!(
+			Session,
+			"db/queries/get_session_by_token.sql",
+			token
+		);
+
+		query
+			.fetch_optional(&self.pool)
+			.await
+			.map_err(Into::into)
+	}
+
 	#[builder]
 	pub async fn create_or_update_user(
 		&self,

@@ -15,7 +15,7 @@ const STATE_COOKIE_MAX_AGE: Duration = Duration::hours(1);
 const STATE_COOKIE_PATH: &str = "/login/fimfic";
 
 const SESSION_COOKIE_NAME: &str = "fimfic-auth-session";
-const SESSION_COOKIE_MAX_AGE: Duration = Duration::days(14);
+const SESSION_COOKIE_MAX_AGE: Duration = Duration::days(30);
 const SESSION_COOKIE_PATH: &str = "/";
 
 #[derive(Deserialize)]
@@ -45,11 +45,35 @@ pub async fn fimfic_auth(
 			.call()
 			.await
 	} else {
-		fimfic_auth_redirect(fimfic_cfg).await
+		fimfic_auth_redirect(req, db, fimfic_cfg).await
 	}
 }
 
-async fn fimfic_auth_redirect(fimfic_cfg: Data<FimficCfg>) -> HttpResponse {
+async fn fimfic_auth_redirect(req: HttpRequest, db: Data<Db>, fimfic_cfg: Data<FimficCfg>) -> HttpResponse {
+	if let Some(session_cookie) = req.cookie(SESSION_COOKIE_NAME) {
+		let session = db
+			.get_session_by_token(session_cookie.value())
+			.await;
+
+		match session {
+			Ok(None) => {
+				// invalid cookie; continue with regular auth flow
+			}
+			Ok(Some(session)) => {
+				return HttpResponse::Ok()
+					.content_type("text/plain")
+					.body("already have cooki (validated to be valid session)")
+			}
+			Err(err) => {
+				eprintln!("wah {err}");
+				// todo present actual error
+				return HttpResponse::Ok()
+					.content_type("text/plain")
+					.body("db error trying to get existing session")
+			}
+		}
+	}
+
 	let state = gen_auth_state();
 
 	let login_url = format!("{login_url}&state={state}", login_url = &*fimfic_cfg.login_url);
