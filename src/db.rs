@@ -33,6 +33,12 @@ pub enum QuestionStatus {
 	Written
 }
 
+pub struct Session {
+	token: String,
+	user_id: i32,
+	date_created: DateTime<Local>
+}
+
 pub struct User {
 	id: i32,
 	name: String,
@@ -56,6 +62,25 @@ impl Db {
 			.await?;
 
 		Ok(Self { pool })
+	}
+
+	#[builder]
+	pub async fn create_session(
+		&self,
+		token: &str,
+		id: i32
+	) -> Result<Session> {
+		let query = sqlx::query_file_as!(
+			Session,
+			"db/queries/create_session.sql",
+			token,
+			id
+		);
+
+		query
+			.fetch_one(&self.pool)
+			.await
+			.map_err(Into::into)
 	}
 
 	#[builder]

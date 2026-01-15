@@ -117,8 +117,6 @@ async fn fimfic_auth_return(
 		}
 	};
 
-	let token = gen_auth_token();
-
 	let db_result = db.create_or_update_user()
 		.id(id)
 		.name(&name)
@@ -135,7 +133,20 @@ async fn fimfic_auth_return(
 			.body("db broke")
 	}
 
-	// todo still need to store the token
+	let token = gen_auth_token();
+
+	let db_result = db.create_session()
+		.token(&token)
+		.id(id)
+		.call()
+		.await;
+
+	if let Err(err) = db_result {
+		eprintln!("error in token storing {err}");
+		return HttpResponse::Ok()
+			.content_type("text/plain")
+			.body("storing token in db broke")
+	}
 
 	let state_cookie = Cookie::build(STATE_COOKIE_NAME, "3c")
 		.path(STATE_COOKIE_PATH)
