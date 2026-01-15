@@ -1,6 +1,6 @@
 use crate::fimfic_cfg::FimficCfg;
 use crate::db::{ Db, UserType };
-use crate::http::HttpClient;
+use crate::http::{ FimficTokenExchangeResponse, HttpClient };
 use crate::rand::{ gen_auth_state, gen_auth_token };
 use actix_web::get;
 use actix_web::{ HttpRequest, HttpResponse };
@@ -91,7 +91,11 @@ async fn fimfic_auth_return(
 			.body(format!("state mismatch\n\nstate param: {state}\nstate cookie: {state_cookie}"))
 	}
 
-	let fimfic_token_exchange = match http_client.fimfic_token_exchange(&fimfic_cfg, &code).await {
+	let FimficTokenExchangeResponse {
+		id,
+		name,
+		access_token
+	} = match http_client.fimfic_token_exchange(&fimfic_cfg, &code).await {
 		Ok(res) => { res }
 		Err(err) => {
 			eprintln!("error in fimfic token exchange: {err}");
@@ -102,12 +106,23 @@ async fn fimfic_auth_return(
 		}
 	};
 
+	let fimfic_pfp = match http_client.get_fimfic_pfp(id, &access_token).await {
+		Ok(res) => { res }
+		Err(err) => {
+			eprintln!("error in pfp fetching: {err}");
+			// todo present an actual error
+			return HttpResponse::Ok()
+				.content_type("text/plain")
+				.body("fimfic didn't like the request for pfp")
+		}
+	};
+
 	let token = gen_auth_token();
 
 	let db_result = db.create_or_update_user()
-		.id(fimfic_token_exchange.id)
-		.name(&fimfic_token_exchange.name)
-		// .maybe_pfp_url(todo)
+		.id(id)
+		.name(&name)
+		.maybe_pfp_url(fimfic_pfp.as_deref())
 		.user_type(UserType::Voter)
 		.call()
 		.await;

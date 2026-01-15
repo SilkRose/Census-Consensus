@@ -14,4 +14,6 @@ pub fn make_login_url(client_id: &str, oauth_redirect_url: &str) -> Box<str> {
 		.into_boxed_str()
 }
 
-pub const FIMFIC_TOKEN_EXCHANGE_URL: &str = "https://www.fimfiction.net/api/v2/token";
+// todo need real header
+pub const FIMFIC_USER_AGENT: &str = "fish";
+pub const FIMFIC_NO_PFP_LINK: &str = "https://static.fimfiction.net/images/none_64.png";
