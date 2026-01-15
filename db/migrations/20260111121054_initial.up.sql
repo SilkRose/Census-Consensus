@@ -76,14 +76,12 @@ CREATE TABLE IF NOT EXISTS Questions (
 );
 
 CREATE TABLE IF NOT EXISTS Writings (
-	id           serial      NOT NULL PRIMARY KEY,
-	name         text        NOT NULL,
-	question_id  integer     NOT NULL,
-	writing      text        NOT NULL,
-	created_by   integer     NOT NULL,
-	saved_by     integer     NOT NULL,
-	revision_id  integer     NOT NULL,
-	date_created timestamptz NOT NULL DEFAULT now(),
+	id              serial      NOT NULL PRIMARY KEY,
+	name            text        NOT NULL,
+	question_id     integer     NOT NULL,
+	created_by      integer     NOT NULL,
+	latest_revision integer     NOT NULL,
+	date_created    timestamptz NOT NULL DEFAULT now(),
 
 	CONSTRAINT Writings_Questions_fk FOREIGN KEY (question_id)
 		REFERENCES Questions (id) ON DELETE CASCADE,
@@ -91,11 +89,25 @@ CREATE TABLE IF NOT EXISTS Writings (
 	CONSTRAINT Writings_created_by_Users_fk FOREIGN KEY (created_by)
 		REFERENCES Users (id) ON DELETE CASCADE,
 
-	CONSTRAINT Writings_saved_by_Users_fk FOREIGN KEY (saved_by)
-		REFERENCES Users (id) ON DELETE CASCADE,
+	CONSTRAINT Writings_latest_revision_fk FOREIGN KEY (latest_revision)
+		REFERENCES Writing_revisions (id),
 
 	CONSTRAINT name_question_revison_unique
 		UNIQUE (name, question_id, revision_id)
+);
+
+CREATE TABLE IF NOT EXISTS Writing_revisions (
+	id                serial      NOT NULL PRIMARY KEY,
+	writing           text        NOT NULL,
+	created_by        integer     NOT NULL,
+	previous_revision integer     NULL,
+	date_created      timestamptz NOT NULL DEFAULT now(),
+
+	CONSTRAINT Writing_revisions_created_by_Users_fk FOREIGN KEY (created_by)
+		REFERENCES Users (id) ON DELETE CASCADE,
+
+	CONSTRAINT Writing_revisions_previous_revision_fk FOREIGN KEY (previous_revision)
+		REFERENCES Writing_revisions (id)
 );
 
 CREATE TABLE IF NOT EXISTS Options (
