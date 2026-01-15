@@ -31,7 +31,7 @@ impl Db {
 	) -> Result<Session> {
 		let query = sqlx::query_file_as!(
 			Session,
-			"db/queries/create_session.sql",
+			"db/queries/insert/token.sql",
 			token,
 			id
 		);
@@ -45,7 +45,7 @@ impl Db {
 	pub async fn get_session_by_token(&self, token: &str) -> Result<Option<Session>> {
 		let query = sqlx::query_file_as!(
 			Session,
-			"db/queries/get_session_by_token.sql",
+			"db/queries/select/token.sql",
 			token
 		);
 
@@ -65,7 +65,7 @@ impl Db {
 	) -> Result<User> {
 		let query = sqlx::query_file_as!(
 			User,
-			"db/queries/create_or_update_user.sql",
+			"db/queries/insert/user.sql",
 			id,
 			name,
 			pfp_url,
