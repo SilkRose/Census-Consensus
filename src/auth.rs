@@ -6,7 +6,8 @@ use actix_web::get;
 use actix_web::{ HttpRequest, HttpResponse };
 use actix_web::web::{ Data, Query };
 use bon::builder;
-use serde::Deserialize;
+use serde::{ Deserialize, Serialize };
+use std::borrow::Cow;
 
 #[derive(Deserialize)]
 struct AuthQueryParams {
@@ -172,38 +173,86 @@ mod cookie {
 
 	pub fn create_state_cookie(state: &str) -> Cookie<'_> {
 		Cookie::build(STATE_COOKIE_NAME, state)
-			.max_age(Duration::hours(1))
 			.path(STATE_COOKIE_PATH)
+			.max_age(Duration::hours(1))
 			.same_site(SameSite::Lax)
 			.http_only(true)
 			.secure(true)
 			.finish()
 	}
 
-	pub fn try_get_state_cookie(req: &HttpRequest) -> Option<Cookie<'_>> {
+	pub fn try_get_state_cookie(req: &HttpRequest) -> Option<Cookie<'static>> {
 		req.cookie(STATE_COOKIE_NAME)
 	}
 
 	pub fn create_unset_state_cookie() -> Cookie<'static> {
 		Cookie::build(STATE_COOKIE_NAME, "3c")
-			.max_age(Duration::ZERO)
 			.path(STATE_COOKIE_PATH)
+			.max_age(Duration::ZERO)
 			.finish()
 	}
 
 	const SESSION_COOKIE_NAME: &str = "fimfic-auth-session";
+	const SESSION_COOKIE_PATH: &str = "/";
 
 	pub fn create_session_cookie(token: &str) -> Cookie<'_> {
 		Cookie::build(SESSION_COOKIE_NAME, token)
+			.path(SESSION_COOKIE_PATH)
 			.max_age(Duration::days(30))
-			.path("/")
 			.same_site(SameSite::Lax)
 			.http_only(true)
 			.secure(true)
 			.finish()
 	}
 
-	pub fn try_get_session_cookie(req: &HttpRequest) -> Option<Cookie<'_>> {
+	pub fn try_get_session_cookie(req: &HttpRequest) -> Option<Cookie<'static>> {
 		req.cookie(SESSION_COOKIE_NAME)
+	}
+
+	pub fn create_unset_session_cookie() -> Cookie<'static> {
+		Cookie::build(SESSION_COOKIE_NAME, "3c")
+			.path(SESSION_COOKIE_PATH)
+			.max_age(Duration::ZERO)
+			.finish()
+	}
+
+	#[derive(Deserialize, Serialize)]
+	pub struct SessionInfo<'h> {
+		pub id: i32,
+		pub pfp_url: Cow<'h, str>
+	}
+
+	const SESSION_INFO_COOKIE_NAME: &str = "fimfic-auth-session-info";
+	const SESSION_INFO_COOKIE_PATH: &str = SESSION_COOKIE_PATH;
+
+	pub fn create_session_info_cookie(id: i32, pfp_url: &str) -> Cookie<'static> {
+		let value = serde_json::to_string(&SessionInfo {
+			id,
+			pfp_url: Cow::Borrowed(pfp_url)
+		}).unwrap();
+
+		Cookie::build(SESSION_INFO_COOKIE_NAME, value)
+			.path(SESSION_INFO_COOKIE_PATH)
+			.max_age(Duration::days(30))
+			.same_site(SameSite::Lax)
+			.http_only(false)
+			.secure(true)
+			.finish()
+	}
+
+	pub fn try_get_session_info_cookie(req: &HttpRequest) -> Option<Cookie<'static>> {
+		req.cookie(SESSION_INFO_COOKIE_NAME)
+	}
+
+	pub fn try_get_session_info_cookie_value(req: &HttpRequest) -> Option<SessionInfo<'static>> {
+		try_get_session_info_cookie(req)
+			.and_then(|cookie| serde_json::from_str(cookie.value()).ok())
+	}
+
+	pub fn create_unset_session_info_cookie() -> Cookie<'static> {
+		Cookie::build(SESSION_INFO_COOKIE_NAME, "3c")
+			.path(SESSION_INFO_COOKIE_PATH)
+			.max_age(Duration::ZERO)
+			.finish()
 	}
 }
