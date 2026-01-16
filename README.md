@@ -23,7 +23,7 @@ You need:
 
 ## Project setup
 
-Before compiling the project for the first time, you will need to use the sqlx cli to run migrations on the database, so that the library can typecheck and infer types during the compilation process. The command is `cargo sqlx migrate run --source db/migrations`. See below for information on setting the required `DATABASE_URL` environment variable for connecting to the database.
+Before compiling the project for the first time, you will need to use the sqlx cli to run migrations on the database, so that the library can typecheck and infer types during the compilation process. The command is `cargo sqlx migrate run`. See below for information on setting the required `DATABASE_URL` environment variable for connecting to the database.
 
 For environment variables, you may use a `.env` file in the root of the project directory to configure them.
 
