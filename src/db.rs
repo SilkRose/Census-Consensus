@@ -16,7 +16,7 @@ impl Db {
 			.connect(database_url)
 			.await?;
 
-		sqlx::migrate!("db/migrations")
+		sqlx::migrate!()
 			.run(&pool)
 			.await?;
 
@@ -31,7 +31,7 @@ impl Db {
 	) -> Result<Session> {
 		let query = sqlx::query_file_as!(
 			Session,
-			"db/queries/insert/token.sql",
+			"queries/insert/token.sql",
 			token,
 			id
 		);
@@ -45,7 +45,7 @@ impl Db {
 	pub async fn get_session_by_token(&self, token: &str) -> Result<Option<Session>> {
 		let query = sqlx::query_file_as!(
 			Session,
-			"db/queries/select/token.sql",
+			"queries/select/token.sql",
 			token
 		);
 
@@ -65,7 +65,7 @@ impl Db {
 	) -> Result<User> {
 		let query = sqlx::query_file_as!(
 			User,
-			"db/queries/insert/user.sql",
+			"queries/insert/user.sql",
 			id,
 			name,
 			pfp_url,
