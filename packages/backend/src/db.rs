@@ -24,49 +24,46 @@ impl Db {
 		Ok(Self { pool })
 	}
 
-	pub async fn count_rows(table: &str, db: &Pool<Postgres>) -> Result<i64> {
+	pub async fn count_rows(&self, table: &str) -> Result<i64, Box<dyn Error>> {
 		let query = format!("SELECT count(*) FROM {table}");
-		let count: i64 = sqlx::query_scalar(&query).fetch_one(db).await?;
+		let count: i64 = sqlx::query_scalar(&query).fetch_one(&self.pool).await?;
 		Ok(count)
 	}
 
-	pub async fn get_session_by_token(db: &Pool<Postgres>, token: &str) -> Result<Option<Session>> {
+	pub async fn get_session_by_token(&self, token: &str) -> Result<Option<Session>> {
 		sqlx::query_as!(
 			Session,
 			"SELECT token, user_id, date_created FROM Tokens WHERE token = $1;",
 			token
 		)
-		.fetch_optional(db)
+		.fetch_optional(&self.pool)
 		.await
 		.map_err(|e| format!("database retrieval error.\n{e}").into())
 	}
 
-	pub async fn get_all_sessions(db: &Pool<Postgres>) -> Result<Vec<Session>> {
+	pub async fn get_all_sessions(&self) -> Result<Vec<Session>> {
 		sqlx::query_as!(Session, "SELECT token, user_id, date_created FROM Tokens;",)
-			.fetch_all(db)
+			.fetch_all(&self.pool)
 			.await
 			.map_err(|e| format!("database retrieval error.\n{e}").into())
 	}
 
-	pub async fn insert_session(
-		db: &Pool<Postgres>, token: &str, user_id: i32,
-	) -> Result<Option<Session>> {
+	pub async fn insert_session(&self, token: &str, user_id: i32) -> Result<Option<Session>> {
 		sqlx::query_as!(
 			Session,
 			"INSERT INTO Tokens
-				(token, user_id)
-			VALUES
-				($1, $2)
-			RETURNING
-				token, user_id, date_created;",
+			(token, user_id)
+		VALUES
+			($1, $2)
+		RETURNING
+			token, user_id, date_created;",
 			token,
 			user_id
 		)
-		.fetch_optional(db)
+		.fetch_optional(&self.pool)
 		.await
 		.map_err(|e| format!("database retrieval error.\n{e}").into())
 	}
-
 
 	#[builder]
 	pub async fn create_session(
