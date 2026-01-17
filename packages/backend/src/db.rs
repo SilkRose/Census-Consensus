@@ -48,6 +48,26 @@ impl Db {
 			.map_err(|e| format!("database retrieval error.\n{e}").into())
 	}
 
+	pub async fn insert_session(
+		db: &Pool<Postgres>, token: &str, user_id: i32,
+	) -> Result<Option<Session>> {
+		sqlx::query_as!(
+			Session,
+			"INSERT INTO Tokens
+				(token, user_id)
+			VALUES
+				($1, $2)
+			RETURNING
+				token, user_id, date_created;",
+			token,
+			user_id
+		)
+		.fetch_optional(db)
+		.await
+		.map_err(|e| format!("database retrieval error.\n{e}").into())
+	}
+
+
 	#[builder]
 	pub async fn create_session(
 		&self,
