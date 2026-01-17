@@ -1,4 +1,5 @@
-use crate::structs::Session;
+use crate::fimfiction_api::user::UserData;
+use crate::structs::{Session, User, UserType};
 use anyhow::Result;
 use bon::bon;
 use chrono::{ DateTime, Local };
@@ -63,6 +64,38 @@ impl Db {
 		.fetch_optional(&self.pool)
 		.await
 		.map_err(|e| format!("database retrieval error.\n{e}").into())
+	}
+
+	pub async fn insert_user(
+		&self, id: i32, data: &UserData<i32>, user_type: UserType,
+	) -> Result<User, Box<dyn Error>> {
+		sqlx::query_as!(
+			User,
+			r#"INSERT INTO Users
+				(id, name, pfp_url, type)
+			VALUES
+				($1, $2, $3, $4)
+			ON CONFLICT(id) DO UPDATE SET
+				name = EXCLUDED.name,
+				pfp_url = EXCLUDED.pfp_url,
+				type = EXCLUDED.type
+			RETURNING
+				id, name, pfp_url, type AS "user_type: UserType",
+				feedback_private, feedback_public, date_joined;"#,
+			id,
+			data.attributes.name.clone(),
+			(!data.attributes.avatar.r64.ends_with("none_64.png")).then_some(
+				data.attributes
+					.avatar
+					.r256
+					.trim_end_matches("-256")
+					.to_string(),
+			),
+			user_type as _,
+		)
+		.fetch_one(&self.pool)
+		.await
+		.map_err(|e| format!("database insertion error.\n{e}").into())
 	}
 
 	#[builder]
