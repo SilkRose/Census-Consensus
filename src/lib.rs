@@ -17,6 +17,8 @@ pub mod fimfic_cfg;
 pub mod http;
 #[cfg(feature = "ssr")]
 pub mod rand;
+#[cfg(feature = "ssr")]
+pub mod structs;
 
 #[cfg(feature = "hydrate")]
 #[wasm_bindgen::prelude::wasm_bindgen]
