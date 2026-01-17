@@ -95,15 +95,6 @@ pub enum QuestionType {
 	Scale
 }
 
-#[derive(sqlx::Type)]
-#[sqlx(type_name = "question_status", rename_all = "snake_case")]
-pub enum QuestionStatus {
-	Unclaimed,
-	Claimed,
-	InProgress,
-	Written
-}
-
 pub struct Session {
 	token: String,
 	user_id: i32,
