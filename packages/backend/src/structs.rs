@@ -29,21 +29,6 @@ pub struct Story {
 }
 
 #[derive(Debug, Clone)]
-pub struct User {
-	pub id: i32,
-	pub name: String,
-	pub bio: String,
-	pub link: String,
-	pub followers: i32,
-	pub stories: i32,
-	pub blogs: i32,
-	pub profile_pic_url: Option<String>,
-	pub color_hex: String,
-	pub date_joined: DateTime<Utc>,
-	pub date_cached: DateTime<Utc>,
-}
-
-#[derive(Debug, Clone)]
 pub struct AppState {
 	pub api: Request,
 	pub db: Pool<Postgres>,
@@ -82,7 +67,7 @@ pub enum Table {
 	StoryUpdates,
 }
 
-impl fmt::Display for Color {
+impl fmt::Display for Table {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		let text = match self {
 			Table::Users => "Users",
@@ -97,4 +82,36 @@ impl fmt::Display for Color {
 		};
 		write!(f, "{text}")
 	}
+}
+
+#[derive(sqlx::Type)]
+#[sqlx(type_name = "user_type", rename_all = "snake_case")]
+pub enum UserType {
+	Admin,
+	Writer,
+	Voter,
+}
+
+#[derive(sqlx::Type)]
+#[sqlx(type_name = "question_type", rename_all = "snake_case")]
+pub enum QuestionType {
+	MultipleChoice,
+	Multiselect,
+	Scale,
+}
+
+pub struct Session {
+	pub token: String,
+	pub user_id: i32,
+	pub date_created: DateTime<Utc>,
+}
+
+pub struct User {
+	pub id: i32,
+	pub name: String,
+	pub pfp_url: Option<String>,
+	pub user_type: UserType,
+	pub feedback_private: Option<String>,
+	pub feedback_public: Option<String>,
+	pub date_joined: DateTime<Utc>,
 }
