@@ -23,6 +23,13 @@ impl Db {
 		Ok(Self { pool })
 	}
 
+	pub async fn count_rows(table: &str, db: &Pool<Postgres>) -> Result<i64> {
+		let query = format!("SELECT count(*) FROM {table}");
+		let count: i64 = sqlx::query_scalar(&query).fetch_one(db).await?;
+		Ok(count)
+	}
+
+
 	#[builder]
 	pub async fn create_session(
 		&self,
