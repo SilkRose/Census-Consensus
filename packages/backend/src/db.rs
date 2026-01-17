@@ -1,3 +1,4 @@
+use crate::structs::Session;
 use anyhow::Result;
 use bon::bon;
 use chrono::{ DateTime, Local };
@@ -29,6 +30,18 @@ impl Db {
 		Ok(count)
 	}
 
+	pub async fn get_session_by_token(db: &Pool<Postgres>, token: &str) -> Result<Option<Session>> {
+		sqlx::query_as!(
+			Session,
+			"SELECT
+				token, user_id, date_created
+			FROM Tokens WHERE token = $1;",
+			token
+		)
+		.fetch_optional(db)
+		.await
+		.map_err(|e| format!("database retrieval error.\n{e}").into())
+	}
 
 	#[builder]
 	pub async fn create_session(
