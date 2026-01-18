@@ -69,15 +69,29 @@ impl Db {
 			.map_err(|e| format!("database retrieval error.\n{e}").into())
 	}
 
+	pub async fn get_all_user_sessions(&self, user_id: i32) -> Result<Vec<Session>> {
+		sqlx::query_as!(
+			Session,
+			"SELECT
+				token, user_id, date_created
+			FROM Tokens
+			WHERE user_id = $1;",
+			user_id
+		)
+		.fetch_all(&self.pool)
+		.await
+		.map_err(|e| format!("database retrieval error.\n{e}").into())
+	}
+
 	pub async fn insert_session(&self, token: &str, user_id: i32) -> Result<Option<Session>> {
 		sqlx::query_as!(
 			Session,
 			"INSERT INTO Tokens
-			(token, user_id)
-		VALUES
-			($1, $2)
-		RETURNING
-			token, user_id, date_created;",
+				(token, user_id)
+			VALUES
+				($1, $2)
+			RETURNING
+				token, user_id, date_created;",
 			token,
 			user_id
 		)
