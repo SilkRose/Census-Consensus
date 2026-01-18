@@ -312,6 +312,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "april-fools-2026-backend"
+version = "0.1.0"
+
+[[package]]
+name = "april-fools-2026-frontend"
+version = "0.1.0"
+
+[[package]]
 name = "async-lock"
 version = "3.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"

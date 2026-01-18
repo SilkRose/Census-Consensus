@@ -1,0 +1,5 @@
+[package]
+name = "april-fools-2026-backend"
+version = { workspace = true }
+edition = { workspace = true }
+publish = false
