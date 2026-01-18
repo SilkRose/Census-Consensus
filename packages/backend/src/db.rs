@@ -83,7 +83,7 @@ impl Db {
 		.map_err(|e| format!("database retrieval error.\n{e}").into())
 	}
 
-	pub async fn insert_session(&self, token: &str, user_id: i32) -> Result<Option<Session>> {
+	pub async fn insert_session(&self, token: &str, user_id: i32) -> Result<Session> {
 		sqlx::query_as!(
 			Session,
 			"INSERT INTO Tokens
@@ -95,9 +95,9 @@ impl Db {
 			token,
 			user_id
 		)
-		.fetch_optional(&self.pool)
+		.fetch_one(&self.pool)
 		.await
-		.map_err(|e| format!("database retrieval error.\n{e}").into())
+		.map_err(|e| format!("database insertion error.\n{e}").into())
 	}
 
 	pub async fn insert_user(
