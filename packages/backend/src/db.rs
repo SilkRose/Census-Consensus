@@ -1,5 +1,5 @@
 use crate::fimfiction_api::user::UserData;
-use crate::structs::{Session, User, UserType};
+use crate::structs::{Session, Table, User, UserType};
 use anyhow::Result;
 use bon::bon;
 use chrono::{ DateTime, Local };
@@ -25,8 +25,14 @@ impl Db {
 		Ok(Self { pool })
 	}
 
-	pub async fn count_rows(&self, table: &str) -> Result<i64, Box<dyn Error>> {
-		let query = format!("SELECT count(*) FROM {table}");
+	pub async fn delete_rows(&self, table: Table) -> Result<u64, Box<dyn Error>> {
+		let query = format!("DELETE FROM {table};");
+		let result = sqlx::query(&query).execute(&self.pool).await?;
+		Ok(result.rows_affected())
+	}
+
+	pub async fn count_rows(&self, table: Table) -> Result<i64, Box<dyn Error>> {
+		let query = format!("SELECT count(*) FROM {table};");
 		let count: i64 = sqlx::query_scalar(&query).fetch_one(&self.pool).await?;
 		Ok(count)
 	}
