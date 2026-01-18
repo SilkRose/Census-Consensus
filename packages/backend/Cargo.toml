@@ -3,3 +3,9 @@ name = "april-fools-2026-backend"
 version = { workspace = true }
 edition = { workspace = true }
 publish = false
+
+[dependencies]
+anyhow = { workspace = true }
+bon = { workspace = true }
+chrono = { workspace = true }
+sqlx = { workspace = true }

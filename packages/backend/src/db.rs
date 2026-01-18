@@ -1,7 +1,3 @@
-// todo this file has been moved to packages/backend/src/db.rs, but
-// kept in this location for now to keep the workspace compiling..
-// this file needs to be deleted eventually
-
 use anyhow::Result;
 use bon::bon;
 use chrono::{ DateTime, Local };
