@@ -25,27 +25,25 @@ impl Db {
 		Ok(Self { pool })
 	}
 
-	pub async fn delete_by_id(&self, table: Table, id: i32) -> Result<u64, Box<dyn Error>> {
+	pub async fn delete_by_id(&self, table: Table, id: i32) -> Result<u64> {
 		let query = format!("DELETE FROM {table} WHERE id = $1;");
 		let result = sqlx::query(&query).bind(id).execute(&self.pool).await?;
 		Ok(result.rows_affected())
 	}
 
-	pub async fn delete_by_text(
-		&self, table: Table, name: &str, value: &str,
-	) -> Result<u64, Box<dyn Error>> {
+	pub async fn delete_by_text(&self, table: Table, name: &str, value: &str) -> Result<u64> {
 		let query = format!("DELETE FROM {table} WHERE {name} = $1;");
 		let result = sqlx::query(&query).bind(value).execute(&self.pool).await?;
 		Ok(result.rows_affected())
 	}
 
-	pub async fn delete_rows(&self, table: Table) -> Result<u64, Box<dyn Error>> {
+	pub async fn delete_rows(&self, table: Table) -> Result<u64> {
 		let query = format!("DELETE FROM {table};");
 		let result = sqlx::query(&query).execute(&self.pool).await?;
 		Ok(result.rows_affected())
 	}
 
-	pub async fn count_rows(&self, table: Table) -> Result<i64, Box<dyn Error>> {
+	pub async fn count_rows(&self, table: Table) -> Result<i64> {
 		let query = format!("SELECT count(*) FROM {table};");
 		let count: i64 = sqlx::query_scalar(&query).fetch_one(&self.pool).await?;
 		Ok(count)
@@ -102,7 +100,7 @@ impl Db {
 
 	pub async fn insert_user(
 		&self, id: i32, data: &UserData<i32>, user_type: UserType,
-	) -> Result<User, Box<dyn Error>> {
+	) -> Result<User> {
 		sqlx::query_as!(
 			User,
 			r#"INSERT INTO Users
