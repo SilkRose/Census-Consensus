@@ -3,6 +3,7 @@ channel = "nightly-2025-12-11"
 profile = "minimal"
 components = [
 	"clippy",
+	"rustfmt",
 	"llvm-tools",
 	"rust-analyzer",
 	"rust-docs",
