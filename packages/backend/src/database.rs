@@ -6,6 +6,11 @@ use chrono::{DateTime, Utc};
 use sqlx::postgres::PgPoolOptions;
 use sqlx::{Pool, Postgres};
 
+const SELECT_ERROR: &str = "database selection error";
+const INSERT_ERROR: &str = "database insertion error";
+const DELETE_ERROR: &str = "database deletion error";
+const UPDATE_ERROR: &str = "database updating error";
+
 pub struct Db {
 	pool: Pool<Postgres>,
 }
@@ -54,14 +59,14 @@ impl Db {
 		)
 		.fetch_optional(&self.pool)
 		.await
-		.context("database retrieval error")
+		.context(SELECT_ERROR)
 	}
 
 	pub async fn get_all_sessions(&self) -> Result<Vec<Session>> {
 		sqlx::query_as!(Session, "SELECT token, user_id, date_created FROM Tokens;",)
 			.fetch_all(&self.pool)
 			.await
-			.context("database retrieval error")
+			.context(SELECT_ERROR)
 	}
 
 	pub async fn get_all_user_sessions(&self, user_id: i32) -> Result<Vec<Session>> {
@@ -75,7 +80,7 @@ impl Db {
 		)
 		.fetch_all(&self.pool)
 		.await
-		.context("database retrieval error")
+		.context(SELECT_ERROR)
 	}
 
 	pub async fn insert_session(&self, token: &str, user_id: i32) -> Result<Session> {
@@ -92,7 +97,7 @@ impl Db {
 		)
 		.fetch_one(&self.pool)
 		.await
-		.context("database insertion error")
+		.context(INSERT_ERROR)
 	}
 
 	pub async fn insert_user(
@@ -124,7 +129,7 @@ impl Db {
 		)
 		.fetch_one(&self.pool)
 		.await
-		.context("database insertion error")
+		.context(INSERT_ERROR)
 	}
 
 	pub async fn get_all_banned_users(&self) -> Result<Vec<BannedUser>> {
@@ -134,7 +139,7 @@ impl Db {
 		)
 		.fetch_all(&self.pool)
 		.await
-		.context("database retrieval error")
+		.context(SELECT_ERROR)
 	}
 
 	pub async fn get_banned_user(&self, id: i32) -> Result<Option<BannedUser>> {
@@ -150,7 +155,7 @@ impl Db {
 		)
 		.fetch_optional(&self.pool)
 		.await
-		.context("database retrieval error")
+		.context(SELECT_ERROR)
 	}
 
 	pub async fn insert_banned_user(&self, user_id: i32, reason: &str) -> Result<BannedUser> {
@@ -169,7 +174,7 @@ impl Db {
 		)
 		.fetch_one(&self.pool)
 		.await
-		.context("database insertion error")
+		.context(INSERT_ERROR)
 	}
 
 	pub async fn insert_story_update(&self, data: StoryData<i32>) -> Result<StoryUpdate> {
@@ -197,7 +202,7 @@ impl Db {
 		)
 		.fetch_one(&self.pool)
 		.await
-		.context("database insertion error")
+		.context(INSERT_ERROR)
 	}
 
 	pub async fn get_all_story_updates(&self) -> Result<Vec<StoryUpdate>> {
@@ -210,7 +215,7 @@ impl Db {
 		)
 		.fetch_all(&self.pool)
 		.await
-		.context("database retrieval error")
+		.context(SELECT_ERROR)
 	}
 
 	pub async fn get_story_updates_in_range(
@@ -228,7 +233,7 @@ impl Db {
 		)
 		.fetch_all(&self.pool)
 		.await
-		.context("database retrieval error")
+		.context(SELECT_ERROR)
 	}
 
 	// #[builder]
