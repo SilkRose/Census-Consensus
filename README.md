@@ -11,8 +11,7 @@ You need:
   - Once installed, running any rust command in this directory will cause rustc to automatically install (if needed) and run the right version of the tool (it will tell you when it is installing something).
 - [pnpm](https://pnpm.io)
   - Installation: <https://pnpm.io/installation>
-- [cargo-leptos](https://crates.io/crates/cargo-leptos)
-  - Installation: `cargo install --locked cargo-leptos`
+  - Run `pnpm install` to install the necessary npm dependencies in the workspace
 - a [postgres](https://www.postgresql.org) instance set up and available
   - Installation: <https://www.postgresql.org/download/>
   - A container image is also available, if you would prefer: <https://hub.docker.com/_/postgres>
@@ -20,6 +19,15 @@ You need:
   - Installation: `cargo install --locked sqlx-cli`
   - You only need the `postgres` and a TLS library feature to use sqlx for this project, so you may optionally add `--no-default-features --features postgres,rustls` to the install command
   - If you wish to limit the amount of binaries installed, you may choose to only install either the `cargo-sqlx` or `sqlx` commands with `--bin cargo-sqlx` or `--bin sqlx`, respectively. You'd then invoke the CLI with `cargo sqlx` or `sqlx`
+- [tailwindcss](https://tailwindcss.com) CLI
+  - Installation: `pnpm install --global @tailwindcss/cli`
+  - The CLI depends on the `tailwindcss` package being installed in the workspace (which it is!)
+- [Trunk](https://trunkrs.dev)
+  - Installation: `cargo install trunk --no-default-features`
+- [wasm-bindgen CLI](https://crates.io/crates/wasm-bindgen)
+  - Installation: `cargo install wasm-bindgen-cli --version 0.2.106` (must be exactly version 0.2.106 for this project)
+- [wasm-opt](https://crates.io/crates/wasm-opt)
+  - Installation: `cargo install wasm-opt`
 
 ## Project setup
 

@@ -3,3 +3,8 @@ name = "april-fools-2026-frontend"
 version = { workspace = true }
 edition = { workspace = true }
 publish = false
+
+[dependencies]
+console-error-panic-hook = { workspace = true }
+leptos = { workspace = true }
+leptos-mview = { workspace = true }
