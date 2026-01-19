@@ -51,11 +51,11 @@ async fn async_main() -> Result<()> {
 
 	let server = HttpServer::new(move || {
 		ActixApp::new()
+			.service(fimfic_auth)
 			.service(
 				Files::new("/", "./target/site")
 					.index_file("index.html")
 			)
-			.service(fimfic_auth)
 			.app_data(db.clone())
 			.app_data(fimfic.clone())
 			.app_data(http_client.clone())

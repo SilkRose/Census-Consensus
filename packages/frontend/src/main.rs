@@ -42,7 +42,7 @@ fn HomePage() -> impl IntoView {
 
 		a
 			rel="external"
-			class="underline text-purple-400"
+			class="underline text-green-400"
 			href="/login/fimfic"
 		{ "evil whimsical login button" }
 	}
