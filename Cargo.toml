@@ -14,7 +14,6 @@ anyhow = "1.0.100"
 # actix-files = "0.6.9"
 # actix-web = { version = "4.12.1", features = ["macros"] }
 # base64ct = { version = "1.8.2", features = ["std"] }
-bon = "3.8.2"
 chrono = "0.4.42"
 # console-error-panic-hook = { package = "console_error_panic_hook", version = "0.1.7" }
 # dotenvy = "0.15.7"

@@ -6,7 +6,6 @@ publish = false
 
 [dependencies]
 anyhow = { workspace = true }
-bon = { workspace = true }
 chrono = { workspace = true }
 pony = { workspace = true }
 reqwest = { workspace = true }
