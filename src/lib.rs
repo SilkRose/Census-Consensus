@@ -5,21 +5,6 @@ use leptos_meta::{ Stylesheet, Title, provide_meta_context };
 use leptos_router::path;
 use leptos_router::components::{ Route, Router, Routes };
 
-#[cfg(feature = "ssr")]
-pub mod auth;
-#[cfg(feature = "ssr")]
-pub mod db;
-#[cfg(feature = "ssr")]
-pub mod env_vars;
-#[cfg(feature = "ssr")]
-pub mod fimfic_cfg;
-#[cfg(feature = "ssr")]
-pub mod http;
-#[cfg(feature = "ssr")]
-pub mod rand;
-#[cfg(feature = "ssr")]
-pub mod structs;
-
 #[cfg(feature = "hydrate")]
 #[wasm_bindgen::prelude::wasm_bindgen]
 pub fn hydrate() {

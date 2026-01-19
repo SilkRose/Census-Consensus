@@ -5,9 +5,16 @@ edition = { workspace = true }
 publish = false
 
 [dependencies]
+actix-web = { workspace = true }
 anyhow = { workspace = true }
+base64ct = { workspace = true }
+bon = { workspace = true }
 chrono = { workspace = true }
+dotenvy = { workspace = true }
 pony = { workspace = true }
+rand = { workspace = true }
+rand-chacha = { workspace = true }
 reqwest = { workspace = true }
 serde = { workspace = true }
+serde-json = { workspace = true }
 sqlx = { workspace = true }

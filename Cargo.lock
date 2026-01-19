@@ -333,11 +333,18 @@ dependencies = [
 name = "april-fools-2026-backend"
 version = "0.1.0"
 dependencies = [
+ "actix-web",
  "anyhow",
+ "base64ct",
+ "bon",
  "chrono",
+ "dotenvy",
  "pony",
+ "rand 0.9.2",
+ "rand_chacha 0.9.0",
  "reqwest 0.13.1",
  "serde",
+ "serde_json",
  "sqlx",
 ]
 
