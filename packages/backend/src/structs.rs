@@ -115,3 +115,9 @@ pub struct User {
 	pub feedback_public: Option<String>,
 	pub date_joined: DateTime<Utc>,
 }
+
+pub struct BannedUser {
+	pub id: i32,
+	pub reason: String,
+	pub date_banned: DateTime<Utc>,
+}

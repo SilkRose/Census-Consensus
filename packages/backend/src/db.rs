@@ -1,5 +1,5 @@
 use crate::fimfiction_api::user::UserData;
-use crate::structs::{Session, Table, User, UserType};
+use crate::structs::{BannedUser, Session, Table, User, UserType};
 use anyhow::Result;
 use bon::bon;
 use chrono::{ DateTime, Local };
@@ -124,6 +124,51 @@ impl Db {
 					.to_string(),
 			),
 			user_type as _,
+		)
+		.fetch_one(&self.pool)
+		.await
+		.map_err(|e| format!("database insertion error.\n{e}").into())
+	}
+
+	pub async fn get_all_banned_users(&self) -> Result<Vec<BannedUser>> {
+		sqlx::query_as!(
+			BannedUser,
+			"SELECT id, reason, date_banned FROM Banned_users;",
+		)
+		.fetch_all(&self.pool)
+		.await
+		.map_err(|e| format!("database retrieval error.\n{e}").into())
+	}
+
+	pub async fn get_banned_user(&self, id: i32) -> Result<Option<BannedUser>> {
+		sqlx::query_as!(
+			BannedUser,
+			"SELECT
+				id, reason, date_banned
+			FROM
+				Banned_users
+			WHERE id = $1
+			LIMIT 1;",
+			id
+		)
+		.fetch_optional(&self.pool)
+		.await
+		.map_err(|e| format!("database retrieval error.\n{e}").into())
+	}
+
+	pub async fn insert_banned_user(&self, user_id: i32, reason: &str) -> Result<BannedUser> {
+		sqlx::query_as!(
+			BannedUser,
+			"INSERT INTO Banned_users
+				(id, reason)
+			VALUES
+				($1, $2)
+			ON CONFLICT(id) DO UPDATE SET
+			reason = EXCLUDED.reason
+			RETURNING
+				id, reason, date_banned;",
+			user_id,
+			reason
 		)
 		.fetch_one(&self.pool)
 		.await
