@@ -1,13 +1,13 @@
 use crate::fimfiction_api::story::StoryData;
 use crate::fimfiction_api::user::UserData;
 use crate::structs::{BannedUser, Session, StoryUpdate, Table, User, UserType};
-use anyhow::{ Context as _, Result };
-use chrono::{ DateTime, Utc };
-use sqlx::{ Pool, Postgres };
+use anyhow::{Context as _, Result};
+use chrono::{DateTime, Utc};
 use sqlx::postgres::PgPoolOptions;
+use sqlx::{Pool, Postgres};
 
 pub struct Db {
-	pool: Pool<Postgres>
+	pool: Pool<Postgres>,
 }
 
 impl Db {
@@ -17,9 +17,7 @@ impl Db {
 			.connect(database_url)
 			.await?;
 
-		sqlx::migrate!()
-			.run(&pool)
-			.await?;
+		sqlx::migrate!().run(&pool).await?;
 
 		Ok(Self { pool })
 	}
