@@ -1,4 +1,4 @@
-mod db;
+mod database;
 mod fimfiction_api;
 mod structs;
 
