@@ -31,7 +31,7 @@ You need:
 
 ## Project setup
 
-Before compiling the project for the first time, you will need to use the sqlx cli to run migrations on the database, so that the library can typecheck and infer types during the compilation process. The command is `cargo sqlx migrate run`. See below for information on setting the required `DATABASE_URL` environment variable for connecting to the database.
+Before compiling the project for the first time, you will need to use the sqlx cli to run migrations on the database, so that sqlx can typecheck and infer types during the compilation process. The command is `cargo sqlx migrate run`. See below for information on setting the required `DATABASE_URL` environment variable for connecting to the database.
 
 For environment variables, you may use a `.env` file in the root of the project directory to configure them.
 
@@ -40,15 +40,15 @@ For environment variables, you may use a `.env` file in the root of the project 
 - `DATABASE_URL`: postgres connection URL, in the format of `postgres://<username>:<password>@<hostname>:<port>/<databasename>`
   - ex. `postgres://postgres:root@localhost:5432/aprilfools`, with username "postgres", password "root", hostname "localhost", port "5432", database name "aprilfools"
 
-## Running development server
+## Running development server (currently outdated) <!-- todo fix this -->
 
 Run the command `cargo leptos watch`, and a development server should start at `localhost:3000` with live reload.
 
-## Building
+## Building (currently outdated) <!-- todo fix this -->
 
 Run `cargo leptos build` for a debug build, or `cargo leptos build -r` for a release build. Note: a postgres instance with migrations ran is needed for any form of checking or compilation (see [#project-setup](#project-setup) for more information).
 
-## Deploying
+## Deploying (currently outdated) <!-- todo fix this -->
 
 Build the project as describe above, then move the following files to a directory on your deployment server:
 
