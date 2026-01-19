@@ -11,7 +11,7 @@ edition = "2024"
 
 [workspace.dependencies]
 anyhow = "1.0.100"
-# actix-files = "0.6.9"
+actix-files = "0.6.9"
 actix-web = { version = "4.12.1", features = ["macros"] }
 bon = "3.8.2"
 base64ct = { version = "1.8.2", features = ["std"] }

@@ -5,6 +5,7 @@ edition = { workspace = true }
 publish = false
 
 [dependencies]
+actix-files = { workspace = true }
 actix-web = { workspace = true }
 anyhow = { workspace = true }
 base64ct = { workspace = true }
