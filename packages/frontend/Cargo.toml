@@ -7,4 +7,6 @@ publish = false
 [dependencies]
 console-error-panic-hook = { workspace = true }
 leptos = { workspace = true }
+leptos-meta = { workspace = true }
 leptos-mview = { workspace = true }
+leptos-router = { workspace = true }
