@@ -19,7 +19,6 @@ chrono = "0.4.42"
 console-error-panic-hook = { package = "console_error_panic_hook", version = "0.1.7" }
 dotenvy = "0.15.7"
 leptos = { version = "0.8.14", features = ["csr", "nightly"] }
-# leptos-actix = { package = "leptos_actix", version = "0.8.6" }
 leptos-meta = { package = "leptos_meta", version = "0.8.5" }
 leptos-mview = { version = "0.4.4", features = ["nightly"] }
 leptos-router = { package = "leptos_router", version = "0.8.10", features = ["nightly"] }
@@ -37,65 +36,7 @@ sqlx = { version = "0.8.6", default-features = false, features = [
 	"runtime-tokio",
 	"tls-rustls"
 ] }
-# wasm-bindgen = "=0.2.106"
-
-[package]
-name = "april-fools-2026"
-version = { workspace = true }
-edition = { workspace = true }
-publish = false
-
-[dependencies]
-anyhow = "1.0.100"
-actix-files = { version = "0.6.9", optional = true }
-actix-web = { version = "4.12.1", optional = true, features = ["macros"] }
-base64ct = { version = "1.8.2", optional = true, features = ["std"] }
-bon = "3.8.2"
-chrono = "0.4.42"
-console-error-panic-hook = { package = "console_error_panic_hook", version = "0.1.7" }
-dotenvy = "0.15.7"
-leptos = { version = "0.8.14", features = ["nightly"] }
-leptos-actix = { package = "leptos_actix", version = "0.8.6", optional = true }
-leptos-meta = { package = "leptos_meta", version = "0.8.5" }
-leptos-mview = { version = "0.4.4", features = ["nightly"] }
-leptos-router = { package = "leptos_router", version = "0.8.10", features = ["nightly"] }
-rand = { version = "0.9.2", optional = true }
-rand-chacha = { package = "rand_chacha", version = "0.9.0", optional = true }
-reqwest = { version = "0.13.1", optional = true, features = ["json", "form"] }
-serde = { version = "1.0.228", optional = true, features = ["derive"] }
-serde-json = { package = "serde_json", version = "1.0.149", optional = true }
-sqlx = { version = "0.8.6", optional = true, default-features = false, features = [
-	"chrono",
-	"macros",
-	"migrate",
-	"postgres",
-	"runtime-tokio",
-	"tls-rustls"
-] }
 wasm-bindgen = "=0.2.106"
-
-[features]
-hydrate = [
-	"leptos/hydrate"
-]
-ssr = [
-	"dep:actix-files",
-	"dep:actix-web",
-	"dep:base64ct",
-	"dep:leptos-actix",
-	"dep:rand",
-	"dep:rand-chacha",
-	"dep:reqwest",
-	"dep:serde",
-	"dep:serde-json",
-	"dep:sqlx",
-	"leptos/ssr",
-	"leptos-meta/ssr",
-	"leptos-router/ssr",
-]
-
-[lib]
-crate-type = ["cdylib", "rlib"]
 
 [profile.dev.package."*"]
 opt-level = 3
@@ -106,16 +47,3 @@ opt-level = "z"
 lto = true
 codegen-units = 1
 panic = "abort"
-
-[package.metadata.leptos]
-site-root = "target/site"
-site-pkg-dir = "_"
-style-file = "target/unoptimised.css"
-site-addr = "127.0.0.1:3000"
-reload-port = 3001
-browserquery = "supports wasm"
-# ????????
-env = "DEV"
-bin-features = ["ssr"]
-lib-features = ["hydrate"]
-lib-profile-release = "wasm-release"

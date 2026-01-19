@@ -209,20 +209,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "actix-ws"
-version = "0.3.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a3a1fb4f9f2794b0aadaf2ba5f14a6f034c7e86957b458c506a8cb75953f2d99"
-dependencies = [
- "actix-codec",
- "actix-http",
- "actix-web",
- "bytestring",
- "futures-core",
- "tokio",
-]
-
-[[package]]
 name = "adler2"
 version = "2.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -293,7 +279,6 @@ checksum = "1384d3fe1eecb464229fcf6eebb72306591c56bf27b373561489458a7c73027d"
 dependencies = [
  "futures",
  "thiserror 2.0.17",
- "tokio",
  "wasm-bindgen-futures",
 ]
 
@@ -302,32 +287,6 @@ name = "anyhow"
 version = "1.0.100"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a23eb6b1614318a8071c9b2521f36b424b2c83db5eb3a0fead4a6c0809af6e61"
-
-[[package]]
-name = "april-fools-2026"
-version = "0.1.0"
-dependencies = [
- "actix-files",
- "actix-web",
- "anyhow",
- "base64ct",
- "bon",
- "chrono",
- "console_error_panic_hook",
- "dotenvy",
- "leptos",
- "leptos-mview",
- "leptos_actix",
- "leptos_meta",
- "leptos_router",
- "rand 0.9.2",
- "rand_chacha 0.9.0",
- "reqwest 0.13.1",
- "serde",
- "serde_json",
- "sqlx",
- "wasm-bindgen",
-]
 
 [[package]]
 name = "april-fools-2026-backend"
@@ -1802,13 +1761,11 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e8714ae4adeaa846d838f380fbd72f049197de629948f91bf045329e0cf0a283"
 dependencies = [
  "futures",
- "js-sys",
  "once_cell",
  "or_poisoned",
  "pin-project-lite",
  "serde",
  "throw_error",
- "wasm-bindgen",
 ]
 
 [[package]]
@@ -2106,15 +2063,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "71dd52191aae121e8611f1e8dc3e324dd0dd1dee1e6dd91d10ee07a3cfb4d9d8"
 
 [[package]]
-name = "inventory"
-version = "0.3.21"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bc61209c082fbeb19919bee74b176221b27223e27b65d781eb91af24eb1fb46e"
-dependencies = [
- "rustversion",
-]
-
-[[package]]
 name = "ipnet"
 version = "2.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2215,7 +2163,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5f9569fc37575a5d64c0512145af7630bf651007237ef67a8a77328199d315bb"
 dependencies = [
  "any_spawner",
- "base64",
  "cfg-if",
  "either_of",
  "futures",
@@ -2229,7 +2176,6 @@ dependencies = [
  "oco_ref",
  "or_poisoned",
  "paste",
- "rand 0.9.2",
  "reactive_graph",
  "rustc-hash",
  "rustc_version",
@@ -2283,32 +2229,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "leptos_actix"
-version = "0.8.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "60a3b5cf3f0414192d37f9f5afa389afcec5b5e1636fade8be55d4f46cd95471"
-dependencies = [
- "actix-files",
- "actix-http",
- "actix-web",
- "any_spawner",
- "dashmap",
- "futures",
- "hydration_context",
- "leptos",
- "leptos_integration_utils",
- "leptos_macro",
- "leptos_meta",
- "leptos_router",
- "parking_lot",
- "send_wrapper",
- "serde_json",
- "server_fn",
- "tachys",
- "tokio",
-]
-
-[[package]]
 name = "leptos_config"
 version = "0.8.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2352,21 +2272,6 @@ dependencies = [
  "serde",
  "syn",
  "walkdir",
-]
-
-[[package]]
-name = "leptos_integration_utils"
-version = "0.8.7"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "13cccc9305df53757bae61bf15641bfa6a667b5f78456ace4879dfe0591ae0e8"
-dependencies = [
- "futures",
- "hydration_context",
- "leptos",
- "leptos_config",
- "leptos_meta",
- "leptos_router",
- "reactive_graph",
 ]
 
 [[package]]
@@ -2421,7 +2326,6 @@ dependencies = [
  "leptos",
  "leptos_router_macro",
  "or_poisoned",
- "percent-encoding",
  "reactive_graph",
  "rustc_version",
  "send_wrapper",
@@ -3973,8 +3877,6 @@ version = "0.8.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "353d02fa2886cd8dae0b8da0965289fa8f2ecc7df633d1ce965f62fdf9644d29"
 dependencies = [
- "actix-web",
- "actix-ws",
  "base64",
  "bytes",
  "const-str",
@@ -3983,7 +3885,6 @@ dependencies = [
  "futures",
  "gloo-net",
  "http 1.4.0",
- "inventory",
  "js-sys",
  "pin-project-lite",
  "rustc_version",
