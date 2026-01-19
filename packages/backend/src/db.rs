@@ -1,3 +1,4 @@
+use crate::fimfiction_api::story::StoryData;
 use crate::fimfiction_api::user::UserData;
 use crate::structs::{BannedUser, Session, Table, User, UserType};
 use anyhow::Result;
@@ -173,6 +174,65 @@ impl Db {
 		.fetch_one(&self.pool)
 		.await
 		.map_err(|e| format!("database insertion error.\n{e}").into())
+	}
+
+	pub async fn insert_story_update(&self, data: StoryData<i32>) -> Result<StoryUpdate> {
+		sqlx::query_as!(
+			StoryUpdate,
+			"INSERT INTO Story_updates
+				(title, short_description, description, views, total_views,
+				words, chapters, comments, rating, likes, dislikes)
+			VALUES
+				($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+			RETURNING
+				title, short_description, description, views, total_views,
+				words, chapters, comments, rating, likes, dislikes, date_cached;",
+			data.attributes.title,
+			data.attributes.short_description,
+			data.attributes.description,
+			data.attributes.num_views,
+			data.attributes.total_num_views,
+			data.attributes.num_words,
+			data.attributes.num_chapters,
+			data.attributes.num_comments,
+			data.attributes.rating,
+			data.attributes.num_likes,
+			data.attributes.num_dislikes,
+		)
+		.fetch_one(&self.pool)
+		.await
+		.map_err(|e| format!("database insertion error.\n{e}").into())
+	}
+
+	pub async fn get_all_story_updates(&self) -> Result<Vec<StoryUpdate>> {
+		sqlx::query_as!(
+			StoryUpdate,
+			"SELECT
+				title, short_description, description, views, total_views,
+				words, chapters, comments, rating, likes, dislikes, date_cached
+			FROM Story_updates;",
+		)
+		.fetch_all(&self.pool)
+		.await
+		.map_err(|e| format!("database retrieval error.\n{e}").into())
+	}
+
+	pub async fn get_story_updates_in_range(
+		&self, start: DateTime<Utc>, end: DateTime<Utc>,
+	) -> Result<Vec<StoryUpdate>> {
+		sqlx::query_as!(
+			StoryUpdate,
+			"SELECT
+				title, short_description, description, views, total_views,
+				words, chapters, comments, rating, likes, dislikes, date_cached
+			FROM Story_updates
+			WHERE date_cached > $1 AND date_cached < $2;",
+			start,
+			end
+		)
+		.fetch_all(&self.pool)
+		.await
+		.map_err(|e| format!("database retrieval error.\n{e}").into())
 	}
 
 	#[builder]

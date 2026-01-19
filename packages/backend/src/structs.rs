@@ -4,31 +4,6 @@ use sqlx::{Pool, Postgres};
 use std::fmt;
 
 #[derive(Debug, Clone)]
-pub struct Story {
-	pub id: i32,
-	pub title: String,
-	pub short_description: String,
-	pub description: String,
-	pub published: bool,
-	pub link: String,
-	pub cover_url: Option<String>,
-	pub color_hex: String,
-	pub views: i32,
-	pub total_views: i32,
-	pub words: i32,
-	pub chapters: i32,
-	pub comments: i32,
-	pub rating: i32,
-	pub likes: i32,
-	pub dislikes: i32,
-	pub author_id: i32,
-	pub date_modified: DateTime<Utc>,
-	pub date_updated: DateTime<Utc>,
-	pub date_published: DateTime<Utc>,
-	pub date_cached: DateTime<Utc>,
-}
-
-#[derive(Debug, Clone)]
 pub struct AppState {
 	pub api: Request,
 	pub db: Pool<Postgres>,
@@ -120,4 +95,20 @@ pub struct BannedUser {
 	pub id: i32,
 	pub reason: String,
 	pub date_banned: DateTime<Utc>,
+}
+
+#[derive(Debug, Clone)]
+pub struct StoryUpdate {
+	pub title: String,
+	pub short_description: String,
+	pub description: String,
+	pub views: i32,
+	pub total_views: i32,
+	pub words: i32,
+	pub chapters: i32,
+	pub comments: i32,
+	pub rating: i32,
+	pub likes: i32,
+	pub dislikes: i32,
+	pub date_cached: DateTime<Utc>,
 }
