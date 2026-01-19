@@ -8,4 +8,7 @@ publish = false
 anyhow = { workspace = true }
 bon = { workspace = true }
 chrono = { workspace = true }
+pony = { workspace = true }
+reqwest = { workspace = true }
+serde = { workspace = true }
 sqlx = { workspace = true }

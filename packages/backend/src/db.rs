@@ -1,9 +1,8 @@
 use crate::fimfiction_api::story::StoryData;
 use crate::fimfiction_api::user::UserData;
-use crate::structs::{BannedUser, Session, Table, User, UserType};
-use anyhow::Result;
-use bon::bon;
-use chrono::{ DateTime, Local };
+use crate::structs::{BannedUser, Session, StoryUpdate, Table, User, UserType};
+use anyhow::{ Context as _, Result };
+use chrono::{ DateTime, Utc };
 use sqlx::{ Pool, Postgres };
 use sqlx::postgres::PgPoolOptions;
 
@@ -11,7 +10,6 @@ pub struct Db {
 	pool: Pool<Postgres>
 }
 
-#[bon]
 impl Db {
 	pub async fn new(database_url: &str) -> Result<Self> {
 		let pool = PgPoolOptions::new()
@@ -58,14 +56,14 @@ impl Db {
 		)
 		.fetch_optional(&self.pool)
 		.await
-		.map_err(|e| format!("database retrieval error.\n{e}").into())
+		.context("database retrieval error")
 	}
 
 	pub async fn get_all_sessions(&self) -> Result<Vec<Session>> {
 		sqlx::query_as!(Session, "SELECT token, user_id, date_created FROM Tokens;",)
 			.fetch_all(&self.pool)
 			.await
-			.map_err(|e| format!("database retrieval error.\n{e}").into())
+			.context("database retrieval error")
 	}
 
 	pub async fn get_all_user_sessions(&self, user_id: i32) -> Result<Vec<Session>> {
@@ -79,7 +77,7 @@ impl Db {
 		)
 		.fetch_all(&self.pool)
 		.await
-		.map_err(|e| format!("database retrieval error.\n{e}").into())
+		.context("database retrieval error")
 	}
 
 	pub async fn insert_session(&self, token: &str, user_id: i32) -> Result<Session> {
@@ -96,7 +94,7 @@ impl Db {
 		)
 		.fetch_one(&self.pool)
 		.await
-		.map_err(|e| format!("database insertion error.\n{e}").into())
+		.context("database insertion error")
 	}
 
 	pub async fn insert_user(
@@ -128,7 +126,7 @@ impl Db {
 		)
 		.fetch_one(&self.pool)
 		.await
-		.map_err(|e| format!("database insertion error.\n{e}").into())
+		.context("database insertion error")
 	}
 
 	pub async fn get_all_banned_users(&self) -> Result<Vec<BannedUser>> {
@@ -138,7 +136,7 @@ impl Db {
 		)
 		.fetch_all(&self.pool)
 		.await
-		.map_err(|e| format!("database retrieval error.\n{e}").into())
+		.context("database retrieval error")
 	}
 
 	pub async fn get_banned_user(&self, id: i32) -> Result<Option<BannedUser>> {
@@ -154,7 +152,7 @@ impl Db {
 		)
 		.fetch_optional(&self.pool)
 		.await
-		.map_err(|e| format!("database retrieval error.\n{e}").into())
+		.context("database retrieval error")
 	}
 
 	pub async fn insert_banned_user(&self, user_id: i32, reason: &str) -> Result<BannedUser> {
@@ -173,7 +171,7 @@ impl Db {
 		)
 		.fetch_one(&self.pool)
 		.await
-		.map_err(|e| format!("database insertion error.\n{e}").into())
+		.context("database insertion error")
 	}
 
 	pub async fn insert_story_update(&self, data: StoryData<i32>) -> Result<StoryUpdate> {
@@ -201,7 +199,7 @@ impl Db {
 		)
 		.fetch_one(&self.pool)
 		.await
-		.map_err(|e| format!("database insertion error.\n{e}").into())
+		.context("database insertion error")
 	}
 
 	pub async fn get_all_story_updates(&self) -> Result<Vec<StoryUpdate>> {
@@ -214,7 +212,7 @@ impl Db {
 		)
 		.fetch_all(&self.pool)
 		.await
-		.map_err(|e| format!("database retrieval error.\n{e}").into())
+		.context("database retrieval error")
 	}
 
 	pub async fn get_story_updates_in_range(
@@ -232,93 +230,61 @@ impl Db {
 		)
 		.fetch_all(&self.pool)
 		.await
-		.map_err(|e| format!("database retrieval error.\n{e}").into())
+		.context("database retrieval error")
 	}
 
-	#[builder]
-	pub async fn create_session(
-		&self,
-		token: &str,
-		id: i32
-	) -> Result<Session> {
-		let query = sqlx::query_file_as!(
-			Session,
-			"queries/insert/token.sql",
-			token,
-			id
-		);
+	// #[builder]
+	// pub async fn create_session(
+	// 	&self,
+	// 	token: &str,
+	// 	id: i32
+	// ) -> Result<Session> {
+	// 	let query = sqlx::query_file_as!(
+	// 		Session,
+	// 		"queries/insert/token.sql",
+	// 		token,
+	// 		id
+	// 	);
 
-		query
-			.fetch_one(&self.pool)
-			.await
-			.map_err(Into::into)
-	}
+	// 	query
+	// 		.fetch_one(&self.pool)
+	// 		.await
+	// 		.map_err(Into::into)
+	// }
 
-	pub async fn get_session_by_token(&self, token: &str) -> Result<Option<Session>> {
-		let query = sqlx::query_file_as!(
-			Session,
-			"queries/select/token.sql",
-			token
-		);
+	// pub async fn get_session_by_token(&self, token: &str) -> Result<Option<Session>> {
+	// 	let query = sqlx::query_file_as!(
+	// 		Session,
+	// 		"queries/select/token.sql",
+	// 		token
+	// 	);
 
-		query
-			.fetch_optional(&self.pool)
-			.await
-			.map_err(Into::into)
-	}
+	// 	query
+	// 		.fetch_optional(&self.pool)
+	// 		.await
+	// 		.map_err(Into::into)
+	// }
 
-	#[builder]
-	pub async fn create_or_update_user(
-		&self,
-		id: i32,
-		name: &str,
-		pfp_url: Option<&str>,
-		user_type: UserType
-	) -> Result<User> {
-		let query = sqlx::query_file_as!(
-			User,
-			"queries/insert/user.sql",
-			id,
-			name,
-			pfp_url,
-			user_type as _
-		);
+	// #[builder]
+	// pub async fn create_or_update_user(
+	// 	&self,
+	// 	id: i32,
+	// 	name: &str,
+	// 	pfp_url: Option<&str>,
+	// 	user_type: UserType
+	// ) -> Result<User> {
+	// 	let query = sqlx::query_file_as!(
+	// 		User,
+	// 		"queries/insert/user.sql",
+	// 		id,
+	// 		name,
+	// 		pfp_url,
+	// 		user_type as _
+	// 	);
 
-		query
-			.fetch_one(&self.pool)
-			.await
-			.map_err(Into::into)
-	}
-}
-
-#[derive(sqlx::Type)]
-#[sqlx(type_name = "user_type", rename_all = "snake_case")]
-pub enum UserType {
-	Admin,
-	Writer,
-	Voter
-}
-
-#[derive(sqlx::Type)]
-#[sqlx(type_name = "question_type", rename_all = "snake_case")]
-pub enum QuestionType {
-	MultipleChoice,
-	Multiselect,
-	Scale
-}
-
-pub struct Session {
-	token: String,
-	user_id: i32,
-	date_created: DateTime<Local>
-}
-
-pub struct User {
-	id: i32,
-	name: String,
-	pfp_url: Option<String>,
-	user_type: UserType,
-	feedback_private: Option<String>,
-	feedback_public: Option<String>,
-	date_joined: DateTime<Local>
+	// 	query
+	// 		.fetch_one(&self.pool)
+	// 		.await
+	// 		.map_err(Into::into)
+	// }
 }
