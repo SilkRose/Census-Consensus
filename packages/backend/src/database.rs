@@ -6,10 +6,14 @@ use pony::fimfiction_api::user::UserData;
 use sqlx::postgres::PgPoolOptions;
 use sqlx::{Pool, Postgres};
 
-const SELECT_ERROR: &str = "database selection error";
 const INSERT_ERROR: &str = "database insertion error";
-const DELETE_ERROR: &str = "database deletion error";
+const SELECT_ERROR: &str = "database selection error";
 const UPDATE_ERROR: &str = "database updating error";
+const DELETE_ERROR: &str = "database deletion error";
+
+// Going to order the database functions as followed:
+// Tables: users, tokens, banned users, chapters, questions, writings, options, votes, story updates
+// Methods: insert, select one, select many, update, delete one, delete all
 
 pub struct Db {
 	pool: Pool<Postgres>,
@@ -31,55 +35,6 @@ impl Db {
 		let query = format!("SELECT count(*) FROM {table};");
 		let count: i64 = sqlx::query_scalar(&query).fetch_one(&self.pool).await?;
 		Ok(count)
-	}
-
-	pub async fn get_session_by_token(&self, token: &str) -> Result<Option<Session>> {
-		sqlx::query_as!(
-			Session,
-			"SELECT token, user_id, date_created FROM Tokens WHERE token = $1;",
-			token
-		)
-		.fetch_optional(&self.pool)
-		.await
-		.context(SELECT_ERROR)
-	}
-
-	pub async fn get_all_sessions(&self) -> Result<Vec<Session>> {
-		sqlx::query_as!(Session, "SELECT token, user_id, date_created FROM Tokens;",)
-			.fetch_all(&self.pool)
-			.await
-			.context(SELECT_ERROR)
-	}
-
-	pub async fn get_all_user_sessions(&self, user_id: i32) -> Result<Vec<Session>> {
-		sqlx::query_as!(
-			Session,
-			"SELECT
-				token, user_id, date_created
-			FROM Tokens
-			WHERE user_id = $1;",
-			user_id
-		)
-		.fetch_all(&self.pool)
-		.await
-		.context(SELECT_ERROR)
-	}
-
-	pub async fn insert_session(&self, token: &str, user_id: i32) -> Result<Session> {
-		sqlx::query_as!(
-			Session,
-			"INSERT INTO Tokens
-				(token, user_id)
-			VALUES
-				($1, $2)
-			RETURNING
-				token, user_id, date_created;",
-			token,
-			user_id
-		)
-		.fetch_one(&self.pool)
-		.await
-		.context(INSERT_ERROR)
 	}
 
 	pub async fn insert_user(
@@ -114,30 +69,53 @@ impl Db {
 		.context(INSERT_ERROR)
 	}
 
-	pub async fn get_all_banned_users(&self) -> Result<Vec<BannedUser>> {
+	pub async fn insert_session(&self, token: &str, user_id: i32) -> Result<Session> {
 		sqlx::query_as!(
-			BannedUser,
-			"SELECT id, reason, date_banned FROM Banned_users;",
+			Session,
+			"INSERT INTO Tokens
+				(token, user_id)
+			VALUES
+				($1, $2)
+			RETURNING
+				token, user_id, date_created;",
+			token,
+			user_id
+		)
+		.fetch_one(&self.pool)
+		.await
+		.context(INSERT_ERROR)
+	}
+
+	pub async fn get_session_by_token(&self, token: &str) -> Result<Option<Session>> {
+		sqlx::query_as!(
+			Session,
+			"SELECT token, user_id, date_created FROM Tokens WHERE token = $1;",
+			token
+		)
+		.fetch_optional(&self.pool)
+		.await
+		.context(SELECT_ERROR)
+	}
+
+	pub async fn get_all_user_sessions(&self, user_id: i32) -> Result<Vec<Session>> {
+		sqlx::query_as!(
+			Session,
+			"SELECT
+				token, user_id, date_created
+			FROM Tokens
+			WHERE user_id = $1;",
+			user_id
 		)
 		.fetch_all(&self.pool)
 		.await
 		.context(SELECT_ERROR)
 	}
 
-	pub async fn get_banned_user(&self, id: i32) -> Result<Option<BannedUser>> {
-		sqlx::query_as!(
-			BannedUser,
-			"SELECT
-				id, reason, date_banned
-			FROM
-				Banned_users
-			WHERE id = $1
-			LIMIT 1;",
-			id
-		)
-		.fetch_optional(&self.pool)
-		.await
-		.context(SELECT_ERROR)
+	pub async fn get_all_sessions(&self) -> Result<Vec<Session>> {
+		sqlx::query_as!(Session, "SELECT token, user_id, date_created FROM Tokens;",)
+			.fetch_all(&self.pool)
+			.await
+			.context(SELECT_ERROR)
 	}
 
 	pub async fn insert_banned_user(&self, user_id: i32, reason: &str) -> Result<BannedUser> {
@@ -157,6 +135,32 @@ impl Db {
 		.fetch_one(&self.pool)
 		.await
 		.context(INSERT_ERROR)
+	}
+
+	pub async fn get_banned_user(&self, id: i32) -> Result<Option<BannedUser>> {
+		sqlx::query_as!(
+			BannedUser,
+			"SELECT
+				id, reason, date_banned
+			FROM
+				Banned_users
+			WHERE id = $1
+			LIMIT 1;",
+			id
+		)
+		.fetch_optional(&self.pool)
+		.await
+		.context(SELECT_ERROR)
+	}
+
+	pub async fn get_all_banned_users(&self) -> Result<Vec<BannedUser>> {
+		sqlx::query_as!(
+			BannedUser,
+			"SELECT id, reason, date_banned FROM Banned_users;",
+		)
+		.fetch_all(&self.pool)
+		.await
+		.context(SELECT_ERROR)
 	}
 
 	pub async fn insert_story_update(&self, data: StoryData<i32>) -> Result<StoryUpdate> {
@@ -187,19 +191,6 @@ impl Db {
 		.context(INSERT_ERROR)
 	}
 
-	pub async fn get_all_story_updates(&self) -> Result<Vec<StoryUpdate>> {
-		sqlx::query_as!(
-			StoryUpdate,
-			"SELECT
-				title, short_description, description, views, total_views,
-				words, chapters, comments, rating, likes, dislikes, date_cached
-			FROM Story_updates;",
-		)
-		.fetch_all(&self.pool)
-		.await
-		.context(SELECT_ERROR)
-	}
-
 	pub async fn get_story_updates_in_range(
 		&self, start: DateTime<Utc>, end: DateTime<Utc>,
 	) -> Result<Vec<StoryUpdate>> {
@@ -218,58 +209,16 @@ impl Db {
 		.context(SELECT_ERROR)
 	}
 
-	// #[builder]
-	// pub async fn create_session(
-	// 	&self,
-	// 	token: &str,
-	// 	id: i32
-	// ) -> Result<Session> {
-	// 	let query = sqlx::query_file_as!(
-	// 		Session,
-	// 		"queries/insert/token.sql",
-	// 		token,
-	// 		id
-	// 	);
-
-	// 	query
-	// 		.fetch_one(&self.pool)
-	// 		.await
-	// 		.map_err(Into::into)
-	// }
-
-	// pub async fn get_session_by_token(&self, token: &str) -> Result<Option<Session>> {
-	// 	let query = sqlx::query_file_as!(
-	// 		Session,
-	// 		"queries/select/token.sql",
-	// 		token
-	// 	);
-
-	// 	query
-	// 		.fetch_optional(&self.pool)
-	// 		.await
-	// 		.map_err(Into::into)
-	// }
-
-	// #[builder]
-	// pub async fn create_or_update_user(
-	// 	&self,
-	// 	id: i32,
-	// 	name: &str,
-	// 	pfp_url: Option<&str>,
-	// 	user_type: UserType
-	// ) -> Result<User> {
-	// 	let query = sqlx::query_file_as!(
-	// 		User,
-	// 		"queries/insert/user.sql",
-	// 		id,
-	// 		name,
-	// 		pfp_url,
-	// 		user_type as _
-	// 	);
-
-	// 	query
-	// 		.fetch_one(&self.pool)
-	// 		.await
-	// 		.map_err(Into::into)
-	// }
+	pub async fn get_all_story_updates(&self) -> Result<Vec<StoryUpdate>> {
+		sqlx::query_as!(
+			StoryUpdate,
+			"SELECT
+				title, short_description, description, views, total_views,
+				words, chapters, comments, rating, likes, dislikes, date_cached
+			FROM Story_updates;",
+		)
+		.fetch_all(&self.pool)
+		.await
+		.context(SELECT_ERROR)
+	}
 }
