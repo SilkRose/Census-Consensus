@@ -1,9 +1,6 @@
 [workspace]
 resolver = "3"
-members = [
-	"packages/backend",
-	"packages/frontend"
-]
+members = ["packages/backend", "packages/frontend"]
 
 [workspace.package]
 version = "0.1.0"
@@ -15,13 +12,15 @@ actix-files = "0.6.9"
 actix-web = { version = "4.12.1", features = ["macros"] }
 bon = "3.8.2"
 base64ct = { version = "1.8.2", features = ["std"] }
-chrono = "0.4.42"
+chrono = { version = "0.4.43", features = ["serde"] }
 console-error-panic-hook = { package = "console_error_panic_hook", version = "0.1.7" }
 dotenvy = "0.15.7"
 leptos = { version = "0.8.14", features = ["csr", "nightly"] }
 leptos-meta = { package = "leptos_meta", version = "0.8.5" }
 leptos-mview = { version = "0.4.4", features = ["nightly"] }
-leptos-router = { package = "leptos_router", version = "0.8.10", features = ["nightly"] }
+leptos-router = { package = "leptos_router", version = "0.8.10", features = [
+	"nightly",
+] }
 pony = { git = "https://github.com/SilkRose/Pony", rev = "bd77dbcd45dc94c3e2398d550757c4705779a2d8" }
 rand = "0.9.2"
 rand-chacha = { package = "rand_chacha", version = "0.9.0" }
@@ -34,7 +33,7 @@ sqlx = { version = "0.8.6", default-features = false, features = [
 	"migrate",
 	"postgres",
 	"runtime-tokio",
-	"tls-rustls"
+	"tls-rustls",
 ] }
 wasm-bindgen = "=0.2.106"
 

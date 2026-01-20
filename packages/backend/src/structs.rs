@@ -1,7 +1,9 @@
 use chrono::{DateTime, Utc};
+use serde::{Deserialize, Serialize};
+use sqlx::Type;
 use std::fmt;
 
-#[derive(Debug, Clone)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub enum Table {
 	Users,
 	Tokens,
@@ -31,7 +33,7 @@ impl fmt::Display for Table {
 	}
 }
 
-#[derive(sqlx::Type)]
+#[derive(Clone, Debug, Deserialize, Serialize, Type)]
 #[sqlx(type_name = "user_type", rename_all = "snake_case")]
 pub enum UserType {
 	Admin,
@@ -39,7 +41,7 @@ pub enum UserType {
 	Voter,
 }
 
-#[derive(sqlx::Type)]
+#[derive(Clone, Debug, Deserialize, Serialize, Type)]
 #[sqlx(type_name = "question_type", rename_all = "snake_case")]
 pub enum QuestionType {
 	MultipleChoice,
@@ -47,12 +49,7 @@ pub enum QuestionType {
 	Scale,
 }
 
-pub struct Session {
-	pub token: String,
-	pub user_id: i32,
-	pub date_created: DateTime<Utc>,
-}
-
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct User {
 	pub id: i32,
 	pub name: String,
@@ -63,13 +60,77 @@ pub struct User {
 	pub date_joined: DateTime<Utc>,
 }
 
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct Session {
+	pub token: String,
+	pub user_id: i32,
+	pub date_created: DateTime<Utc>,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct BannedUser {
 	pub id: i32,
 	pub reason: String,
 	pub date_banned: DateTime<Utc>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct Chapter {
+	pub id: i32,
+	pub title: String,
+	pub vote_duration: i32,
+	pub minutes_left: Option<i32>,
+	pub fimfic_ch_id: Option<i32>,
+	pub intro_text: Option<String>,
+	pub outro_text: Option<String>,
+	pub chapter_order: Option<i32>,
+	pub date_created: DateTime<Utc>,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct Writing {
+	pub id: i32,
+	pub writing: String,
+	pub created_by: i32,
+	pub previous_revision: Option<i32>,
+	pub date_created: DateTime<Utc>,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct Question {
+	pub id: i32,
+	pub text: String,
+	pub r#type: QuestionType,
+	pub response_percent: f64,
+	pub asked_by: String,
+	pub created_by: i32,
+	pub claimed_by: Option<i32>,
+	pub chapter_id: Option<i32>,
+	pub chapter_order: Option<i32>,
+	pub latest_writing: Option<i32>,
+	pub date_created: DateTime<Utc>,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct QuestionOption {
+	pub id: i32,
+	pub question_id: i32,
+	pub option_number: i32,
+	pub text: String,
+	pub writing_id: Option<i32>,
+	pub order_rank: i32,
+	pub date_created: DateTime<Utc>,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct Vote {
+	pub voter_id: i32,
+	pub question_id: i32,
+	pub option_id: i32,
+	pub date_created: DateTime<Utc>,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct StoryUpdate {
 	pub title: String,
 	pub short_description: String,
