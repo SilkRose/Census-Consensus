@@ -1,8 +1,8 @@
-use crate::fimfiction_api::story::StoryData;
-use crate::fimfiction_api::user::UserData;
 use crate::structs::{BannedUser, Session, StoryUpdate, Table, User, UserType};
 use anyhow::{Context as _, Result};
 use chrono::{DateTime, Utc};
+use pony::fimfiction_api::story::StoryData;
+use pony::fimfiction_api::user::UserData;
 use sqlx::postgres::PgPoolOptions;
 use sqlx::{Pool, Postgres};
 

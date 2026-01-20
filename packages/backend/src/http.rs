@@ -1,5 +1,6 @@
 use crate::fimfic_cfg::FimficCfg;
 use anyhow::Result;
+use pony::fimfiction_api::user::UserApi;
 use reqwest::{ Client as ReqwestClient, IntoUrl, RequestBuilder };
 use serde::Deserialize;
 use std::borrow::Cow;
@@ -25,44 +26,13 @@ impl HttpClient {
 
 	// if we ever need to fetch more user data than only a
 	// pfp from fimfic, modify this function into that
-	pub async fn get_fimfic_pfp(&self, id: i32, token: &str) -> Result<Option<String>> {
-		// todo is there a better way to do this?
-		#[derive(Deserialize)]
-		struct Res {
-			data: Data
-		}
-
-		#[derive(Deserialize)]
-		struct Data {
-			attributes: Attributes
-		}
-
-		#[derive(Deserialize)]
-		struct Attributes {
-			avatar: Avatar
-		}
-
-		// help me
-		#[derive(Deserialize)]
-		struct Avatar {
-			#[serde(rename = "512")]
-			size_512: String
-		}
-
-		let res = self.get(format!("https://www.fimfiction.net/api/v2/users/{id}"), Some(token))
+	pub async fn get_fimfic_user(&self, id: i32, token: &str) -> Result<UserApi<i32>> {
+		self.get(format!("https://www.fimfiction.net/api/v2/users/{id}"), Some(token))
 			.send()
 			.await?
-			.json::<Res>()
-			.await?;
-
-		let res = res.data.attributes.avatar.size_512;
-		if let Some((link, _)) = res.rsplit_once('-') {
-			Ok(Some(link.into()))
-		} else if &*res == "https://static.fimfiction.net/images/none_64.png" {
-			Ok(None)
-		} else {
-			Err(anyhow::anyhow!("invalid pfp_url format"))
-		}
+			.json()
+			.await
+			.map_err(Into::into)
 	}
 
 	pub async fn fimfic_token_exchange(

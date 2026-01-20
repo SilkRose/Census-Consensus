@@ -1,7 +1,8 @@
 use crate::fimfic_cfg::FimficCfg;
-use crate::db::{ Db, UserType };
+use crate::database::Db;
 use crate::http::{ FimficTokenExchangeResponse, HttpClient };
 use crate::rand::{ gen_auth_state, gen_auth_token };
+use crate::structs::UserType;
 use actix_web::get;
 use actix_web::{ HttpRequest, HttpResponse };
 use actix_web::web::{ Data, Query };
@@ -112,7 +113,7 @@ async fn fimfic_auth_return(
 		}
 	};
 
-	let fimfic_pfp = match http_client.get_fimfic_pfp(id, &access_token).await {
+	let fimfic_user = match http_client.get_fimfic_user(id, &access_token).await {
 		Ok(res) => { res }
 		Err(err) => {
 			eprintln!("error in pfp fetching: {err}");
@@ -123,13 +124,7 @@ async fn fimfic_auth_return(
 		}
 	};
 
-	let db_result = db.create_or_update_user()
-		.id(id)
-		.name(&name)
-		.maybe_pfp_url(fimfic_pfp.as_deref())
-		.user_type(UserType::Voter)
-		.call()
-		.await;
+	let db_result = db.insert_user(id, &fimfic_user.data, UserType::Voter).await;
 
 	if let Err(err) = db_result {
 		eprintln!("error in db storing: {err}");
@@ -141,13 +136,7 @@ async fn fimfic_auth_return(
 
 	let token = gen_auth_token();
 
-	let db_result = db.create_session()
-		.token(&token)
-		.id(id)
-		.call()
-		.await;
-
-	if let Err(err) = db_result {
+	if let Err(err) = db.insert_session(&token, id).await {
 		eprintln!("error in token storing {err}");
 		return HttpResponse::Ok()
 			.content_type("text/plain")
