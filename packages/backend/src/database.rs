@@ -251,6 +251,37 @@ impl Db {
 		.context(SELECT_ERROR)
 	}
 
+	pub async fn update_banned_user_reason(&self, id: i32, reason: &str) -> Result<u64> {
+		Ok(sqlx::query!(
+			"UPDATE Banned_users
+			SET
+				reason = $2
+			WHERE id = $1;",
+			id,
+			reason
+		)
+		.execute(&self.pool)
+		.await
+		.context(UPDATE_ERROR)?
+		.rows_affected())
+	}
+
+	pub async fn delete_banned_user(&self, id: i32) -> Result<u64> {
+		Ok(sqlx::query!("DELETE FROM Banned_users WHERE id = $1;", id)
+			.execute(&self.pool)
+			.await
+			.context(DELETE_ERROR)?
+			.rows_affected())
+	}
+
+	pub async fn delete_all_banned_users(&self) -> Result<u64> {
+		Ok(sqlx::query!("DELETE FROM Banned_users;")
+			.execute(&self.pool)
+			.await
+			.context(DELETE_ERROR)?
+			.rows_affected())
+	}
+
 	pub async fn insert_story_update(&self, data: StoryData<i32>) -> Result<StoryUpdate> {
 		sqlx::query_as!(
 			StoryUpdate,
