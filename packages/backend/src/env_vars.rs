@@ -17,7 +17,7 @@ pub unsafe fn set_required_vars() {
 		("LEPTOS_SITE_ROOT", "site"),
 		// this wasn't meant to be a vivid/stasis reference I swear
 		("LEPTOS_SITE_PKG_DIR", "_"),
-		("LEPTOS_SITE_ADDR", "127.0.0.1:3000")
+		("LEPTOS_SITE_ADDR", "127.0.0.1:3000"),
 	];
 
 	for (k, v) in vars {
@@ -55,6 +55,9 @@ macro_rules! declare_env_fn {
 declare_env_fn! {
 	/// URL to use to connect to postgres
 	database_url() -> "DATABASE_URL"
+
+	/// fimfic API key for updating the story
+	bearer_token() -> "BEARER_TOKEN"
 
 	/// fimfic oauth2 client id
 	fimfic_client_id() -> "FIMFIC_CLIENT_ID"
