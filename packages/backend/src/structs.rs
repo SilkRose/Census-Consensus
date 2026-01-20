@@ -1,33 +1,5 @@
 use chrono::{DateTime, Utc};
-use pony::http::Request;
-use sqlx::{Pool, Postgres};
 use std::fmt;
-
-#[derive(Debug, Clone)]
-pub struct AppState {
-	pub api: Request,
-	pub db: Pool<Postgres>,
-	pub gc_interval: u64,
-	pub cache_max_age: i64,
-	pub cache_recache_age: i64,
-}
-
-#[derive(Debug, Clone)]
-pub struct EmbedData {
-	pub title: String,
-	pub description: String,
-	pub link: String,
-	pub color: Option<String>,
-	pub cover: Option<String>,
-	pub site_name: String,
-	pub site_url: String,
-	pub errors: Vec<String>,
-	pub user_name: Option<String>,
-	pub user_link: Option<String>,
-	pub html_comment: Option<String>,
-	pub open_graph_type: String,
-	pub open_graph_property: Option<String>,
-}
 
 #[derive(Debug, Clone)]
 pub enum Table {
