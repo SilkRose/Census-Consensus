@@ -1,4 +1,4 @@
-use crate::structs::{BannedUser, Session, StoryUpdate, Table, User, UserType};
+use crate::structs::{BannedUser, Session, StoryUpdate, Table, User, UserType, Vote};
 use anyhow::{Context as _, Result};
 use chrono::{DateTime, Utc};
 use pony::fimfiction_api::story::StoryData;
@@ -276,6 +276,116 @@ impl Db {
 
 	pub async fn delete_all_banned_users(&self) -> Result<u64> {
 		Ok(sqlx::query!("DELETE FROM Banned_users;")
+			.execute(&self.pool)
+			.await
+			.context(DELETE_ERROR)?
+			.rows_affected())
+	}
+
+	pub async fn insert_vote(
+		&self, user_id: i32, question_id: i32, option_id: i32,
+	) -> Result<Vote> {
+		sqlx::query_as!(
+			Vote,
+			"INSERT INTO Votes
+				(voter_id, question_id, option_id)
+			VALUES
+				($1, $2, $3)
+			RETURNING
+				voter_id, question_id, option_id, date_created;",
+			user_id,
+			question_id,
+			option_id
+		)
+		.fetch_one(&self.pool)
+		.await
+		.context(INSERT_ERROR)
+	}
+
+	pub async fn get_all_votes_by_user(&self, user_id: i32) -> Result<Vec<Vote>> {
+		sqlx::query_as!(
+			Vote,
+			"SELECT
+				voter_id, question_id, option_id, date_created
+			FROM Votes
+			WHERE voter_id = $1;",
+			user_id
+		)
+		.fetch_all(&self.pool)
+		.await
+		.context(SELECT_ERROR)
+	}
+
+	pub async fn get_all_votes_by_question(&self, question_id: i32) -> Result<Vec<Vote>> {
+		sqlx::query_as!(
+			Vote,
+			"SELECT
+				voter_id, question_id, option_id, date_created
+			FROM Votes
+			WHERE question_id = $1;",
+			question_id
+		)
+		.fetch_all(&self.pool)
+		.await
+		.context(SELECT_ERROR)
+	}
+
+	pub async fn get_all_votes_by_option(&self, option_id: i32) -> Result<Vec<Vote>> {
+		sqlx::query_as!(
+			Vote,
+			"SELECT
+				voter_id, question_id, option_id, date_created
+			FROM Votes
+			WHERE option_id = $1;",
+			option_id
+		)
+		.fetch_all(&self.pool)
+		.await
+		.context(SELECT_ERROR)
+	}
+
+	pub async fn get_all_votes(&self) -> Result<Vec<Vote>> {
+		sqlx::query_as!(
+			Vote,
+			"SELECT voter_id, question_id, option_id, date_created FROM Votes;",
+		)
+		.fetch_all(&self.pool)
+		.await
+		.context(SELECT_ERROR)
+	}
+
+	pub async fn delete_votes_by_user(&self, user_id: i32) -> Result<u64> {
+		Ok(
+			sqlx::query!("DELETE FROM Votes WHERE voter_id = $1;", user_id)
+				.execute(&self.pool)
+				.await
+				.context(DELETE_ERROR)?
+				.rows_affected(),
+		)
+	}
+
+	pub async fn delete_votes_by_option(&self, question_id: i32) -> Result<u64> {
+		Ok(
+			sqlx::query!("DELETE FROM Votes WHERE question_id = $1;", question_id)
+				.execute(&self.pool)
+				.await
+				.context(DELETE_ERROR)?
+				.rows_affected(),
+		)
+	}
+
+	pub async fn delete_votes_by_question(&self, option_id: i32) -> Result<u64> {
+		Ok(
+			sqlx::query!("DELETE FROM Votes WHERE option_id = $1;", option_id)
+				.execute(&self.pool)
+				.await
+				.context(DELETE_ERROR)?
+				.rows_affected(),
+		)
+	}
+
+	pub async fn delete_all_votes(&self) -> Result<u64> {
+		Ok(sqlx::query!("DELETE FROM Votes;")
 			.execute(&self.pool)
 			.await
 			.context(DELETE_ERROR)?
