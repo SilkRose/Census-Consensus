@@ -69,6 +69,68 @@ impl Db {
 		.context(INSERT_ERROR)
 	}
 
+	pub async fn get_user(&self, id: i32) -> Result<Option<User>> {
+		sqlx::query_as!(
+			User,
+			r#"SELECT
+				id, name, pfp_url, type AS "user_type: UserType",
+				feedback_private, feedback_public, date_joined
+			FROM Users WHERE id = $1 LIMIT 1;"#,
+			id,
+		)
+		.fetch_optional(&self.pool)
+		.await
+		.context(SELECT_ERROR)
+	}
+
+	pub async fn get_all_users(&self) -> Result<Vec<User>> {
+		sqlx::query_as!(
+			User,
+			r#"SELECT
+				id, name, pfp_url, type AS "user_type: UserType",
+				feedback_private, feedback_public, date_joined
+			FROM Users;"#,
+		)
+		.fetch_all(&self.pool)
+		.await
+		.context(SELECT_ERROR)
+	}
+
+	pub async fn update_user_feedback(
+		&self, id: i32, private_msg: &str, public_msg: &str,
+	) -> Result<u64> {
+		Ok(sqlx::query!(
+			"UPDATE Users
+			SET
+				feedback_private = $2,
+				feedback_public = $3
+			WHERE id = $1;",
+			id,
+			private_msg,
+			public_msg
+		)
+		.execute(&self.pool)
+		.await
+		.context(UPDATE_ERROR)?
+		.rows_affected())
+	}
+
+	pub async fn delete_user(&self, id: i32) -> Result<u64> {
+		Ok(sqlx::query!(r#"DELETE FROM Users WHERE id = $1;"#, id)
+			.execute(&self.pool)
+			.await
+			.context(DELETE_ERROR)?
+			.rows_affected())
+	}
+
+	pub async fn delete_all_users(&self) -> Result<u64> {
+		Ok(sqlx::query!(r#"DELETE FROM Users;"#)
+			.execute(&self.pool)
+			.await
+			.context(DELETE_ERROR)?
+			.rows_affected())
+	}
+
 	pub async fn insert_session(&self, token: &str, user_id: i32) -> Result<Session> {
 		sqlx::query_as!(
 			Session,
