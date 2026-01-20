@@ -180,6 +180,34 @@ impl Db {
 			.context(SELECT_ERROR)
 	}
 
+	pub async fn delete_session(&self, token: &str) -> Result<u64> {
+		Ok(
+			sqlx::query!(r#"DELETE FROM Tokens WHERE token = $1;"#, token)
+				.execute(&self.pool)
+				.await
+				.context(DELETE_ERROR)?
+				.rows_affected(),
+		)
+	}
+
+	pub async fn delete_sessions_by_user_id(&self, user_id: i32) -> Result<u64> {
+		Ok(
+			sqlx::query!(r#"DELETE FROM Tokens WHERE user_id = $1;"#, user_id)
+				.execute(&self.pool)
+				.await
+				.context(DELETE_ERROR)?
+				.rows_affected(),
+		)
+	}
+
+	pub async fn delete_all_sessions(&self) -> Result<u64> {
+		Ok(sqlx::query!(r#"DELETE FROM Tokens;"#)
+			.execute(&self.pool)
+			.await
+			.context(DELETE_ERROR)?
+			.rows_affected())
+	}
+
 	pub async fn insert_banned_user(&self, user_id: i32, reason: &str) -> Result<BannedUser> {
 		sqlx::query_as!(
 			BannedUser,
