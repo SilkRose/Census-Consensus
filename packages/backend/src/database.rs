@@ -116,7 +116,7 @@ impl Db {
 	}
 
 	pub async fn delete_user(&self, id: i32) -> Result<u64> {
-		Ok(sqlx::query!(r#"DELETE FROM Users WHERE id = $1;"#, id)
+		Ok(sqlx::query!("DELETE FROM Users WHERE id = $1;", id)
 			.execute(&self.pool)
 			.await
 			.context(DELETE_ERROR)?
@@ -124,7 +124,7 @@ impl Db {
 	}
 
 	pub async fn delete_all_users(&self) -> Result<u64> {
-		Ok(sqlx::query!(r#"DELETE FROM Users;"#)
+		Ok(sqlx::query!("DELETE FROM Users;")
 			.execute(&self.pool)
 			.await
 			.context(DELETE_ERROR)?
@@ -181,18 +181,16 @@ impl Db {
 	}
 
 	pub async fn delete_session(&self, token: &str) -> Result<u64> {
-		Ok(
-			sqlx::query!(r#"DELETE FROM Tokens WHERE token = $1;"#, token)
-				.execute(&self.pool)
-				.await
-				.context(DELETE_ERROR)?
-				.rows_affected(),
-		)
+		Ok(sqlx::query!("DELETE FROM Tokens WHERE token = $1;", token)
+			.execute(&self.pool)
+			.await
+			.context(DELETE_ERROR)?
+			.rows_affected())
 	}
 
 	pub async fn delete_sessions_by_user_id(&self, user_id: i32) -> Result<u64> {
 		Ok(
-			sqlx::query!(r#"DELETE FROM Tokens WHERE user_id = $1;"#, user_id)
+			sqlx::query!("DELETE FROM Tokens WHERE user_id = $1;", user_id)
 				.execute(&self.pool)
 				.await
 				.context(DELETE_ERROR)?
@@ -201,7 +199,7 @@ impl Db {
 	}
 
 	pub async fn delete_all_sessions(&self) -> Result<u64> {
-		Ok(sqlx::query!(r#"DELETE FROM Tokens;"#)
+		Ok(sqlx::query!("DELETE FROM Tokens;")
 			.execute(&self.pool)
 			.await
 			.context(DELETE_ERROR)?
@@ -314,7 +312,7 @@ impl Db {
 
 	pub async fn delete_story_update(&self, date_cached: DateTime<Utc>) -> Result<u64> {
 		Ok(sqlx::query!(
-			r#"DELETE FROM Story_updates WHERE date_cached = $1;"#,
+			"DELETE FROM Story_updates WHERE date_cached = $1;",
 			date_cached
 		)
 		.execute(&self.pool)
@@ -327,8 +325,8 @@ impl Db {
 		&self, start: DateTime<Utc>, end: DateTime<Utc>,
 	) -> Result<u64> {
 		Ok(sqlx::query!(
-			r#"DELETE FROM Story_updates
-			WHERE date_cached > $1 AND date_cached > $2;"#,
+			"DELETE FROM Story_updates
+			WHERE date_cached > $1 AND date_cached > $2;",
 			start,
 			end
 		)
@@ -339,7 +337,7 @@ impl Db {
 	}
 
 	pub async fn delete_all_story_updates(&self) -> Result<u64> {
-		Ok(sqlx::query!(r#"DELETE FROM Story_updates;"#)
+		Ok(sqlx::query!("DELETE FROM Story_updates;")
 			.execute(&self.pool)
 			.await
 			.context(DELETE_ERROR)?
