@@ -311,4 +311,38 @@ impl Db {
 		.await
 		.context(SELECT_ERROR)
 	}
+
+	pub async fn delete_story_update(&self, date_cached: DateTime<Utc>) -> Result<u64> {
+		Ok(sqlx::query!(
+			r#"DELETE FROM Story_updates WHERE date_cached = $1;"#,
+			date_cached
+		)
+		.execute(&self.pool)
+		.await
+		.context(DELETE_ERROR)?
+		.rows_affected())
+	}
+
+	pub async fn delete_story_updates_in_range(
+		&self, start: DateTime<Utc>, end: DateTime<Utc>,
+	) -> Result<u64> {
+		Ok(sqlx::query!(
+			r#"DELETE FROM Story_updates
+			WHERE date_cached > $1 AND date_cached > $2;"#,
+			start,
+			end
+		)
+		.execute(&self.pool)
+		.await
+		.context(DELETE_ERROR)?
+		.rows_affected())
+	}
+
+	pub async fn delete_all_story_updates(&self) -> Result<u64> {
+		Ok(sqlx::query!(r#"DELETE FROM Story_updates;"#)
+			.execute(&self.pool)
+			.await
+			.context(DELETE_ERROR)?
+			.rows_affected())
+	}
 }
