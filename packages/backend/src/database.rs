@@ -1,4 +1,6 @@
-use crate::structs::{BannedUser, Chapter, Session, StoryUpdate, Table, User, UserType, Vote};
+use crate::structs::{
+	BannedUser, Chapter, Session, StoryUpdate, Table, User, UserType, Vote, Writing,
+};
 use anyhow::{Context as _, Result};
 use chrono::{DateTime, Utc};
 use pony::fimfiction_api::story::StoryData;
@@ -456,6 +458,67 @@ impl Db {
 
 	pub async fn delete_all_chapters(&self) -> Result<u64> {
 		Ok(sqlx::query!("DELETE FROM Chapters;")
+			.execute(&self.pool)
+			.await
+			.context(DELETE_ERROR)?
+			.rows_affected())
+	}
+
+	pub async fn insert_writing(
+		&self, text: &str, creator_id: i32, previous_id: Option<i32>,
+	) -> Result<Writing> {
+		sqlx::query_as!(
+			Writing,
+			"INSERT INTO Writings
+				(writing, created_by, previous_revision)
+			VALUES
+				($1, $2, $3)
+			RETURNING
+				id, writing, created_by, previous_revision, date_created;",
+			text,
+			creator_id,
+			previous_id
+		)
+		.fetch_one(&self.pool)
+		.await
+		.context(INSERT_ERROR)
+	}
+
+	pub async fn get_writing(&self, id: i32) -> Result<Option<Writing>> {
+		sqlx::query_as!(
+			Writing,
+			"SELECT
+				id, writing, created_by, previous_revision, date_created
+			FROM Writings WHERE id = $1 LIMIT 1;",
+			id,
+		)
+		.fetch_optional(&self.pool)
+		.await
+		.context(SELECT_ERROR)
+	}
+
+	pub async fn get_all_writings(&self) -> Result<Vec<Writing>> {
+		sqlx::query_as!(
+			Writing,
+			"SELECT
+				id, writing, created_by, previous_revision, date_created
+			FROM Writings;",
+		)
+		.fetch_all(&self.pool)
+		.await
+		.context(SELECT_ERROR)
+	}
+
+	pub async fn delete_writing(&self, id: i32) -> Result<u64> {
+		Ok(sqlx::query!("DELETE FROM Writings WHERE id = $1;", id)
+			.execute(&self.pool)
+			.await
+			.context(DELETE_ERROR)?
+			.rows_affected())
+	}
+
+	pub async fn delete_all_writings(&self) -> Result<u64> {
+		Ok(sqlx::query!("DELETE FROM Writings;")
 			.execute(&self.pool)
 			.await
 			.context(DELETE_ERROR)?
