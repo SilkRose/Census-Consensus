@@ -1,5 +1,5 @@
 use crate::structs::{
-	BannedUser, Chapter, Session, StoryUpdate, Table, User, UserType, Vote, Writing,
+	BannedUser, Chapter, QuestionOption, Session, StoryUpdate, Table, User, UserType, Vote, Writing,
 };
 use anyhow::{Context as _, Result};
 use chrono::{DateTime, Utc};
@@ -519,6 +519,155 @@ impl Db {
 
 	pub async fn delete_all_writings(&self) -> Result<u64> {
 		Ok(sqlx::query!("DELETE FROM Writings;")
+			.execute(&self.pool)
+			.await
+			.context(DELETE_ERROR)?
+			.rows_affected())
+	}
+
+	pub async fn insert_option(
+		&self, question_id: i32, option_number: i32, text: &str, order_rank: i32,
+	) -> Result<QuestionOption> {
+		sqlx::query_as!(
+			QuestionOption,
+			"INSERT INTO Options
+				(question_id, option_number, text, order_rank)
+			VALUES
+				($1, $2, $3, $4)
+			RETURNING
+				id, question_id, option_number, text,
+				writing_id, order_rank, date_created;",
+			question_id,
+			option_number,
+			text,
+			order_rank
+		)
+		.fetch_one(&self.pool)
+		.await
+		.context(INSERT_ERROR)
+	}
+
+	pub async fn get_option(&self, id: i32) -> Result<Option<QuestionOption>> {
+		sqlx::query_as!(
+			QuestionOption,
+			"SELECT
+				id, question_id, option_number, text,
+				writing_id, order_rank, date_created
+			FROM Options WHERE id = $1 LIMIT 1;",
+			id,
+		)
+		.fetch_optional(&self.pool)
+		.await
+		.context(SELECT_ERROR)
+	}
+
+	pub async fn get_options_by_question(&self, question_id: i32) -> Result<Vec<QuestionOption>> {
+		sqlx::query_as!(
+			QuestionOption,
+			"SELECT
+				id, question_id, option_number, text,
+				writing_id, order_rank, date_created
+			FROM Options WHERE question_id = $1 LIMIT 1;",
+			question_id,
+		)
+		.fetch_all(&self.pool)
+		.await
+		.context(SELECT_ERROR)
+	}
+
+	pub async fn get_all_options(&self) -> Result<Vec<QuestionOption>> {
+		sqlx::query_as!(
+			QuestionOption,
+			"SELECT
+				id, question_id, option_number, text,
+				writing_id, order_rank, date_created
+			FROM Options;",
+		)
+		.fetch_all(&self.pool)
+		.await
+		.context(SELECT_ERROR)
+	}
+
+	pub async fn update_option_number(&self, id: i32, number: i32) -> Result<u64> {
+		Ok(sqlx::query!(
+			"UPDATE Options
+			SET
+				option_number = $2
+			WHERE id = $1;",
+			id,
+			number
+		)
+		.execute(&self.pool)
+		.await
+		.context(UPDATE_ERROR)?
+		.rows_affected())
+	}
+
+	pub async fn update_option_text(&self, id: i32, text: &str) -> Result<u64> {
+		Ok(sqlx::query!(
+			"UPDATE Options
+			SET
+				text = $2
+			WHERE id = $1;",
+			id,
+			text
+		)
+		.execute(&self.pool)
+		.await
+		.context(UPDATE_ERROR)?
+		.rows_affected())
+	}
+
+	pub async fn update_option_writing_id(&self, id: i32, writing_id: Option<i32>) -> Result<u64> {
+		Ok(sqlx::query!(
+			"UPDATE Options
+			SET
+				writing_id = $2
+			WHERE id = $1;",
+			id,
+			writing_id
+		)
+		.execute(&self.pool)
+		.await
+		.context(UPDATE_ERROR)?
+		.rows_affected())
+	}
+
+	pub async fn update_option_order_rank(&self, id: i32, order_rank: i32) -> Result<u64> {
+		Ok(sqlx::query!(
+			"UPDATE Options
+			SET
+				order_rank = $2
+			WHERE id = $1;",
+			id,
+			order_rank
+		)
+		.execute(&self.pool)
+		.await
+		.context(UPDATE_ERROR)?
+		.rows_affected())
+	}
+
+	pub async fn delete_option(&self, id: i32) -> Result<u64> {
+		Ok(sqlx::query!("DELETE FROM Options WHERE id = $1;", id)
+			.execute(&self.pool)
+			.await
+			.context(DELETE_ERROR)?
+			.rows_affected())
+	}
+
+	pub async fn delete_options_by_question_id(&self, question_id: i32) -> Result<u64> {
+		Ok(
+			sqlx::query!("DELETE FROM Options WHERE question_id = $1;", question_id)
+				.execute(&self.pool)
+				.await
+				.context(DELETE_ERROR)?
+				.rows_affected(),
+		)
+	}
+
+	pub async fn delete_all_options(&self) -> Result<u64> {
+		Ok(sqlx::query!("DELETE FROM options;")
 			.execute(&self.pool)
 			.await
 			.context(DELETE_ERROR)?
