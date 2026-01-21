@@ -1,4 +1,4 @@
-use crate::structs::{BannedUser, Session, StoryUpdate, Table, User, UserType, Vote};
+use crate::structs::{BannedUser, Chapter, Session, StoryUpdate, Table, User, UserType, Vote};
 use anyhow::{Context as _, Result};
 use chrono::{DateTime, Utc};
 use pony::fimfiction_api::story::StoryData;
@@ -276,6 +276,186 @@ impl Db {
 
 	pub async fn delete_all_banned_users(&self) -> Result<u64> {
 		Ok(sqlx::query!("DELETE FROM Banned_users;")
+			.execute(&self.pool)
+			.await
+			.context(DELETE_ERROR)?
+			.rows_affected())
+	}
+
+	pub async fn insert_chapter(&self, title: &str, vote_duration: i32) -> Result<Chapter> {
+		sqlx::query_as!(
+			Chapter,
+			"INSERT INTO Chapters
+				(title, vote_duration)
+			VALUES
+				($1, $2)
+			RETURNING
+				id, title, vote_duration, minutes_left, fimfic_ch_id,
+				intro_text, outro_text, chapter_order, date_created;",
+			title,
+			vote_duration
+		)
+		.fetch_one(&self.pool)
+		.await
+		.context(INSERT_ERROR)
+	}
+
+	pub async fn get_chapter(&self, id: i32) -> Result<Option<Chapter>> {
+		sqlx::query_as!(
+			Chapter,
+			"SELECT
+				id, title, vote_duration, minutes_left, fimfic_ch_id,
+				intro_text, outro_text, chapter_order, date_created
+			FROM Chapters WHERE id = $1 LIMIT 1;",
+			id,
+		)
+		.fetch_optional(&self.pool)
+		.await
+		.context(SELECT_ERROR)
+	}
+
+	pub async fn get_chapter_by_order(&self, order: i32) -> Result<Option<Chapter>> {
+		sqlx::query_as!(
+			Chapter,
+			"SELECT
+				id, title, vote_duration, minutes_left, fimfic_ch_id,
+				intro_text, outro_text, chapter_order, date_created
+			FROM Chapters WHERE chapter_order = $1 LIMIT 1;",
+			order,
+		)
+		.fetch_optional(&self.pool)
+		.await
+		.context(SELECT_ERROR)
+	}
+
+	pub async fn get_all_chapters(&self) -> Result<Vec<Chapter>> {
+		sqlx::query_as!(
+			Chapter,
+			"SELECT
+				id, title, vote_duration, minutes_left, fimfic_ch_id,
+				intro_text, outro_text, chapter_order, date_created
+			FROM Chapters;",
+		)
+		.fetch_all(&self.pool)
+		.await
+		.context(SELECT_ERROR)
+	}
+
+	pub async fn update_chapter_title(&self, id: i32, title: &str) -> Result<u64> {
+		Ok(sqlx::query!(
+			"UPDATE Chapters
+			SET
+				title = $2
+			WHERE id = $1;",
+			id,
+			title
+		)
+		.execute(&self.pool)
+		.await
+		.context(UPDATE_ERROR)?
+		.rows_affected())
+	}
+
+	pub async fn update_chapter_vote_duration(&self, id: i32, duration: i32) -> Result<u64> {
+		Ok(sqlx::query!(
+			"UPDATE Chapters
+			SET
+				vote_duration = $2
+			WHERE id = $1;",
+			id,
+			duration
+		)
+		.execute(&self.pool)
+		.await
+		.context(UPDATE_ERROR)?
+		.rows_affected())
+	}
+
+	pub async fn update_chapter_minutes_left(&self, id: i32, minutes: i32) -> Result<u64> {
+		Ok(sqlx::query!(
+			"UPDATE Chapters
+			SET
+				minutes_left = $2
+			WHERE id = $1;",
+			id,
+			minutes
+		)
+		.execute(&self.pool)
+		.await
+		.context(UPDATE_ERROR)?
+		.rows_affected())
+	}
+
+	pub async fn update_chapter_fimfic_id(&self, id: i32, fimfic_id: i32) -> Result<u64> {
+		Ok(sqlx::query!(
+			"UPDATE Chapters
+			SET
+				fimfic_ch_id = $2
+			WHERE id = $1;",
+			id,
+			fimfic_id
+		)
+		.execute(&self.pool)
+		.await
+		.context(UPDATE_ERROR)?
+		.rows_affected())
+	}
+
+	pub async fn update_chapter_intro(&self, id: i32, text: &str) -> Result<u64> {
+		Ok(sqlx::query!(
+			"UPDATE Chapters
+			SET
+				intro_text = $2
+			WHERE id = $1;",
+			id,
+			text
+		)
+		.execute(&self.pool)
+		.await
+		.context(UPDATE_ERROR)?
+		.rows_affected())
+	}
+
+	pub async fn update_chapter_outro(&self, id: i32, text: &str) -> Result<u64> {
+		Ok(sqlx::query!(
+			"UPDATE Chapters
+			SET
+				outro_text = $2
+			WHERE id = $1;",
+			id,
+			text
+		)
+		.execute(&self.pool)
+		.await
+		.context(UPDATE_ERROR)?
+		.rows_affected())
+	}
+
+	pub async fn update_chapter_ordering(&self, id: i32, order: i32) -> Result<u64> {
+		Ok(sqlx::query!(
+			"UPDATE Chapters
+			SET
+				chapter_order = $2
+			WHERE id = $1;",
+			id,
+			order
+		)
+		.execute(&self.pool)
+		.await
+		.context(UPDATE_ERROR)?
+		.rows_affected())
+	}
+
+	pub async fn delete_chapter(&self, id: i32) -> Result<u64> {
+		Ok(sqlx::query!("DELETE FROM Chapters WHERE id = $1;", id)
+			.execute(&self.pool)
+			.await
+			.context(DELETE_ERROR)?
+			.rows_affected())
+	}
+
+	pub async fn delete_all_chapters(&self) -> Result<u64> {
+		Ok(sqlx::query!("DELETE FROM Chapters;")
 			.execute(&self.pool)
 			.await
 			.context(DELETE_ERROR)?
