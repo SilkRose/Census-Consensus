@@ -1,4 +1,4 @@
-use crate::html_templates::form_html_template;
+use crate::endpoints::{form_page, user_feedback};
 
 pub use self::auth::fimfic_auth;
 pub use self::database::Db;
@@ -11,31 +11,15 @@ pub use actix_web::web::ThinData as Data;
 pub use actix_web::{App as ActixApp, HttpServer};
 pub use anyhow::Result;
 
-use actix_web::{HttpRequest, HttpResponse, Responder, get, post};
-use std::error::Error;
-
 mod auth;
 mod database;
+mod endpoints;
 mod env_vars;
 mod fimfic_cfg;
 mod html_templates;
 mod http;
 mod rand;
 mod structs;
-
-#[get("/form-page")]
-async fn form_page() -> Result<impl Responder, Box<dyn Error>> {
-	Ok(HttpResponse::Ok()
-		.content_type("text/html; charset=utf-8")
-		.body(form_html_template()))
-}
-
-#[post("/form-endpoint")]
-async fn form_endpoint(_req: HttpRequest, body: String) -> Result<impl Responder, Box<dyn Error>> {
-	Ok(HttpResponse::Ok()
-		.content_type("text/html; charset=utf-8")
-		.body(body))
-}
 
 fn main() -> Result<()> {
 	// SAFETY: we do this before doing anything else in the program, including
@@ -73,7 +57,7 @@ async fn async_main() -> Result<()> {
 		ActixApp::new()
 			.service(fimfic_auth)
 			.service(form_page)
-			.service(form_endpoint)
+			.service(user_feedback)
 			.service(Files::new("/", "./target/site").index_file("index.html"))
 			.app_data(db.clone())
 			.app_data(fimfic.clone())
