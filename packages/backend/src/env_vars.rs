@@ -94,4 +94,10 @@ declare_env_fn! {
 
 	/// fimfic oauth2 redirect url
 	fimfic_oauth_redirect_url() -> "FIMFIC_OAUTH_REDIRECT_URL"
+
+	/// If this is set, the application will create and print a session token
+	/// for the fimfic user behind `BEARER_TOKEN`
+	///
+	/// This should not be set in production environments for security reasons
+	(optional) create_dev_session() -> "CREATE_DEV_SESSION"
 }
