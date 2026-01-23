@@ -1,4 +1,5 @@
 use crate::endpoints::{form_page, user_feedback};
+use crate::structs::UserType;
 
 pub use self::auth::fimfic_auth;
 pub use self::database::Db;
@@ -50,6 +51,19 @@ async fn async_main() -> Result<()> {
 
 	let http_client = HttpClient::new()?;
 	let http_client = Data::new(http_client);
+
+	let admin_id = env_vars::admin_id().parse::<i32>()?;
+	let bearer_token = env_vars::bearer_token();
+	let admin = db.get_user(admin_id).await?;
+	if let Some(admin) = admin {
+		if admin.user_type != UserType::Admin {
+			db.update_user_role(admin_id, UserType::Admin).await?;
+		}
+	} else {
+		let admin = http_client.get_fimfic_user(admin_id, &bearer_token).await?;
+		db.insert_user(admin_id, &admin.data, UserType::Admin)
+			.await?;
+	}
 
 	println!("listening on 127.0.0.1:3000");
 

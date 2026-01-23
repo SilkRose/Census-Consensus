@@ -99,6 +99,21 @@ impl Db {
 		.context(SELECT_ERROR)
 	}
 
+	pub async fn update_user_role(&self, id: i32, role: UserType) -> Result<u64> {
+		Ok(sqlx::query!(
+			"UPDATE Users
+			SET
+				type = $2
+			WHERE id = $1;",
+			id,
+			role as _
+		)
+		.execute(&self.pool)
+		.await
+		.context(UPDATE_ERROR)?
+		.rows_affected())
+	}
+
 	pub async fn update_user_feedback(
 		&self, id: i32, private_msg: &str, public_msg: &str,
 	) -> Result<u64> {
