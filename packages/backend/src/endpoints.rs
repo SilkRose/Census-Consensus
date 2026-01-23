@@ -1,4 +1,5 @@
 use crate::{Db, html_templates::form_html_template};
+use crate::error::ErrorWrapper;
 use actix_web::{HttpRequest, HttpResponse, Responder, get, post, web::Data};
 use std::collections::HashMap;
 
@@ -24,10 +25,10 @@ pub async fn user_feedback(
 		.and_then(|msg| if msg.is_empty() { None } else { Some(msg) });
 
 	if let Some(token) = req.cookie("fimfic-auth-session-info") {
-		let session = db.get_session_by_token(token.value()).await;
-		if let Ok(session) = session {
-			if let Some(session) = session {}
-		}
+		let session = db.get_session_by_token(token.value()).await.map_err(ErrorWrapper)?;
+		// if let Ok(session) = session {
+		// 	if let Some(session) = session {}
+		// }
 	}
 
 	let redirect_to = req

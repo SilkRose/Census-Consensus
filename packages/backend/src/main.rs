@@ -14,6 +14,7 @@ pub use anyhow::Result;
 mod auth;
 mod database;
 mod endpoints;
+mod error;
 mod env_vars;
 mod fimfic_cfg;
 mod html_templates;
