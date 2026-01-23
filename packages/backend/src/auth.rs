@@ -5,7 +5,7 @@ use crate::rand::{ gen_auth_state, gen_auth_token };
 use crate::structs::UserType;
 use actix_web::get;
 use actix_web::{ HttpRequest, HttpResponse };
-use actix_web::web::{ Data, Query };
+use actix_web::web::{ ThinData as Data, Query };
 use bon::builder;
 use serde::{ Deserialize, Serialize };
 use std::borrow::Cow;

@@ -7,7 +7,7 @@ pub use self::http::HttpClient;
 
 pub use actix_files::Files;
 pub use actix_web::middleware::Compress;
-pub use actix_web::web::Data;
+pub use actix_web::web::ThinData as Data;
 pub use actix_web::{App as ActixApp, HttpServer};
 pub use anyhow::Result;
 
@@ -51,21 +51,21 @@ async fn async_main() -> Result<()> {
 	env_vars::check();
 
 	let db = Db::new(&env_vars::database_url()).await?;
-	let db = Data::new(db);
+	let db = Data(db);
 
 	let client_id = env_vars::fimfic_client_id();
 	let oauth_redirect_url = env_vars::fimfic_oauth_redirect_url();
 	let login_url = fimfic_cfg::make_login_url(&client_id, &oauth_redirect_url);
-	let fimfic_cfg = FimficCfg {
-		client_id,
-		client_secret: env_vars::fimfic_client_secret(),
-		oauth_redirect_url,
-		login_url,
-	};
-	let fimfic = Data::new(fimfic_cfg);
+	let fimfic_cfg = FimficCfg::builder()
+		.client_id(client_id)
+		.client_secret(env_vars::fimfic_client_secret())
+		.oauth_redirect_url(oauth_redirect_url)
+		.login_url(login_url)
+		.build();
+	let fimfic = Data(fimfic_cfg);
 
 	let http_client = HttpClient::new()?;
-	let http_client = Data::new(http_client);
+	let http_client = Data(http_client);
 
 	println!("listening on 127.0.0.1:3000");
 

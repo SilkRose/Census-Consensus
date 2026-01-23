@@ -1,10 +1,47 @@
+use bon::bon;
+use std::ops::Deref;
+use std::sync::Arc;
+
+#[derive(Clone)]
 pub struct FimficCfg {
+	inner: Arc<FimficCfgInner>
+}
+
+pub struct FimficCfgInner {
 	pub client_id: Box<str>,
 	pub client_secret: Box<str>,
 	pub oauth_redirect_url: Box<str>,
 	/// Login URL except missing state (ie. `format!("{url}&state={state}")` to
 	/// get a complete URL)
 	pub login_url: Box<str>
+}
+
+#[bon]
+impl FimficCfg {
+	#[builder]
+	pub fn new(
+		client_id: Box<str>,
+		client_secret: Box<str>,
+		oauth_redirect_url: Box<str>,
+		login_url: Box<str>
+	) -> Self {
+		Self {
+			inner: Arc::new(FimficCfgInner {
+				client_id,
+				client_secret,
+				oauth_redirect_url,
+				login_url
+			})
+		}
+	}
+}
+
+impl Deref for FimficCfg {
+	type Target = FimficCfgInner;
+
+	fn deref(&self) -> &FimficCfgInner {
+		&self.inner
+	}
 }
 
 /// Makes a login url, purposefully without scope so we can reuse this and
