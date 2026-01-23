@@ -12,6 +12,7 @@ pub use actix_web::{App as ActixApp, HttpServer};
 pub use anyhow::Result;
 
 use actix_web::{HttpRequest, HttpResponse, Responder, get, post};
+use std::collections::HashMap;
 use std::error::Error;
 
 mod auth;
@@ -32,9 +33,10 @@ async fn form_page() -> Result<impl Responder, Box<dyn Error>> {
 
 #[post("/form-endpoint")]
 async fn form_endpoint(_req: HttpRequest, body: String) -> Result<impl Responder, Box<dyn Error>> {
+	let params = serde_urlencoded::from_str::<HashMap<String, String>>(&body)?;
 	Ok(HttpResponse::Ok()
 		.content_type("text/html; charset=utf-8")
-		.body(body))
+		.body(format!("{params:#?}")))
 }
 
 fn main() -> Result<()> {
