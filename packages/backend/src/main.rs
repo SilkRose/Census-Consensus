@@ -1,4 +1,4 @@
-use crate::endpoints::{form_endpoint, form_page};
+use crate::endpoints::{form_page, user_feedback};
 
 pub use self::auth::fimfic_auth;
 pub use self::database::Db;
@@ -57,7 +57,7 @@ async fn async_main() -> Result<()> {
 		ActixApp::new()
 			.service(fimfic_auth)
 			.service(form_page)
-			.service(form_endpoint)
+			.service(user_feedback)
 			.service(Files::new("/", "./target/site").index_file("index.html"))
 			.app_data(db.clone())
 			.app_data(fimfic.clone())
