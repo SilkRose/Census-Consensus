@@ -5,6 +5,7 @@ use reqwest::{ Client as ReqwestClient, IntoUrl, RequestBuilder };
 use serde::Deserialize;
 use std::borrow::Cow;
 
+#[derive(Clone)]
 pub struct HttpClient {
 	inner: ReqwestClient
 }

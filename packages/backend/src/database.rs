@@ -18,6 +18,7 @@ const DELETE_ERROR: &str = "database deletion error";
 // Tables: users, tokens, banned users, chapters, questions, writings, options, votes, story updates
 // Methods: insert, select one, select many, update, delete one, delete all
 
+#[derive(Clone)]
 pub struct Db {
 	pool: Pool<Postgres>,
 }
