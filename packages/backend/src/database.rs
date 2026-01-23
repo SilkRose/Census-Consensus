@@ -1,5 +1,6 @@
 use crate::structs::{
-	BannedUser, Chapter, QuestionOption, Session, StoryUpdate, Table, User, UserType, Vote, Writing,
+	BannedUser, Chapter, Question, QuestionOption, QuestionType, Session, StoryUpdate, Table, User,
+	UserType, Vote, Writing,
 };
 use anyhow::{Context as _, Result};
 use chrono::{DateTime, Utc};
@@ -519,6 +520,231 @@ impl Db {
 
 	pub async fn delete_all_writings(&self) -> Result<u64> {
 		Ok(sqlx::query!("DELETE FROM Writings;")
+			.execute(&self.pool)
+			.await
+			.context(DELETE_ERROR)?
+			.rows_affected())
+	}
+
+	pub async fn insert_question(
+		&self, text: &str, question_type: QuestionType, percent: f64, asked_by: &str,
+		creator_id: i32, claiment_id: Option<i32>,
+	) -> Result<Question> {
+		sqlx::query_as!(
+			Question,
+			r#"INSERT INTO Questions
+				(text, type, response_percent, asked_by, created_by, claimed_by)
+			VALUES
+				($1, $2, $3, $4, $5, $6)
+			RETURNING
+				id, text, type AS "type: QuestionType", response_percent, asked_by, created_by,
+				claimed_by, chapter_id, chapter_order, latest_writing, date_created;"#,
+			text,
+			question_type as _,
+			percent,
+			asked_by,
+			creator_id,
+			claiment_id
+		)
+		.fetch_one(&self.pool)
+		.await
+		.context(INSERT_ERROR)
+	}
+
+	pub async fn get_question(&self, id: i32) -> Result<Option<Question>> {
+		sqlx::query_as!(
+			Question,
+			r#"SELECT
+				id, text, type AS "type: QuestionType", response_percent, asked_by, created_by,
+				claimed_by, chapter_id, chapter_order, latest_writing, date_created
+			FROM Questions WHERE id = $1 LIMIT 1;"#,
+			id,
+		)
+		.fetch_optional(&self.pool)
+		.await
+		.context(SELECT_ERROR)
+	}
+
+	pub async fn get_questions_by_chapter(&self, chapter_id: Option<i32>) -> Result<Vec<Question>> {
+		sqlx::query_as!(
+			Question,
+			r#"SELECT
+				id, text, type AS "type: QuestionType", response_percent, asked_by, created_by,
+				claimed_by, chapter_id, chapter_order, latest_writing, date_created
+			FROM Questions WHERE chapter_id = $1;"#,
+			chapter_id
+		)
+		.fetch_all(&self.pool)
+		.await
+		.context(SELECT_ERROR)
+	}
+
+	pub async fn get_questions_by_crator(&self, creator_id: i32) -> Result<Vec<Question>> {
+		sqlx::query_as!(
+			Question,
+			r#"SELECT
+				id, text, type AS "type: QuestionType", response_percent, asked_by, created_by,
+				claimed_by, chapter_id, chapter_order, latest_writing, date_created
+			FROM Questions WHERE created_by = $1;"#,
+			creator_id
+		)
+		.fetch_all(&self.pool)
+		.await
+		.context(SELECT_ERROR)
+	}
+
+	pub async fn get_questions_by_claiment(
+		&self, claiment_id: Option<i32>,
+	) -> Result<Vec<Question>> {
+		sqlx::query_as!(
+			Question,
+			r#"SELECT
+				id, text, type AS "type: QuestionType", response_percent, asked_by, created_by,
+				claimed_by, chapter_id, chapter_order, latest_writing, date_created
+			FROM Questions WHERE claimed_by = $1;"#,
+			claiment_id
+		)
+		.fetch_all(&self.pool)
+		.await
+		.context(SELECT_ERROR)
+	}
+
+	pub async fn get_all_questions(&self) -> Result<Vec<Question>> {
+		sqlx::query_as!(
+			Question,
+			r#"SELECT
+				id, text, type AS "type: QuestionType", response_percent, asked_by, created_by,
+				claimed_by, chapter_id, chapter_order, latest_writing, date_created
+			FROM Questions;"#,
+		)
+		.fetch_all(&self.pool)
+		.await
+		.context(SELECT_ERROR)
+	}
+
+	pub async fn update_question_text(&self, id: i32, text: &str) -> Result<u64> {
+		Ok(sqlx::query!(
+			"UPDATE Questions
+			SET
+				text = $2
+			WHERE id = $1;",
+			id,
+			text
+		)
+		.execute(&self.pool)
+		.await
+		.context(UPDATE_ERROR)?
+		.rows_affected())
+	}
+
+	pub async fn update_question_repsonse_percent(&self, id: i32, percent: f64) -> Result<u64> {
+		Ok(sqlx::query!(
+			"UPDATE Questions
+			SET
+				response_percent = $2
+			WHERE id = $1;",
+			id,
+			percent
+		)
+		.execute(&self.pool)
+		.await
+		.context(UPDATE_ERROR)?
+		.rows_affected())
+	}
+
+	pub async fn update_question_asked_by(&self, id: i32, asked_by: &str) -> Result<u64> {
+		Ok(sqlx::query!(
+			"UPDATE Questions
+			SET
+				asked_by = $2
+			WHERE id = $1;",
+			id,
+			asked_by
+		)
+		.execute(&self.pool)
+		.await
+		.context(UPDATE_ERROR)?
+		.rows_affected())
+	}
+
+	pub async fn update_question_claimed_by(
+		&self, id: i32, claimed_by: Option<i32>,
+	) -> Result<u64> {
+		Ok(sqlx::query!(
+			"UPDATE Questions
+			SET
+				claimed_by = $2
+			WHERE id = $1;",
+			id,
+			claimed_by
+		)
+		.execute(&self.pool)
+		.await
+		.context(UPDATE_ERROR)?
+		.rows_affected())
+	}
+
+	pub async fn update_question_chapter_id(
+		&self, id: i32, chapter_id: Option<i32>,
+	) -> Result<u64> {
+		Ok(sqlx::query!(
+			"UPDATE Questions
+			SET
+				chapter_id = $2
+			WHERE id = $1;",
+			id,
+			chapter_id
+		)
+		.execute(&self.pool)
+		.await
+		.context(UPDATE_ERROR)?
+		.rows_affected())
+	}
+
+	pub async fn update_question_chapter_order(
+		&self, id: i32, chapter_order: Option<i32>,
+	) -> Result<u64> {
+		Ok(sqlx::query!(
+			"UPDATE Questions
+			SET
+				chapter_order = $2
+			WHERE id = $1;",
+			id,
+			chapter_order
+		)
+		.execute(&self.pool)
+		.await
+		.context(UPDATE_ERROR)?
+		.rows_affected())
+	}
+
+	pub async fn update_question_latest_writing(
+		&self, id: i32, writing_id: Option<i32>,
+	) -> Result<u64> {
+		Ok(sqlx::query!(
+			"UPDATE Questions
+			SET
+				latest_writing = $2
+			WHERE id = $1;",
+			id,
+			writing_id
+		)
+		.execute(&self.pool)
+		.await
+		.context(UPDATE_ERROR)?
+		.rows_affected())
+	}
+
+	pub async fn delete_question(&self, id: i32) -> Result<u64> {
+		Ok(sqlx::query!("DELETE FROM Questions WHERE id = $1;", id)
+			.execute(&self.pool)
+			.await
+			.context(DELETE_ERROR)?
+			.rows_affected())
+	}
+
+	pub async fn delete_all_questions(&self) -> Result<u64> {
+		Ok(sqlx::query!("DELETE FROM Questions;")
 			.execute(&self.pool)
 			.await
 			.context(DELETE_ERROR)?
