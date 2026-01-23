@@ -1,4 +1,4 @@
-use std::env;
+use std::env::{ self, VarError };
 
 pub fn load_dotenv() {
 	if let Err(err) = dotenvy::dotenv() {
@@ -32,7 +32,7 @@ macro_rules! declare_env_fn {
 	{
 		$(
 			$(#[$meta:meta])*
-			$fn_name:ident() -> $env_name:literal
+			$(($optional:ident))? $fn_name:ident() -> $key:literal
 		)*
 	} => {
 		pub fn check() {
@@ -41,14 +41,41 @@ macro_rules! declare_env_fn {
 			)*
 		}
 
-		$(
-			$(#[$meta])*
-			pub fn $fn_name() -> Box<str> {
-				std::env::var($env_name)
-					.expect(concat!("environment variable `", $env_name, "` is not set"))
-					.into_boxed_str()
-			}
-		)*
+		$(declare_env_fn! { @helper $(($optional))? $fn_name $key })*
+	};
+
+	{
+		@helper
+		$(#[$meta:meta])*
+		$fn_name:ident $key:literal
+	} => {
+		$(#[$meta])*
+		pub fn $fn_name() -> Box<str> {
+			required_inner($key)
+		}
+	};
+	{
+		@helper
+		$(#[$meta:meta])*
+		(optional) $fn_name:ident $key:literal
+	} => {
+		$(#[$meta])*
+		pub fn $fn_name() -> Option<Box<str>> {
+			optional_inner($key)
+		}
+	};
+}
+
+fn required_inner(key: &str) -> Box<str> {
+	optional_inner(key)
+		.unwrap_or_else(|| panic!("environment variable `{key}` is not set"))
+}
+
+fn optional_inner(key: &str) -> Option<Box<str>> {
+	match env::var(key) {
+		Ok(var) => { Some(var.into_boxed_str()) }
+		Err(VarError::NotPresent) => { None }
+		Err(VarError::NotUnicode(_)) => { panic!("environment variable `{key}` is set, but not valid UTF-8") }
 	}
 }
 
