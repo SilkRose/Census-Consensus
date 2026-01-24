@@ -103,7 +103,7 @@ async fn fimfic_auth_return(
 
 	let FimficTokenExchangeResponse {
 		id,
-		name,
+		name: _,
 		access_token
 	} = match http_client.fimfic_token_exchange(&fimfic_cfg, &code).await {
 		Ok(res) => { res }
