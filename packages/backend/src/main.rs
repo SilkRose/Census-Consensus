@@ -26,16 +26,8 @@ mod rand;
 mod structs;
 mod utility;
 
-fn main() -> Result<()> {
-	// SAFETY: we do this before doing anything else in the program, including
-	// before creating an actix runtime, so this should be fine :3
-	unsafe { env_vars::set_required_vars() }
-
-	async_main()
-}
-
 #[actix_web::main]
-async fn async_main() -> Result<()> {
+async fn main() -> Result<()> {
 	env_vars::load_dotenv();
 	env_vars::check();
 

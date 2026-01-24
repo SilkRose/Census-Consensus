@@ -6,28 +6,6 @@ pub fn load_dotenv() {
 	}
 }
 
-/// Sets required environment variables with defaults, if they are not already
-/// present and valid UTF-8
-///
-/// # Safety
-///
-/// Follow the safety requirements of [`env::set_var`].
-pub unsafe fn set_required_vars() {
-	let vars = [
-		("LEPTOS_SITE_ROOT", "site"),
-		// this wasn't meant to be a vivid/stasis reference I swear
-		("LEPTOS_SITE_PKG_DIR", "_"),
-		("LEPTOS_SITE_ADDR", "127.0.0.1:3000"),
-	];
-
-	for (k, v) in vars {
-		if env::var(k).is_err() {
-			// SAFETY: caller of this function satisfies the thread safety requirement
-			unsafe { env::set_var(k, v) }
-		}
-	}
-}
-
 macro_rules! declare_env_fn {
 	{
 		$(
