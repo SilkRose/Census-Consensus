@@ -1,5 +1,7 @@
-use crate::{Db, html_templates::form_html_template};
+use crate::env_vars;
 use crate::error::ErrorWrapper;
+use crate::{Db, html_templates::form_html_template};
+use actix_web::http::header::SET_COOKIE;
 use actix_web::{HttpRequest, HttpResponse, Responder, get, post, web::Data};
 use std::collections::HashMap;
 
@@ -25,7 +27,10 @@ pub async fn user_feedback(
 		.and_then(|msg| if msg.is_empty() { None } else { Some(msg) });
 
 	if let Some(token) = req.cookie("fimfic-auth-session-info") {
-		let session = db.get_session_by_token(token.value()).await.map_err(ErrorWrapper)?;
+		let session = db
+			.get_session_by_token(token.value())
+			.await
+			.map_err(ErrorWrapper)?;
 		// if let Ok(session) = session {
 		// 	if let Some(session) = session {}
 		// }
@@ -40,4 +45,17 @@ pub async fn user_feedback(
 	Ok(HttpResponse::SeeOther()
 		.append_header(("Location", redirect_to))
 		.finish())
+}
+
+#[get("/dev-session")]
+pub async fn dev_session() -> actix_web::Result<impl Responder> {
+	let mut res = HttpResponse::SeeOther();
+	if let Some(token) = env_vars::create_dev_session() {
+		let cookie = format!(
+			"fimfic-auth-session={token}; Domain=127.0.0.1; Max-Age=2592000; HttpOnly; Secure; Path=/; SameSite=Lax;"
+		);
+		res.append_header((SET_COOKIE, cookie));
+	}
+	res.append_header(("Location", "/form-page"));
+	Ok(res.finish())
 }

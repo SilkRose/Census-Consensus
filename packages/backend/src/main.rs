@@ -1,4 +1,4 @@
-use crate::endpoints::{form_page, user_feedback};
+use crate::endpoints::{dev_session, form_page, user_feedback};
 use crate::structs::UserType;
 
 pub use self::auth::fimfic_auth;
@@ -15,8 +15,8 @@ pub use anyhow::Result;
 mod auth;
 mod database;
 mod endpoints;
-mod error;
 mod env_vars;
+mod error;
 mod fimfic_cfg;
 mod html_templates;
 mod http;
@@ -66,6 +66,12 @@ async fn async_main() -> Result<()> {
 			.await?;
 	}
 
+	if let Some(token) = env_vars::create_dev_session()
+		&& let Err(error) = db.insert_session(&token, admin_id).await
+	{
+		eprintln!("Tried to double insert dev session: {error}")
+	}
+
 	println!("listening on 127.0.0.1:3000");
 
 	let server = HttpServer::new(move || {
@@ -73,6 +79,7 @@ async fn async_main() -> Result<()> {
 			.service(fimfic_auth)
 			.service(form_page)
 			.service(user_feedback)
+			.service(dev_session)
 			.service(Files::new("/", "./target/site").index_file("index.html"))
 			.app_data(db.clone())
 			.app_data(fimfic.clone())
