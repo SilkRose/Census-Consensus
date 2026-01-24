@@ -7,7 +7,7 @@ use crate::structs::UserType;
 use actix_web::{ FromRequest, get };
 use actix_web::{ HttpRequest, HttpResponse };
 use actix_web::dev::Payload;
-use actix_web::web::{ ThinData as Data, Query };
+use actix_web::web::{ ThinData as Data, Path, Query };
 use anyhow::Context as _;
 use bon::builder;
 use serde::{ Deserialize, Serialize };
@@ -223,6 +223,42 @@ async fn verify_session_info(req: &HttpRequest, session_info: &SessionInfo) -> R
 	}
 
 	Ok(())
+}
+
+#[derive(Clone, Deserialize)]
+pub struct DevSession {
+	token: String,
+	user_id: i32,
+	pfp_url: String
+}
+
+impl DevSession {
+	pub fn new(token: String, user_id: i32, pfp_url: String) -> Self {
+		Self { token, user_id, pfp_url }
+	}
+}
+
+#[get("/dev-session/{token}")]
+pub async fn dev_session(
+	path: Path<String>,
+	db: Data<Db>,
+	dev_session: Data<Option<DevSession>>,
+) -> HttpResponse {
+	let Some(dev_session) = dev_session.as_ref() else {
+		return HttpResponse::NotFound().finish()
+	};
+
+	if **path != *dev_session.token {
+		HttpResponse::NotFound().finish()
+	} else if db.insert_session(&dev_session.token, dev_session.user_id).await.is_err() {
+		HttpResponse::InternalServerError().finish()
+	} else {
+		HttpResponse::Ok()
+			.content_type("text/plain")
+			.cookie(cookie::create_session_cookie(&dev_session.token))
+			.cookie(cookie::create_session_info_cookie(dev_session.user_id, &dev_session.pfp_url))
+			.body("token set")
+	}
 }
 
 mod cookie {

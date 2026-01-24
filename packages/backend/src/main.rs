@@ -1,9 +1,9 @@
 #![feature(impl_trait_in_assoc_type)]
 
-use crate::endpoints::{dev_session, get_user_feedback, set_user_feedback};
+use crate::endpoints::{get_user_feedback, set_user_feedback};
 use crate::structs::UserType;
 
-pub use self::auth::fimfic_auth;
+pub use self::auth::{DevSession, dev_session, fimfic_auth};
 pub use self::database::Db;
 pub use self::fimfic_cfg::FimficCfg;
 pub use self::http::HttpClient;
@@ -59,23 +59,27 @@ async fn async_main() -> Result<()> {
 	let admin_id = env_vars::admin_id().parse::<i32>()?;
 	let bearer_token = env_vars::bearer_token();
 	let admin = db.get_user(admin_id).await?;
+	let admin_fimfic_user = http_client.get_fimfic_user(admin_id, &bearer_token).await?;
+
 	if let Some(admin) = admin {
 		if admin.user_type != UserType::Admin {
 			db.update_user_role(admin_id, UserType::Admin).await?;
 		}
 	} else {
-		let admin = http_client.get_fimfic_user(admin_id, &bearer_token).await?;
-		db.insert_user(admin_id, &admin.data, UserType::Admin)
+		db.insert_user(admin_id, &admin_fimfic_user.data, UserType::Admin)
 			.await?;
 	}
 
-	if let Some(token) = env_vars::create_dev_session()
-		&& let Err(error) = db.insert_session(&token, admin_id).await
-	{
-		eprintln!("Tried to double insert dev session: {error}")
-	}
-
 	println!("listening on 127.0.0.1:3000");
+
+	let create_dev_session = env_vars::create_dev_session().is_some();
+	let token = rand::gen_auth_token();
+
+	if create_dev_session {
+		println!();
+		println!("You should unset the `CREATE_DEV_SESSION` environment variable in production.");
+		println!("to set a development session, open this link in your browser: http://127.0.0.1:3000/dev-session/{token}");
+	}
 
 	let server = HttpServer::new(move || {
 		ActixApp::new()
@@ -87,6 +91,11 @@ async fn async_main() -> Result<()> {
 			.app_data(db.clone())
 			.app_data(fimfic.clone())
 			.app_data(http_client.clone())
+			.app_data(Data(create_dev_session.then(|| DevSession::new(
+				token.clone(),
+				admin_id,
+				admin_fimfic_user.data.attributes.avatar.r256.trim_end_matches("-256").into()
+			))))
 			.wrap(Compress::default())
 	});
 

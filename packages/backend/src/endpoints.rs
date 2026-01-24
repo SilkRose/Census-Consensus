@@ -1,8 +1,6 @@
-use crate::env_vars;
 use crate::error::ErrorWrapper;
 use crate::utility::redirect;
 use crate::{Db, html_templates::form_html_template};
-use actix_web::http::header::SET_COOKIE;
 use actix_web::web::ThinData;
 use actix_web::{HttpRequest, HttpResponse, Responder, get, post};
 use std::collections::HashMap;
@@ -72,17 +70,4 @@ pub async fn set_user_feedback(
 	Ok(HttpResponse::SeeOther()
 		.append_header(("Location", redirect(req)))
 		.finish())
-}
-
-#[get("/dev-session")]
-pub async fn dev_session() -> actix_web::Result<impl Responder> {
-	let mut res = HttpResponse::SeeOther();
-	if let Some(token) = env_vars::create_dev_session() {
-		let cookie = format!(
-			"fimfic-auth-session={token}; Domain=127.0.0.1; Max-Age=2592000; HttpOnly; Secure; Path=/; SameSite=Lax;"
-		);
-		res.append_header((SET_COOKIE, cookie));
-	}
-	res.append_header(("Location", "/"));
-	Ok(res.finish())
 }
