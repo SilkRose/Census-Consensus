@@ -3,12 +3,13 @@ use crate::error::ErrorWrapper;
 use crate::utility::redirect;
 use crate::{Db, html_templates::form_html_template};
 use actix_web::http::header::SET_COOKIE;
-use actix_web::{HttpRequest, HttpResponse, Responder, get, post, web::Data};
+use actix_web::web::ThinData;
+use actix_web::{HttpRequest, HttpResponse, Responder, get, post};
 use std::collections::HashMap;
 
 #[get("/user-feedback")]
 pub async fn get_user_feedback(
-	req: HttpRequest, db: Data<Db>,
+	req: HttpRequest, db: ThinData<Db>,
 ) -> actix_web::Result<impl Responder> {
 	if let Some(token) = req.cookie("fimfic-auth-session") {
 		let session = db
@@ -34,7 +35,7 @@ pub async fn get_user_feedback(
 
 #[post("/user-feedback")]
 pub async fn set_user_feedback(
-	req: HttpRequest, body: String, db: Data<Db>,
+	req: HttpRequest, body: String, db: ThinData<Db>,
 ) -> actix_web::Result<impl Responder> {
 	let feedback = serde_urlencoded::from_str::<HashMap<String, String>>(&body)?;
 	let private_feedback = feedback
