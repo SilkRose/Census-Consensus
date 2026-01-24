@@ -116,7 +116,7 @@ impl Db {
 	}
 
 	pub async fn update_user_feedback(
-		&self, id: i32, private_msg: &str, public_msg: &str,
+		&self, id: i32, private_msg: Option<String>, public_msg: Option<String>,
 	) -> Result<u64> {
 		Ok(sqlx::query!(
 			"UPDATE Users

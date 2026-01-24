@@ -1,4 +1,4 @@
-use crate::endpoints::{dev_session, form_page, user_feedback};
+use crate::endpoints::{dev_session, get_user_feedback, set_user_feedback};
 use crate::structs::UserType;
 
 pub use self::auth::fimfic_auth;
@@ -22,6 +22,7 @@ mod html_templates;
 mod http;
 mod rand;
 mod structs;
+mod utility;
 
 fn main() -> Result<()> {
 	// SAFETY: we do this before doing anything else in the program, including
@@ -77,8 +78,8 @@ async fn async_main() -> Result<()> {
 	let server = HttpServer::new(move || {
 		ActixApp::new()
 			.service(fimfic_auth)
-			.service(form_page)
-			.service(user_feedback)
+			.service(get_user_feedback)
+			.service(set_user_feedback)
 			.service(dev_session)
 			.service(Files::new("/", "./target/site").index_file("index.html"))
 			.app_data(db.clone())
