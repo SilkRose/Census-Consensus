@@ -1,6 +1,7 @@
 #![feature(impl_trait_in_assoc_type)]
 
-use crate::endpoints::{form_page, user_feedback};
+use crate::endpoints::{dev_session, get_user_feedback, set_user_feedback};
+use crate::structs::UserType;
 
 pub use self::auth::fimfic_auth;
 pub use self::database::Db;
@@ -16,13 +17,14 @@ pub use anyhow::Result;
 mod auth;
 mod database;
 mod endpoints;
-mod error;
 mod env_vars;
+mod error;
 mod fimfic_cfg;
 mod html_templates;
 mod http;
 mod rand;
 mod structs;
+mod utility;
 
 fn main() -> Result<()> {
 	// SAFETY: we do this before doing anything else in the program, including
@@ -54,13 +56,33 @@ async fn async_main() -> Result<()> {
 	let http_client = HttpClient::new()?;
 	let http_client = Data(http_client);
 
+	let admin_id = env_vars::admin_id().parse::<i32>()?;
+	let bearer_token = env_vars::bearer_token();
+	let admin = db.get_user(admin_id).await?;
+	if let Some(admin) = admin {
+		if admin.user_type != UserType::Admin {
+			db.update_user_role(admin_id, UserType::Admin).await?;
+		}
+	} else {
+		let admin = http_client.get_fimfic_user(admin_id, &bearer_token).await?;
+		db.insert_user(admin_id, &admin.data, UserType::Admin)
+			.await?;
+	}
+
+	if let Some(token) = env_vars::create_dev_session()
+		&& let Err(error) = db.insert_session(&token, admin_id).await
+	{
+		eprintln!("Tried to double insert dev session: {error}")
+	}
+
 	println!("listening on 127.0.0.1:3000");
 
 	let server = HttpServer::new(move || {
 		ActixApp::new()
 			.service(fimfic_auth)
-			.service(form_page)
-			.service(user_feedback)
+			.service(get_user_feedback)
+			.service(set_user_feedback)
+			.service(dev_session)
 			.service(Files::new("/", "./target/site").index_file("index.html"))
 			.app_data(db.clone())
 			.app_data(fimfic.clone())

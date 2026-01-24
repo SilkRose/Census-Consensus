@@ -83,6 +83,9 @@ declare_env_fn! {
 	/// URL to use to connect to postgres
 	database_url() -> "DATABASE_URL"
 
+	/// fimfic user id for the site admin
+	admin_id() -> "ADMIN_ID"
+
 	/// fimfic API key for updating the story
 	bearer_token() -> "BEARER_TOKEN"
 

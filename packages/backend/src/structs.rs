@@ -33,7 +33,7 @@ impl fmt::Display for Table {
 	}
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize, Type)]
+#[derive(Clone, Debug, Deserialize, Serialize, Type, PartialEq, Eq)]
 #[sqlx(type_name = "user_type", rename_all = "snake_case")]
 pub enum UserType {
 	Admin,
