@@ -1,3 +1,5 @@
+#![feature(impl_trait_in_assoc_type)]
+
 use crate::endpoints::{form_page, user_feedback};
 
 pub use self::auth::fimfic_auth;
