@@ -70,7 +70,7 @@ async fn async_main() -> Result<()> {
 			.await?;
 	}
 
-	println!("listening on 127.0.0.1:3000");
+	println!("listening on localhost:3000");
 
 	let create_dev_session = env_vars::create_dev_session().is_some();
 	let token = rand::gen_auth_token();
@@ -78,7 +78,7 @@ async fn async_main() -> Result<()> {
 	if create_dev_session {
 		println!();
 		println!("You should unset the `CREATE_DEV_SESSION` environment variable in production.");
-		println!("to set a development session, open this link in your browser: http://127.0.0.1:3000/dev-session/{token}");
+		println!("to set a development session, open this link in your browser: http://localhost:3000/dev-session/{token}");
 	}
 
 	let server = HttpServer::new(move || {
@@ -99,7 +99,7 @@ async fn async_main() -> Result<()> {
 			.wrap(Compress::default())
 	});
 
-	server.bind("127.0.0.1:3000")?.run().await?;
+	server.bind("localhost:3000")?.run().await?;
 
 	Ok(())
 }
