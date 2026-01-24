@@ -102,7 +102,7 @@ async fn fimfic_auth_return(
 	}
 
 	let FimficTokenExchangeResponse {
-		id,
+		user_id,
 		name: _,
 		access_token
 	} = match http_client.fimfic_token_exchange(&fimfic_cfg, &code).await {
@@ -116,7 +116,7 @@ async fn fimfic_auth_return(
 		}
 	};
 
-	let fimfic_user = match http_client.get_fimfic_user(id, &access_token).await {
+	let fimfic_user = match http_client.get_fimfic_user(user_id, &access_token).await {
 		Ok(res) => { res }
 		Err(err) => {
 			eprintln!("error in pfp fetching: {err}");
@@ -127,7 +127,7 @@ async fn fimfic_auth_return(
 		}
 	};
 
-	let db_result = db.insert_user(id, &fimfic_user.data, UserType::Voter).await;
+	let db_result = db.insert_user(user_id, &fimfic_user.data, UserType::Voter).await;
 
 	if let Err(err) = db_result {
 		eprintln!("error in db storing: {err}");
@@ -139,7 +139,7 @@ async fn fimfic_auth_return(
 
 	let token = gen_auth_token();
 
-	if let Err(err) = db.insert_session(&token, id).await {
+	if let Err(err) = db.insert_session(&token, user_id).await {
 		eprintln!("error in token storing {err}");
 		return HttpResponse::Ok()
 			.content_type("text/plain")
@@ -152,14 +152,14 @@ async fn fimfic_auth_return(
 	HttpResponse::Ok()
 		.cookie(cookie::create_unset_state_cookie())
 		.cookie(cookie::create_session_cookie(&token))
-		.cookie(cookie::create_session_info_cookie(id, pfp_url))
+		.cookie(cookie::create_session_info_cookie(user_id, pfp_url))
 		.content_type("text/plain")
 		.body(format!(r#"the return!! code is "{code}" and state (verified) is "{state}" and token is "{token}""#))
 }
 
 /// Session info extractor
 pub struct SessionInfo {
-	pub id: i32,
+	pub user_id: i32,
 	pub pfp_url: String,
 	pub token: String
 }
@@ -208,7 +208,7 @@ fn get_unverified_session_info(req: &HttpRequest) -> Option<SessionInfo> {
 	let session_info = cookie::try_get_session_info_cookie_value(req)?;
 
 	Some(SessionInfo {
-		id: session_info.id,
+		user_id: session_info.user_id,
 		pfp_url: session_info.pfp_url.into_owned(),
 		token: session.value().into()
 	})
@@ -220,7 +220,7 @@ async fn verify_session_info(req: &HttpRequest, session_info: &SessionInfo) -> R
 		.await?
 		.context("invalid session token")?;
 
-	if db_session_info.user_id != session_info.id {
+	if db_session_info.user_id != session_info.user_id {
 		return Err(anyhow::format_err!("invalid session info, user ID does not match session token").into())
 	}
 
@@ -319,16 +319,16 @@ mod cookie {
 
 	#[derive(Deserialize, Serialize)]
 	pub struct SessionInfo<'h> {
-		pub id: i32,
+		pub user_id: i32,
 		pub pfp_url: Cow<'h, str>
 	}
 
 	const SESSION_INFO_COOKIE_NAME: &str = "fimfic-auth-session-info";
 	const SESSION_INFO_COOKIE_PATH: &str = SESSION_COOKIE_PATH;
 
-	pub fn create_session_info_cookie(id: i32, pfp_url: &str) -> Cookie<'static> {
+	pub fn create_session_info_cookie(user_id: i32, pfp_url: &str) -> Cookie<'static> {
 		let value = serde_json::to_string(&SessionInfo {
-			id,
+			user_id,
 			pfp_url: Cow::Borrowed(pfp_url)
 		}).unwrap();
 

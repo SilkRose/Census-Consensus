@@ -14,7 +14,7 @@ pub struct HttpClient {
 }
 
 pub struct FimficTokenExchangeResponse {
-	pub id: i32,
+	pub user_id: i32,
 	pub name: String,
 	pub access_token: String,
 }
@@ -28,9 +28,9 @@ impl HttpClient {
 
 	// if we ever need to fetch more user data than only a
 	// pfp from fimfic, modify this function into that
-	pub async fn get_fimfic_user(&self, id: i32, token: &str) -> Result<UserApi<i32>> {
+	pub async fn get_fimfic_user(&self, user_id: i32, token: &str) -> Result<UserApi<i32>> {
 		self.get(
-			format!("https://www.fimfiction.net/api/v2/users/{id}"),
+			format!("https://www.fimfiction.net/api/v2/users/{user_id}"),
 			Some(token),
 		)
 		.send()
@@ -74,7 +74,7 @@ impl HttpClient {
 		let res = serde_json::from_slice::<Res>(&res)?;
 
 		Ok(FimficTokenExchangeResponse {
-			id: res.user.id.parse()?,
+			user_id: res.user.id.parse()?,
 			name: res.user.name,
 			access_token: res.access_token,
 		})
