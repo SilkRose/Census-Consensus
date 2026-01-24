@@ -157,12 +157,14 @@ async fn fimfic_auth_return(
 		.body(format!(r#"the return!! code is "{code}" and state (verified) is "{state}" and token is "{token}""#))
 }
 
+/// Session info extractor
 pub struct SessionInfo {
 	pub id: i32,
 	pub pfp_url: String,
 	pub token: String
 }
 
+/// Optional session info extractor (user can be logged in or not)
 pub struct MaybeSessionInfo {
 	pub session_info: Option<SessionInfo>
 }
