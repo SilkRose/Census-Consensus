@@ -1,6 +1,6 @@
 #![feature(impl_trait_in_assoc_type)]
 
-use crate::endpoints::{get_user_feedback, set_user_feedback};
+use crate::endpoints::{get_ban_user, get_user_feedback, set_ban_user, set_user_feedback};
 use crate::structs::UserType;
 
 pub use self::database::Db;
@@ -69,13 +69,17 @@ async fn main() -> Result<()> {
 	if create_dev_session {
 		println!();
 		println!("You should unset the `CREATE_DEV_SESSION` environment variable in production.");
-		println!("to set a development session, open this link in your browser: http://localhost:3000/dev-session/{token}");
+		println!(
+			"to set a development session, open this link in your browser: http://localhost:3000/dev-session/{token}"
+		);
 	}
 
 	let server = HttpServer::new(move || {
 		ActixApp::new()
 			.service(auth::fimfic_auth)
 			.service(auth::fimfic_auth_logout)
+			.service(get_ban_user)
+			.service(set_ban_user)
 			.service(get_user_feedback)
 			.service(set_user_feedback)
 			.service(auth::dev_session)
@@ -83,11 +87,19 @@ async fn main() -> Result<()> {
 			.app_data(db.clone())
 			.app_data(fimfic.clone())
 			.app_data(http_client.clone())
-			.app_data(Data(create_dev_session.then(|| auth::DevSession::new(
-				token.clone(),
-				admin_id,
-				admin_fimfic_user.data.attributes.avatar.r256.trim_end_matches("-256").into()
-			))))
+			.app_data(Data(create_dev_session.then(|| {
+				auth::DevSession::new(
+					token.clone(),
+					admin_id,
+					admin_fimfic_user
+						.data
+						.attributes
+						.avatar
+						.r256
+						.trim_end_matches("-256")
+						.into(),
+				)
+			})))
 			.wrap(Compress::default())
 	});
 
