@@ -1,5 +1,31 @@
 use maud::{DOCTYPE, html};
 
+pub fn update_user_role_html() -> String {
+	html! {
+		(DOCTYPE) html lang = "en" {
+			body {
+				form method = "post" action = "/user-role" {
+					label for = "id" { "User ID:" }
+					br;
+					input type = "text" id = "id" name = "id" inputmode = "numeric" pattern = r"\d*" minlength = "1" maxlength = "8" required {  }
+					br;
+					label for = "role" { "User Role:" }
+					br;
+					input id = "voter" type = "radio" name = "role" value = "voter" required {}
+					label for = "voter" { "Voter" }
+					input id = "writer" type = "radio" name = "role" value = "writer" {}
+					label for = "writer" { "Writer" }
+					input id = "admin" type = "radio" name = "role" value = "admin" {}
+					label for = "admin" { "Admin" }
+					br;
+					button type = "submit" { "Update User Role" }
+				}
+			};
+		};
+	}
+	.into()
+}
+
 pub fn ban_user_html() -> String {
 	html! {
 		(DOCTYPE) html lang = "en" {

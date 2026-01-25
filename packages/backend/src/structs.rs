@@ -41,6 +41,17 @@ pub enum UserType {
 	Voter,
 }
 
+impl UserType {
+	pub fn from_str(value: &str) -> Option<Self> {
+		match value {
+			"admin" => Some(UserType::Admin),
+			"writer" => Some(UserType::Writer),
+			"voter" => Some(UserType::Voter),
+			_ => None,
+		}
+	}
+}
+
 #[derive(Clone, Debug, Deserialize, Serialize, Type)]
 #[sqlx(type_name = "question_type", rename_all = "snake_case")]
 pub enum QuestionType {

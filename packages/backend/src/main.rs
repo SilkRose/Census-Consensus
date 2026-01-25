@@ -1,6 +1,9 @@
 #![feature(impl_trait_in_assoc_type)]
 
-use crate::endpoints::{get_ban_user, get_user_feedback, set_ban_user, set_user_feedback};
+use crate::endpoints::{
+	get_ban_user, get_update_user_role, get_user_feedback, set_ban_user, set_update_user_role,
+	set_user_feedback,
+};
 use crate::structs::UserType;
 
 pub use self::database::Db;
@@ -68,12 +71,15 @@ async fn main() -> Result<()> {
 	let create_dev_session = env_vars::create_dev_session().is_some();
 	let token = rand::gen_auth_token();
 
-	let dev_session = create_dev_session.then(|| auth::DevSession::new(
-		token.clone(),
-		admin_id,
-		admin.pfp_url
-			.unwrap_or_else(|| "https://static.fimfiction.net/images/none_64.png".into()),
-	));
+	let dev_session = create_dev_session.then(|| {
+		auth::DevSession::new(
+			token.clone(),
+			admin_id,
+			admin
+				.pfp_url
+				.unwrap_or_else(|| "https://static.fimfiction.net/images/none_64.png".into()),
+		)
+	});
 	let dev_session = Data(dev_session);
 
 	println!("listening on localhost:3000");
@@ -90,6 +96,8 @@ async fn main() -> Result<()> {
 		ActixApp::new()
 			.service(auth::fimfic_auth)
 			.service(auth::fimfic_auth_logout)
+			.service(get_update_user_role)
+			.service(set_update_user_role)
 			.service(get_ban_user)
 			.service(set_ban_user)
 			.service(get_user_feedback)
