@@ -7,7 +7,7 @@ pub fn ban_user_html() -> String {
 				form method = "post" action = "/ban-user" {
 					label for = "id" { "User ID:" }
 					br;
-					input type = "number" id = "id" name = "id" inputmode = "numeric" pattern= "[0-9]+" min = "1" required {  }
+					input type = "text" id = "id" name = "id" inputmode = "numeric" pattern = r"\d*" minlength = "1" maxlength = "8" required {  }
 					br;
 					label for = "reason" { "Ban Reason:" }
 					br;
