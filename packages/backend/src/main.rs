@@ -3,7 +3,6 @@
 use crate::endpoints::{get_user_feedback, set_user_feedback};
 use crate::structs::UserType;
 
-pub use self::auth::{DevSession, dev_session, fimfic_auth};
 pub use self::database::Db;
 pub use self::fimfic_cfg::FimficCfg;
 pub use self::http::HttpClient;
@@ -75,15 +74,16 @@ async fn main() -> Result<()> {
 
 	let server = HttpServer::new(move || {
 		ActixApp::new()
-			.service(fimfic_auth)
+			.service(auth::fimfic_auth)
+			.service(auth::fimfic_auth_logout)
 			.service(get_user_feedback)
 			.service(set_user_feedback)
-			.service(dev_session)
+			.service(auth::dev_session)
 			.service(Files::new("/", "./target/site").index_file("index.html"))
 			.app_data(db.clone())
 			.app_data(fimfic.clone())
 			.app_data(http_client.clone())
-			.app_data(Data(create_dev_session.then(|| DevSession::new(
+			.app_data(Data(create_dev_session.then(|| auth::DevSession::new(
 				token.clone(),
 				admin_id,
 				admin_fimfic_user.data.attributes.avatar.r256.trim_end_matches("-256").into()

@@ -42,6 +42,28 @@ pub async fn fimfic_auth(
 	}
 }
 
+#[get("/logout")]
+pub async fn fimfic_auth_logout(
+	req: HttpRequest,
+	db: Data<Db>
+) -> HttpResponse {
+	let mut response = HttpResponse::SeeOther();
+	response.insert_header(("location", "/"));
+
+	if let Some(cookie) = cookie::try_get_session_cookie(&req) {
+		// try to delete it but it doesn't really matter if it doesn't work?
+		let _ = db.delete_session(cookie.value()).await;
+
+		response.cookie(cookie::create_unset_session_cookie());
+	}
+
+	if cookie::try_get_session_info_cookie_value(&req).is_some() {
+		response.cookie(cookie::create_unset_session_info_cookie());
+	}
+
+	response.finish()
+}
+
 async fn fimfic_auth_redirect(req: HttpRequest, db: Data<Db>, fimfic_cfg: Data<FimficCfg>) -> HttpResponse {
 	if let Some(session_cookie) = cookie::try_get_session_cookie(&req) {
 		let session = db
