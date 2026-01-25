@@ -49,17 +49,24 @@ async fn main() -> Result<()> {
 
 	let admin_id = env_vars::admin_id().parse::<i32>()?;
 	let bearer_token = env_vars::bearer_token();
-	let admin = db.get_user(admin_id).await?;
-	let admin_fimfic_user = http_client.get_fimfic_user(admin_id, &bearer_token).await?;
 
-	if let Some(admin) = admin {
-		if admin.user_type != UserType::Admin {
-			db.update_user_role(admin_id, UserType::Admin).await?;
+	let admin = match db.get_user(admin_id).await? {
+		Some(admin) => {
+			if admin.user_type != UserType::Admin {
+				db.update_user_role(admin_id, UserType::Admin).await?;
+			}
+
+			admin
 		}
-	} else {
-		db.insert_user(admin_id, &admin_fimfic_user.data, UserType::Admin)
-			.await?;
-	}
+		None => {
+			let admin = http_client.get_fimfic_user(admin_id, &bearer_token).await?;
+			db.insert_user(admin_id, &admin.data, UserType::Admin)
+				.await?
+		}
+	};
+
+	let admin_pfp_url = admin.pfp_url
+		.unwrap_or_else(|| "https://static.fimfiction.net/images/none_64.png".into());
 
 	println!("listening on localhost:3000");
 
@@ -91,13 +98,7 @@ async fn main() -> Result<()> {
 				auth::DevSession::new(
 					token.clone(),
 					admin_id,
-					admin_fimfic_user
-						.data
-						.attributes
-						.avatar
-						.r256
-						.trim_end_matches("-256")
-						.into(),
+					admin_pfp_url.clone(),
 				)
 			})))
 			.wrap(Compress::default())
