@@ -1,10 +1,10 @@
-use crate::HttpClient;
 use crate::auth::SessionInfo;
 use crate::error::ErrorWrapper;
 use crate::html_templates::{ban_user_html, update_user_role_html};
 use crate::structs::UserType;
 use crate::utility::redirect;
 use crate::{Db, html_templates::user_feedback_html};
+use crate::{FimficCfg, HttpClient};
 use actix_web::web::ThinData;
 use actix_web::{HttpRequest, HttpResponse, Responder, get, post};
 use chrono::Utc;
@@ -14,7 +14,7 @@ use std::time::Duration;
 #[post("/update-user")]
 pub async fn set_update_user(
 	req: HttpRequest, db: ThinData<Db>, session: SessionInfo, http_client: ThinData<HttpClient>,
-	bearer_token: ThinData<String>,
+	fimfic_cfg: ThinData<FimficCfg>,
 ) -> actix_web::Result<impl Responder> {
 	let user = db
 		.get_user(session.user_id)
@@ -26,7 +26,7 @@ pub async fn set_update_user(
 		return Ok(HttpResponse::BadRequest().finish());
 	}
 	let user_update = http_client
-		.get_fimfic_user(user.id, &bearer_token)
+		.get_fimfic_user(user.id, &fimfic_cfg.bearer_token)
 		.await
 		.map_err(ErrorWrapper)?;
 	db.insert_user(user.id, &user_update.data, user.user_type)

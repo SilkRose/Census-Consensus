@@ -4,7 +4,7 @@ use std::sync::Arc;
 
 #[derive(Clone)]
 pub struct FimficCfg {
-	inner: Arc<FimficCfgInner>
+	inner: Arc<FimficCfgInner>,
 }
 
 pub struct FimficCfgInner {
@@ -13,25 +13,25 @@ pub struct FimficCfgInner {
 	pub oauth_redirect_url: Box<str>,
 	/// Login URL except missing state (ie. `format!("{url}&state={state}")` to
 	/// get a complete URL)
-	pub login_url: Box<str>
+	pub login_url: Box<str>,
+	pub bearer_token: Box<str>,
 }
 
 #[bon]
 impl FimficCfg {
 	#[builder]
 	pub fn new(
-		client_id: Box<str>,
-		client_secret: Box<str>,
-		oauth_redirect_url: Box<str>,
-		login_url: Box<str>
+		client_id: Box<str>, client_secret: Box<str>, oauth_redirect_url: Box<str>,
+		login_url: Box<str>, bearer_token: Box<str>,
 	) -> Self {
 		Self {
 			inner: Arc::new(FimficCfgInner {
 				client_id,
 				client_secret,
 				oauth_redirect_url,
-				login_url
-			})
+				login_url,
+				bearer_token,
+			}),
 		}
 	}
 }

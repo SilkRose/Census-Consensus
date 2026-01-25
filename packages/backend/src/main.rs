@@ -36,6 +36,9 @@ async fn main() -> Result<()> {
 	let db = Db::new(&env_vars::database_url()).await?;
 	let db = Data(db);
 
+	let admin_id = env_vars::admin_id().parse::<i32>()?;
+	let bearer_token = env_vars::bearer_token();
+
 	let client_id = env_vars::fimfic_client_id();
 	let oauth_redirect_url = env_vars::fimfic_oauth_redirect_url();
 	let login_url = fimfic_cfg::make_login_url(&client_id, &oauth_redirect_url);
@@ -44,15 +47,12 @@ async fn main() -> Result<()> {
 		.client_secret(env_vars::fimfic_client_secret())
 		.oauth_redirect_url(oauth_redirect_url)
 		.login_url(login_url)
+		.bearer_token(bearer_token.clone())
 		.build();
 	let fimfic = Data(fimfic_cfg);
 
 	let http_client = HttpClient::new()?;
 	let http_client = Data(http_client);
-
-	let admin_id = env_vars::admin_id().parse::<i32>()?;
-	let bearer_token = env_vars::bearer_token().to_string();
-	let bearer_token = Data(bearer_token);
 
 	let admin = match db.get_user(admin_id).await? {
 		Some(admin) => {
@@ -110,7 +110,6 @@ async fn main() -> Result<()> {
 			.app_data(fimfic.clone())
 			.app_data(http_client.clone())
 			.app_data(dev_session.clone())
-			.app_data(bearer_token.clone())
 			.wrap(Compress::default())
 	});
 
