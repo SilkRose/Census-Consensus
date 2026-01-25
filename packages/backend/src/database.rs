@@ -171,11 +171,26 @@ impl Db {
 		.context(INSERT_ERROR)
 	}
 
+	/// Use when you need to get the session without updating the last seen time.
 	pub async fn get_session_by_token(&self, token: &str) -> Result<Option<Session>> {
 		sqlx::query_as!(
 			Session,
 			"SELECT token, user_id, user_agent, last_seen, date_created
 			FROM Tokens WHERE token = $1;",
+			token
+		)
+		.fetch_optional(&self.pool)
+		.await
+		.context(SELECT_ERROR)
+	}
+
+	/// Use when you need to get the session and update the last seen time.
+	pub async fn update_session_last_seen(&self, token: &str) -> Result<Option<Session>> {
+		sqlx::query_as!(
+			Session,
+			"UPDATE Tokens SET last_seen = now() WHERE token = $1
+			RETURNING
+				token, user_id, user_agent, last_seen, date_created;",
 			token
 		)
 		.fetch_optional(&self.pool)

@@ -66,7 +66,7 @@ async fn fimfic_auth_redirect(
 	req: HttpRequest, db: Data<Db>, fimfic_cfg: Data<FimficCfg>,
 ) -> HttpResponse {
 	if let Some(session_cookie) = cookie::try_get_session_cookie(&req) {
-		let session = db.get_session_by_token(session_cookie.value()).await;
+		let session = db.update_session_last_seen(session_cookie.value()).await;
 
 		match session {
 			Ok(None) => {
@@ -255,7 +255,7 @@ async fn verify_session_info(
 		.app_data::<Data<Db>>()
 		.context("no ThinData<Db> found")?;
 	let db_session_info = db
-		.get_session_by_token(&session_info.token)
+		.update_session_last_seen(&session_info.token)
 		.await?
 		.context("invalid session token")?;
 
