@@ -1,3 +1,4 @@
+use crate::HttpClient;
 use crate::auth::SessionInfo;
 use crate::error::ErrorWrapper;
 use crate::html_templates::{ban_user_html, update_user_role_html};
@@ -6,7 +7,35 @@ use crate::utility::redirect;
 use crate::{Db, html_templates::user_feedback_html};
 use actix_web::web::ThinData;
 use actix_web::{HttpRequest, HttpResponse, Responder, get, post};
+use chrono::Utc;
 use std::collections::HashMap;
+use std::time::Duration;
+
+#[post("/update-user")]
+pub async fn set_update_user(
+	req: HttpRequest, db: ThinData<Db>, session: SessionInfo, http_client: ThinData<HttpClient>,
+	bearer_token: ThinData<String>,
+) -> actix_web::Result<impl Responder> {
+	let user = db
+		.get_user(session.user_id)
+		.await
+		.map_err(ErrorWrapper)?
+		.expect("Database constraints mean a user will always be present if they have a session.");
+	let next_fetch_time = user.date_last_fetch + Duration::from_hours(1);
+	if Utc::now() < next_fetch_time {
+		return Ok(HttpResponse::BadRequest().finish());
+	}
+	let user_update = http_client
+		.get_fimfic_user(user.id, &bearer_token)
+		.await
+		.map_err(ErrorWrapper)?;
+	db.insert_user(user.id, &user_update.data, user.user_type)
+		.await
+		.map_err(ErrorWrapper)?;
+	Ok(HttpResponse::SeeOther()
+		.append_header(("Location", redirect(req)))
+		.finish())
+}
 
 #[get("/user-role")]
 pub async fn get_update_user_role(

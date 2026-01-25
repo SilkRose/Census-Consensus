@@ -1,8 +1,8 @@
 #![feature(impl_trait_in_assoc_type)]
 
 use crate::endpoints::{
-	get_ban_user, get_update_user_role, get_user_feedback, set_ban_user, set_update_user_role,
-	set_user_feedback,
+	get_ban_user, get_update_user_role, get_user_feedback, set_ban_user, set_update_user,
+	set_update_user_role, set_user_feedback,
 };
 use crate::structs::UserType;
 
@@ -51,7 +51,8 @@ async fn main() -> Result<()> {
 	let http_client = Data(http_client);
 
 	let admin_id = env_vars::admin_id().parse::<i32>()?;
-	let bearer_token = env_vars::bearer_token();
+	let bearer_token = env_vars::bearer_token().to_string();
+	let bearer_token = Data(bearer_token);
 
 	let admin = match db.get_user(admin_id).await? {
 		Some(admin) => {
@@ -96,6 +97,7 @@ async fn main() -> Result<()> {
 		ActixApp::new()
 			.service(auth::fimfic_auth)
 			.service(auth::fimfic_auth_logout)
+			.service(set_update_user)
 			.service(get_update_user_role)
 			.service(set_update_user_role)
 			.service(get_ban_user)
@@ -108,6 +110,7 @@ async fn main() -> Result<()> {
 			.app_data(fimfic.clone())
 			.app_data(http_client.clone())
 			.app_data(dev_session.clone())
+			.app_data(bearer_token.clone())
 			.wrap(Compress::default())
 	});
 
