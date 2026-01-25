@@ -1,7 +1,7 @@
 use crate::auth::SessionInfo;
 use crate::error::ErrorWrapper;
 use crate::utility::redirect;
-use crate::{Db, html_templates::form_html_template};
+use crate::{Db, html_templates::user_feedback_html};
 use actix_web::web::ThinData;
 use actix_web::{HttpRequest, HttpResponse, Responder, get, post};
 use std::collections::HashMap;
@@ -14,10 +14,8 @@ pub async fn get_user_feedback(
 		.get_user(session.user_id)
 		.await
 		.map_err(ErrorWrapper)?
-		.expect(
-			"Database constraints mean a user will always be present if they have a session.",
-		);
-	let page = form_html_template(user.feedback_private, user.feedback_public);
+		.expect("Database constraints mean a user will always be present if they have a session.");
+	let page = user_feedback_html(user.feedback_private, user.feedback_public);
 	Ok(HttpResponse::Ok()
 		.content_type("text/html; charset=utf-8")
 		.body(page))
