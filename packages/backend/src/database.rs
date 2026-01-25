@@ -151,17 +151,20 @@ impl Db {
 			.rows_affected())
 	}
 
-	pub async fn insert_session(&self, token: &str, user_id: i32) -> Result<Session> {
+	pub async fn insert_session(
+		&self, token: &str, user_id: i32, user_agent: &str,
+	) -> Result<Session> {
 		sqlx::query_as!(
 			Session,
 			"INSERT INTO Tokens
-				(token, user_id)
+				(token, user_id, user_agent)
 			VALUES
-				($1, $2)
+				($1, $2, $3)
 			RETURNING
-				token, user_id, date_created;",
+				token, user_id, user_agent, last_seen, date_created;",
 			token,
-			user_id
+			user_id,
+			user_agent
 		)
 		.fetch_one(&self.pool)
 		.await
@@ -171,7 +174,8 @@ impl Db {
 	pub async fn get_session_by_token(&self, token: &str) -> Result<Option<Session>> {
 		sqlx::query_as!(
 			Session,
-			"SELECT token, user_id, date_created FROM Tokens WHERE token = $1;",
+			"SELECT token, user_id, user_agent, last_seen, date_created
+			FROM Tokens WHERE token = $1;",
 			token
 		)
 		.fetch_optional(&self.pool)
@@ -183,7 +187,7 @@ impl Db {
 		sqlx::query_as!(
 			Session,
 			"SELECT
-				token, user_id, date_created
+				token, user_id, user_agent, last_seen, date_created
 			FROM Tokens
 			WHERE user_id = $1;",
 			user_id
@@ -194,10 +198,13 @@ impl Db {
 	}
 
 	pub async fn get_all_sessions(&self) -> Result<Vec<Session>> {
-		sqlx::query_as!(Session, "SELECT token, user_id, date_created FROM Tokens;",)
-			.fetch_all(&self.pool)
-			.await
-			.context(SELECT_ERROR)
+		sqlx::query_as!(
+			Session,
+			"SELECT token, user_id, user_agent, last_seen, date_created FROM Tokens;",
+		)
+		.fetch_all(&self.pool)
+		.await
+		.context(SELECT_ERROR)
 	}
 
 	pub async fn delete_session(&self, token: &str) -> Result<u64> {

@@ -76,6 +76,8 @@ pub struct User {
 pub struct Session {
 	pub token: String,
 	pub user_id: i32,
+	pub user_agent: String,
+	pub last_seen: DateTime<Utc>,
 	pub date_created: DateTime<Utc>,
 }
 

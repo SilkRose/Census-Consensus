@@ -1,34 +1,34 @@
-use crate::fimfic_cfg::FimficCfg;
 use crate::database::Db;
 use crate::error::ErrorWrapper;
-use crate::http::{ FimficTokenExchangeResponse, HttpClient };
-use crate::rand::{ gen_auth_state, gen_auth_token };
+use crate::fimfic_cfg::FimficCfg;
+use crate::http::{FimficTokenExchangeResponse, HttpClient};
+use crate::rand::{gen_auth_state, gen_auth_token};
 use crate::structs::UserType;
-use actix_web::{ FromRequest, get };
-use actix_web::{ HttpRequest, HttpResponse };
 use actix_web::dev::Payload;
-use actix_web::web::{ ThinData as Data, Path, Query };
+use actix_web::http::header::{HeaderValue, USER_AGENT};
+use actix_web::web::{Path, Query, ThinData as Data};
+use actix_web::{FromRequest, get};
+use actix_web::{HttpRequest, HttpResponse};
 use anyhow::Context as _;
 use bon::builder;
-use serde::{ Deserialize, Serialize };
+use serde::{Deserialize, Serialize};
 use std::borrow::Cow;
 use std::sync::Arc;
 
 #[derive(Deserialize)]
 struct AuthQueryParams {
 	code: Option<String>,
-	state: Option<String>
+	state: Option<String>,
 }
 
 #[get("/login/fimfic")]
 pub async fn fimfic_auth(
-	req: HttpRequest,
-	Query(form): Query<AuthQueryParams>,
-	db: Data<Db>,
-	fimfic_cfg: Data<FimficCfg>,
-	http_client: Data<HttpClient>
+	req: HttpRequest, Query(form): Query<AuthQueryParams>, db: Data<Db>,
+	fimfic_cfg: Data<FimficCfg>, http_client: Data<HttpClient>,
 ) -> HttpResponse {
-	if let Some(code) = form.code && let Some(state) = form.state {
+	if let Some(code) = form.code
+		&& let Some(state) = form.state
+	{
 		fimfic_auth_return()
 			.code(code)
 			.state(state)
@@ -44,10 +44,7 @@ pub async fn fimfic_auth(
 }
 
 #[get("/logout")]
-pub async fn fimfic_auth_logout(
-	req: HttpRequest,
-	db: Data<Db>
-) -> HttpResponse {
+pub async fn fimfic_auth_logout(req: HttpRequest, db: Data<Db>) -> HttpResponse {
 	let mut response = HttpResponse::SeeOther();
 	response.insert_header(("location", "/"));
 
@@ -65,11 +62,11 @@ pub async fn fimfic_auth_logout(
 	response.finish()
 }
 
-async fn fimfic_auth_redirect(req: HttpRequest, db: Data<Db>, fimfic_cfg: Data<FimficCfg>) -> HttpResponse {
+async fn fimfic_auth_redirect(
+	req: HttpRequest, db: Data<Db>, fimfic_cfg: Data<FimficCfg>,
+) -> HttpResponse {
 	if let Some(session_cookie) = cookie::try_get_session_cookie(&req) {
-		let session = db
-			.get_session_by_token(session_cookie.value())
-			.await;
+		let session = db.get_session_by_token(session_cookie.value()).await;
 
 		match session {
 			Ok(None) => {
@@ -78,21 +75,24 @@ async fn fimfic_auth_redirect(req: HttpRequest, db: Data<Db>, fimfic_cfg: Data<F
 			Ok(Some(_session)) => {
 				return HttpResponse::Ok()
 					.content_type("text/plain")
-					.body("already have cooki (validated to be valid session)")
+					.body("already have cooki (validated to be valid session)");
 			}
 			Err(err) => {
 				eprintln!("wah {err}");
 				// todo present actual error
 				return HttpResponse::Ok()
 					.content_type("text/plain")
-					.body("db error trying to get existing session")
+					.body("db error trying to get existing session");
 			}
 		}
 	}
 
 	let state = gen_auth_state();
 
-	let login_url = format!("{login_url}&state={state}", login_url = &*fimfic_cfg.login_url);
+	let login_url = format!(
+		"{login_url}&state={state}",
+		login_url = &*fimfic_cfg.login_url
+	);
 
 	HttpResponse::Found()
 		.append_header(("location", login_url))
@@ -102,74 +102,83 @@ async fn fimfic_auth_redirect(req: HttpRequest, db: Data<Db>, fimfic_cfg: Data<F
 
 #[builder]
 async fn fimfic_auth_return(
-	req: HttpRequest,
-	db: Data<Db>,
-	fimfic_cfg: Data<FimficCfg>,
-	http_client: Data<HttpClient>,
-	code: String,
-	state: String
+	req: HttpRequest, db: Data<Db>, fimfic_cfg: Data<FimficCfg>, http_client: Data<HttpClient>,
+	code: String, state: String,
 ) -> HttpResponse {
 	let Some(state_cookie) = cookie::try_get_state_cookie(&req) else {
 		// todo present an actual error
 		return HttpResponse::Ok()
 			.content_type("text/plain")
-			.body("no cooki found")
+			.body("no cooki found");
 	};
 
 	let state_cookie = state_cookie.value();
 	if state_cookie != &*state {
 		// todo present an actual error
-		return HttpResponse::Ok()
-			.content_type("text/plain")
-			.body(format!("state mismatch\n\nstate param: {state}\nstate cookie: {state_cookie}"))
+		return HttpResponse::Ok().content_type("text/plain").body(format!(
+			"state mismatch\n\nstate param: {state}\nstate cookie: {state_cookie}"
+		));
 	}
 
 	let FimficTokenExchangeResponse {
 		user_id,
 		name: _,
-		access_token
+		access_token,
 	} = match http_client.fimfic_token_exchange(&fimfic_cfg, &code).await {
-		Ok(res) => { res }
+		Ok(res) => res,
 		Err(err) => {
 			eprintln!("error in fimfic token exchange: {err}");
 			// todo present an actual error
 			return HttpResponse::Ok()
 				.content_type("text/plain")
-				.body("fimfic didn't like your code for some reason")
+				.body("fimfic didn't like your code for some reason");
 		}
 	};
 
 	let fimfic_user = match http_client.get_fimfic_user(user_id, &access_token).await {
-		Ok(res) => { res }
+		Ok(res) => res,
 		Err(err) => {
 			eprintln!("error in pfp fetching: {err}");
 			// todo present an actual error
 			return HttpResponse::Ok()
 				.content_type("text/plain")
-				.body("fimfic didn't like the request for pfp")
+				.body("fimfic didn't like the request for pfp");
 		}
 	};
 
-	let db_result = db.insert_user(user_id, &fimfic_user.data, UserType::Voter).await;
+	let db_result = db
+		.insert_user(user_id, &fimfic_user.data, UserType::Voter)
+		.await;
 
 	if let Err(err) = db_result {
 		eprintln!("error in db storing: {err}");
 		// todo present an actual error
 		return HttpResponse::Ok()
 			.content_type("text/plain")
-			.body("db broke")
+			.body("db broke");
 	}
 
 	let token = gen_auth_token();
+	let user_agent = req
+		.headers()
+		.get(USER_AGENT)
+		.cloned()
+		.unwrap_or(HeaderValue::from_static("Unknown"));
+	let user_agent = user_agent.to_str().unwrap_or("Unknown");
 
-	if let Err(err) = db.insert_session(&token, user_id).await {
+	if let Err(err) = db.insert_session(&token, user_id, user_agent).await {
 		eprintln!("error in token storing {err}");
 		return HttpResponse::Ok()
 			.content_type("text/plain")
-			.body("storing token in db broke")
+			.body("storing token in db broke");
 	}
 
-	let pfp_url = fimfic_user.data.attributes.avatar.r256.trim_end_matches("-256");
+	let pfp_url = fimfic_user
+		.data
+		.attributes
+		.avatar
+		.r256
+		.trim_end_matches("-256");
 
 	// todo redirect to home page or something
 	HttpResponse::Ok()
@@ -177,19 +186,21 @@ async fn fimfic_auth_return(
 		.cookie(cookie::create_session_cookie(&token))
 		.cookie(cookie::create_session_info_cookie(user_id, pfp_url))
 		.content_type("text/plain")
-		.body(format!(r#"the return!! code is "{code}" and state (verified) is "{state}" and token is "{token}""#))
+		.body(format!(
+			r#"the return!! code is "{code}" and state (verified) is "{state}" and token is "{token}""#
+		))
 }
 
 /// Session info extractor
 pub struct SessionInfo {
 	pub user_id: i32,
 	pub pfp_url: String,
-	pub token: String
+	pub token: String,
 }
 
 /// Optional session info extractor (user can be logged in or not)
 pub struct MaybeSessionInfo {
-	pub session_info: Option<SessionInfo>
+	pub session_info: Option<SessionInfo>,
 }
 
 impl FromRequest for SessionInfo {
@@ -233,18 +244,26 @@ fn get_unverified_session_info(req: &HttpRequest) -> Option<SessionInfo> {
 	Some(SessionInfo {
 		user_id: session_info.user_id,
 		pfp_url: session_info.pfp_url.into_owned(),
-		token: session.value().into()
+		token: session.value().into(),
 	})
 }
 
-async fn verify_session_info(req: &HttpRequest, session_info: &SessionInfo) -> Result<(), ErrorWrapper> {
-	let db = req.app_data::<Data<Db>>().context("no ThinData<Db> found")?;
-	let db_session_info = db.get_session_by_token(&session_info.token)
+async fn verify_session_info(
+	req: &HttpRequest, session_info: &SessionInfo,
+) -> Result<(), ErrorWrapper> {
+	let db = req
+		.app_data::<Data<Db>>()
+		.context("no ThinData<Db> found")?;
+	let db_session_info = db
+		.get_session_by_token(&session_info.token)
 		.await?
 		.context("invalid session token")?;
 
 	if db_session_info.user_id != session_info.user_id {
-		return Err(anyhow::format_err!("invalid session info, user ID does not match session token").into())
+		return Err(anyhow::format_err!(
+			"invalid session info, user ID does not match session token"
+		)
+		.into());
 	}
 
 	Ok(())
@@ -252,14 +271,14 @@ async fn verify_session_info(req: &HttpRequest, session_info: &SessionInfo) -> R
 
 #[derive(Clone, Deserialize)]
 pub struct DevSession {
-	inner: Arc<DevSessionInner>
+	inner: Arc<DevSessionInner>,
 }
 
 #[derive(Clone, Deserialize)]
 pub struct DevSessionInner {
 	token: String,
 	user_id: i32,
-	pfp_url: String
+	pfp_url: String,
 }
 
 impl DevSession {
@@ -268,31 +287,43 @@ impl DevSession {
 			inner: Arc::new(DevSessionInner {
 				token,
 				user_id,
-				pfp_url
-			})
+				pfp_url,
+			}),
 		}
 	}
 }
 
 #[get("/dev-session/{token}")]
 pub async fn dev_session(
-	path: Path<String>,
-	db: Data<Db>,
-	dev_session: Data<Option<DevSession>>,
+	req: HttpRequest, path: Path<String>, db: Data<Db>, dev_session: Data<Option<DevSession>>,
 ) -> HttpResponse {
 	let Some(DevSession { inner: dev_session }) = &*dev_session else {
-		return HttpResponse::NotFound().finish()
+		return HttpResponse::NotFound().finish();
 	};
+
+	let user_agent = req
+		.headers()
+		.get(USER_AGENT)
+		.cloned()
+		.unwrap_or(HeaderValue::from_static("Unknown"));
+	let user_agent = user_agent.to_str().unwrap_or("Unknown");
 
 	if **path != *dev_session.token {
 		HttpResponse::NotFound().finish()
-	} else if db.insert_session(&dev_session.token, dev_session.user_id).await.is_err() {
+	} else if db
+		.insert_session(&dev_session.token, dev_session.user_id, user_agent)
+		.await
+		.is_err()
+	{
 		HttpResponse::InternalServerError().finish()
 	} else {
 		HttpResponse::Ok()
 			.content_type("text/plain")
 			.cookie(cookie::create_session_cookie(&dev_session.token))
-			.cookie(cookie::create_session_info_cookie(dev_session.user_id, &dev_session.pfp_url))
+			.cookie(cookie::create_session_info_cookie(
+				dev_session.user_id,
+				&dev_session.pfp_url,
+			))
 			.body("token set")
 	}
 }
@@ -300,8 +331,8 @@ pub async fn dev_session(
 mod cookie {
 	use super::*;
 
-	use actix_web::cookie::{ Cookie, SameSite };
 	use actix_web::cookie::time::Duration;
+	use actix_web::cookie::{Cookie, SameSite};
 
 	const STATE_COOKIE_NAME: &str = "fimfic-auth-state";
 	const STATE_COOKIE_PATH: &str = "/login/fimfic";
@@ -354,7 +385,7 @@ mod cookie {
 	#[derive(Deserialize, Serialize)]
 	pub struct SessionInfo<'h> {
 		pub user_id: i32,
-		pub pfp_url: Cow<'h, str>
+		pub pfp_url: Cow<'h, str>,
 	}
 
 	const SESSION_INFO_COOKIE_NAME: &str = "fimfic-auth-session-info";
@@ -363,8 +394,9 @@ mod cookie {
 	pub fn create_session_info_cookie(user_id: i32, pfp_url: &str) -> Cookie<'static> {
 		let value = serde_json::to_string(&SessionInfo {
 			user_id,
-			pfp_url: Cow::Borrowed(pfp_url)
-		}).unwrap();
+			pfp_url: Cow::Borrowed(pfp_url),
+		})
+		.unwrap();
 
 		Cookie::build(SESSION_INFO_COOKIE_NAME, value)
 			.path(SESSION_INFO_COOKIE_PATH)
