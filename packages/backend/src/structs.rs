@@ -68,6 +68,7 @@ pub struct User {
 	pub user_type: UserType,
 	pub feedback_private: Option<String>,
 	pub feedback_public: Option<String>,
+	pub date_last_fetch: DateTime<Utc>,
 	pub date_joined: DateTime<Utc>,
 }
 

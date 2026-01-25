@@ -53,10 +53,11 @@ impl Db {
 			ON CONFLICT(id) DO UPDATE SET
 				name = EXCLUDED.name,
 				pfp_url = EXCLUDED.pfp_url,
-				type = EXCLUDED.type
+				type = EXCLUDED.type,
+				date_last_fetch = now()
 			RETURNING
-				id, name, pfp_url, type AS "user_type: UserType",
-				feedback_private, feedback_public, date_joined;"#,
+				id, name, pfp_url, type AS "user_type: UserType", feedback_private,
+				feedback_public, date_last_fetch, date_joined;"#,
 			id,
 			data.attributes.name.clone(),
 			(!data.attributes.avatar.r64.ends_with("none_64.png")).then_some(
@@ -77,8 +78,8 @@ impl Db {
 		sqlx::query_as!(
 			User,
 			r#"SELECT
-				id, name, pfp_url, type AS "user_type: UserType",
-				feedback_private, feedback_public, date_joined
+				id, name, pfp_url, type AS "user_type: UserType", feedback_private,
+				feedback_public, date_last_fetch, date_joined
 			FROM Users WHERE id = $1 LIMIT 1;"#,
 			id,
 		)
@@ -91,8 +92,8 @@ impl Db {
 		sqlx::query_as!(
 			User,
 			r#"SELECT
-				id, name, pfp_url, type AS "user_type: UserType",
-				feedback_private, feedback_public, date_joined
+				id, name, pfp_url, type AS "user_type: UserType", feedback_private,
+				feedback_public, date_last_fetch, date_joined
 			FROM Users;"#,
 		)
 		.fetch_all(&self.pool)

@@ -17,6 +17,7 @@ CREATE TABLE IF NOT EXISTS Users (
 	type             user_type   NOT NULL,
 	feedback_private text        NULL,
 	feedback_public  text        NULL,
+	date_last_fetch  timestamptz NOT NULL DEFAULT now(),
 	date_joined      timestamptz NOT NULL DEFAULT now()
 );
 
