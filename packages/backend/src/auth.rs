@@ -12,6 +12,7 @@ use anyhow::Context as _;
 use bon::builder;
 use serde::{ Deserialize, Serialize };
 use std::borrow::Cow;
+use std::sync::Arc;
 
 #[derive(Deserialize)]
 struct AuthQueryParams {
@@ -251,6 +252,11 @@ async fn verify_session_info(req: &HttpRequest, session_info: &SessionInfo) -> R
 
 #[derive(Clone, Deserialize)]
 pub struct DevSession {
+	inner: Arc<DevSessionInner>
+}
+
+#[derive(Clone, Deserialize)]
+pub struct DevSessionInner {
 	token: String,
 	user_id: i32,
 	pfp_url: String
@@ -258,7 +264,13 @@ pub struct DevSession {
 
 impl DevSession {
 	pub fn new(token: String, user_id: i32, pfp_url: String) -> Self {
-		Self { token, user_id, pfp_url }
+		Self {
+			inner: Arc::new(DevSessionInner {
+				token,
+				user_id,
+				pfp_url
+			})
+		}
 	}
 }
 
@@ -268,7 +280,7 @@ pub async fn dev_session(
 	db: Data<Db>,
 	dev_session: Data<Option<DevSession>>,
 ) -> HttpResponse {
-	let Some(dev_session) = dev_session.as_ref() else {
+	let Some(DevSession { inner: dev_session }) = &*dev_session else {
 		return HttpResponse::NotFound().finish()
 	};
 

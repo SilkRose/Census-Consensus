@@ -65,13 +65,18 @@ async fn main() -> Result<()> {
 		}
 	};
 
-	let admin_pfp_url = admin.pfp_url
-		.unwrap_or_else(|| "https://static.fimfiction.net/images/none_64.png".into());
-
-	println!("listening on localhost:3000");
-
 	let create_dev_session = env_vars::create_dev_session().is_some();
 	let token = rand::gen_auth_token();
+
+	let dev_session = create_dev_session.then(|| auth::DevSession::new(
+		token.clone(),
+		admin_id,
+		admin.pfp_url
+			.unwrap_or_else(|| "https://static.fimfiction.net/images/none_64.png".into()),
+	));
+	let dev_session = Data(dev_session);
+
+	println!("listening on localhost:3000");
 
 	if create_dev_session {
 		println!();
@@ -94,13 +99,7 @@ async fn main() -> Result<()> {
 			.app_data(db.clone())
 			.app_data(fimfic.clone())
 			.app_data(http_client.clone())
-			.app_data(Data(create_dev_session.then(|| {
-				auth::DevSession::new(
-					token.clone(),
-					admin_id,
-					admin_pfp_url.clone(),
-				)
-			})))
+			.app_data(dev_session.clone())
 			.wrap(Compress::default())
 	});
 
