@@ -1,5 +1,20 @@
 use maud::{DOCTYPE, html};
 
+pub fn update_user_info_html() -> String {
+	html! {
+		(DOCTYPE) html lang = "en" {
+			body {
+				form method = "post" action = "/update-user" {
+					p { "You can only update your info once per hour." }
+					br;
+					button type = "submit" { "Update User Info" }
+				}
+			};
+		};
+	}
+	.into()
+}
+
 pub fn update_user_role_html() -> String {
 	html! {
 		(DOCTYPE) html lang = "en" {

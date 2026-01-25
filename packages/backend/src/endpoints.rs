@@ -1,6 +1,6 @@
 use crate::auth::SessionInfo;
 use crate::error::ErrorWrapper;
-use crate::html_templates::{ban_user_html, update_user_role_html};
+use crate::html_templates::{ban_user_html, update_user_info_html, update_user_role_html};
 use crate::structs::UserType;
 use crate::utility::redirect;
 use crate::{Db, html_templates::user_feedback_html};
@@ -10,6 +10,14 @@ use actix_web::{HttpRequest, HttpResponse, Responder, get, post};
 use chrono::Utc;
 use std::collections::HashMap;
 use std::time::Duration;
+
+#[get("/update-user")]
+pub async fn get_update_user() -> actix_web::Result<impl Responder> {
+	let page = update_user_info_html();
+	Ok(HttpResponse::Ok()
+		.content_type("text/html; charset=utf-8")
+		.body(page))
+}
 
 #[post("/update-user")]
 pub async fn set_update_user(
