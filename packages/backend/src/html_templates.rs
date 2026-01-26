@@ -88,6 +88,67 @@ pub fn user_feedback_html(
 	.into()
 }
 
+pub fn sessions_html(sessions: Vec<Session>) -> String {
+	html! {
+		(DOCTYPE) html lang = "en" {
+			body {
+				form method = "post" action = "/revoke-sessions" {
+					h1 { "Sessions" }
+					br;
+					table {
+						tr {
+							th { "Revoke?" }
+							th { "User Agent" }
+							th { "Created" }
+							th { "Last Seen" }
+						}
+						(session_table_row(&sessions[0], 0))
+						@for (num, session) in sessions.iter().enumerate().skip(1) {
+							(session_table_row(session, num))
+						}
+					}
+					br;
+					button type = "submit" { "Revoke Sessions" }
+				}
+			};
+		};
+	}
+	.into()
+}
+
+pub fn chapters_html(chapters: Vec<Chapter>) -> String {
+	html! {
+		(DOCTYPE) html lang = "en" {
+			body {
+				h1 { "Chapters" }
+					br;
+					table {
+						tr {
+							th { "ID" }
+							th { "Title" }
+							th { "Vote Duration" }
+							th { "Minutes Left" }
+							th { "Fimfic Chapter ID" }
+							th { "Intro Length" }
+							th { "Outro Length" }
+							th { "Chapter Order" }
+							th { "Created" }
+							th { "Edit" }
+						}
+						@for chapter in chapters.iter() {
+							(chapter_table_row(chapter))
+						}
+					}
+					br;
+					button onclick = "window.location.href='/new-chapter';" { "New Chapter" }
+			};
+		};
+	}
+	.into()
+}
+
+// HTML components go below this comment:
+
 fn input_text_numeric_required(id: &str, name: &str, min: u32, max: u32) -> PreEscaped<String> {
 	html!	(
 		input
@@ -128,34 +189,6 @@ fn textarea_required(
 	)
 }
 
-pub fn sessions_html(sessions: Vec<Session>) -> String {
-	html! {
-		(DOCTYPE) html lang = "en" {
-			body {
-				form method = "post" action = "/revoke-sessions" {
-					h1 { "Sessions" }
-					br;
-					table {
-						tr {
-							th { "Revoke?" }
-							th { "User Agent" }
-							th { "Created" }
-							th { "Last Seen" }
-						}
-						(session_table_row(&sessions[0], 0))
-						@for (num, session) in sessions.iter().enumerate().skip(1) {
-							(session_table_row(session, num))
-						}
-					}
-					br;
-					button type = "submit" { "Revoke Sessions" }
-				}
-			};
-		};
-	}
-	.into()
-}
-
 fn session_table_row(session: &Session, num: usize) -> PreEscaped<String> {
 	html! (
 		tr {
@@ -169,37 +202,6 @@ fn session_table_row(session: &Session, num: usize) -> PreEscaped<String> {
 			td { (session.last_seen.format("%d/%m/%Y %H:%M")) }
 		}
 	)
-}
-
-pub fn chapters_html(chapters: Vec<Chapter>) -> String {
-	html! {
-		(DOCTYPE) html lang = "en" {
-			body {
-				h1 { "Chapters" }
-					br;
-					table {
-						tr {
-							th { "ID" }
-							th { "Title" }
-							th { "Vote Duration" }
-							th { "Minutes Left" }
-							th { "Fimfic Chapter ID" }
-							th { "Intro Length" }
-							th { "Outro Length" }
-							th { "Chapter Order" }
-							th { "Created" }
-							th { "Edit" }
-						}
-						@for chapter in chapters.iter() {
-							(chapter_table_row(chapter))
-						}
-					}
-					br;
-					button onclick = "window.location.href='/new-chapter';" { "New Chapter" }
-			};
-		};
-	}
-	.into()
 }
 
 fn chapter_table_row(chapter: &Chapter) -> PreEscaped<String> {
