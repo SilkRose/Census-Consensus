@@ -1,4 +1,4 @@
-use crate::structs::Session;
+use crate::structs::{Chapter, Session};
 use maud::{DOCTYPE, PreEscaped, html};
 
 pub fn update_user_info_html() -> String {
@@ -135,6 +135,54 @@ fn session_table_row(session: &Session, num: usize) -> PreEscaped<String> {
 			}
 			td { (session.date_created.format("%d/%m/%Y %H:%M")) }
 			td { (session.last_seen.format("%d/%m/%Y %H:%M")) }
+		}
+	)
+}
+
+pub fn chapters_html(chapters: Vec<Chapter>) -> String {
+	html! {
+		(DOCTYPE) html lang = "en" {
+			body {
+				h1 { "Chapters" }
+					br;
+					table {
+						tr {
+							th { "ID" }
+							th { "Title" }
+							th { "Vote Duration" }
+							th { "Minutes Left" }
+							th { "Fimfic Chapter ID" }
+							th { "Intro Length" }
+							th { "Outro Length" }
+							th { "Chapter Order" }
+							th { "Created" }
+							th { "Edit" }
+						}
+						@for chapter in chapters.iter() {
+							(chapter_table_row(chapter))
+						}
+					}
+					br;
+					button onclick = "window.location.href='/new-chapter';" { "New Chapter" }
+			};
+		};
+	}
+	.into()
+}
+
+fn chapter_table_row(chapter: &Chapter) -> PreEscaped<String> {
+	html! (
+		tr {
+			td { (chapter.id) }
+			td { (chapter.title) }
+			td { (chapter.vote_duration) }
+			td { (chapter.minutes_left.unwrap_or_default()) }
+			td { (chapter.fimfic_ch_id.unwrap_or_default()) }
+			td { (chapter.intro_text.clone().map(|text| text.len()).unwrap_or_default()) }
+			td { (chapter.outro_text.clone().map(|text| text.len()).unwrap_or_default()) }
+			td { (chapter.chapter_order.unwrap_or_default()) }
+			td { (chapter.date_created.format("%d/%m/%Y %H:%M")) }
+			td { button onclick = (format!("window.location.href='/chapters/{}';", chapter.id)) { "Edit" } }
 		}
 	)
 }

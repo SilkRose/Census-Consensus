@@ -1,7 +1,7 @@
 use crate::auth::SessionInfo;
 use crate::error::ErrorWrapper;
 use crate::html_templates::{
-	ban_user_html, sessions_html, update_user_info_html, update_user_role_html,
+	ban_user_html, chapters_html, sessions_html, update_user_info_html, update_user_role_html,
 };
 use crate::structs::UserType;
 use crate::utility::redirect;
@@ -226,4 +226,26 @@ pub async fn set_revoke_sessions(
 			.append_header(("Location", redirect(req)))
 			.finish())
 	}
+}
+
+#[get("/chapters")]
+pub async fn get_chapters(
+	db: ThinData<Db>, session: SessionInfo,
+) -> actix_web::Result<impl Responder> {
+	let user = db
+		.get_user(session.user_id)
+		.await
+		.map_err(ErrorWrapper)?
+		.expect("Database constraints mean a user will always be present if they have a session.");
+	if user.user_type != UserType::Admin {
+		return Ok(HttpResponse::Unauthorized().finish());
+	}
+	let chapters =
+		db.get_all_chapters().await.map_err(ErrorWrapper).expect(
+			"Database constraints mean a user will always be present if they have a session.",
+		);
+	let page = chapters_html(chapters);
+	Ok(HttpResponse::Ok()
+		.content_type("text/html; charset=utf-8")
+		.body(page))
 }
