@@ -13,6 +13,9 @@ use chrono::Utc;
 use std::collections::HashMap;
 use std::time::Duration;
 
+const DATABASE_CONSTRAINT_EXPECT: &str =
+	"Database constraints mean a user will always be present if they have a session.";
+
 #[get("/update-user")]
 pub async fn get_update_user() -> actix_web::Result<impl Responder> {
 	let page = update_user_info_html();
@@ -30,7 +33,7 @@ pub async fn set_update_user(
 		.get_user(session.user_id)
 		.await
 		.map_err(ErrorWrapper)?
-		.expect("Database constraints mean a user will always be present if they have a session.");
+		.expect(DATABASE_CONSTRAINT_EXPECT);
 	let next_fetch_time = user.date_last_fetch + Duration::from_hours(1);
 	if Utc::now() < next_fetch_time {
 		return Ok(HttpResponse::BadRequest().finish());
@@ -55,7 +58,7 @@ pub async fn get_update_user_role(
 		.get_user(session.user_id)
 		.await
 		.map_err(ErrorWrapper)?
-		.expect("Database constraints mean a user will always be present if they have a session.");
+		.expect(DATABASE_CONSTRAINT_EXPECT);
 	if user.user_type != UserType::Admin {
 		return Ok(HttpResponse::Unauthorized().finish());
 	}
@@ -73,7 +76,7 @@ pub async fn set_update_user_role(
 		.get_user(session.user_id)
 		.await
 		.map_err(ErrorWrapper)?
-		.expect("Database constraints mean a user will always be present if they have a session.");
+		.expect(DATABASE_CONSTRAINT_EXPECT);
 	if user.user_type != UserType::Admin {
 		return Ok(HttpResponse::Unauthorized().finish());
 	}
@@ -103,7 +106,7 @@ pub async fn get_ban_user(
 		.get_user(session.user_id)
 		.await
 		.map_err(ErrorWrapper)?
-		.expect("Database constraints mean a user will always be present if they have a session.");
+		.expect(DATABASE_CONSTRAINT_EXPECT);
 	if user.user_type != UserType::Admin {
 		return Ok(HttpResponse::Unauthorized().finish());
 	}
@@ -121,7 +124,7 @@ pub async fn set_ban_user(
 		.get_user(session.user_id)
 		.await
 		.map_err(ErrorWrapper)?
-		.expect("Database constraints mean a user will always be present if they have a session.");
+		.expect(DATABASE_CONSTRAINT_EXPECT);
 	if user.user_type != UserType::Admin {
 		return Ok(HttpResponse::Unauthorized().finish());
 	}
@@ -150,7 +153,7 @@ pub async fn get_user_feedback(
 		.get_user(session.user_id)
 		.await
 		.map_err(ErrorWrapper)?
-		.expect("Database constraints mean a user will always be present if they have a session.");
+		.expect(DATABASE_CONSTRAINT_EXPECT);
 	let page = user_feedback_html(user.feedback_private, user.feedback_public);
 	Ok(HttpResponse::Ok()
 		.content_type("text/html; charset=utf-8")
@@ -236,14 +239,15 @@ pub async fn get_chapters(
 		.get_user(session.user_id)
 		.await
 		.map_err(ErrorWrapper)?
-		.expect("Database constraints mean a user will always be present if they have a session.");
+		.expect(DATABASE_CONSTRAINT_EXPECT);
 	if user.user_type != UserType::Admin {
 		return Ok(HttpResponse::Unauthorized().finish());
 	}
-	let chapters =
-		db.get_all_chapters().await.map_err(ErrorWrapper).expect(
-			"Database constraints mean a user will always be present if they have a session.",
-		);
+	let chapters = db
+		.get_all_chapters()
+		.await
+		.map_err(ErrorWrapper)
+		.expect(DATABASE_CONSTRAINT_EXPECT);
 	let page = chapters_html(chapters);
 	Ok(HttpResponse::Ok()
 		.content_type("text/html; charset=utf-8")
