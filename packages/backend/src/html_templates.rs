@@ -140,7 +140,7 @@ pub fn chapters_html(chapters: Vec<Chapter>) -> String {
 						}
 					}
 					br;
-					button onclick = "window.location.href='/new-chapter';" { "New Chapter" }
+					button onclick = "window.location.href='/chapters/new';" { "New Chapter" }
 			};
 		};
 	}
@@ -247,6 +247,20 @@ fn input_text_value_required(
 			maxlength = (max)
 			required
 			{ (value) }
+	)
+}
+
+fn input_number(id: &str, name: &str, min: u32, max: u32) -> PreEscaped<String> {
+	html!	(
+		input
+			id = (id)
+			type = "number"
+			name = (name)
+			inputmode = "numeric"
+			pattern = r"\d*"
+			min = (min)
+			max = (max)
+			{}
 	)
 }
 

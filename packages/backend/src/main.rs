@@ -1,9 +1,9 @@
 #![feature(impl_trait_in_assoc_type)]
 
 use crate::endpoints::{
-	get_ban_user, get_chapters, get_sessions, get_update_user, get_update_user_role,
-	get_user_feedback, set_ban_user, set_revoke_sessions, set_update_user, set_update_user_role,
-	set_user_feedback,
+	get_ban_user, get_chapter_new, get_chapters, get_sessions, get_update_user,
+	get_update_user_role, get_user_feedback, set_ban_user, set_chapter_new, set_revoke_sessions,
+	set_update_user, set_update_user_role, set_user_feedback,
 };
 use crate::structs::UserType;
 
@@ -109,6 +109,8 @@ async fn main() -> Result<()> {
 			.service(get_user_feedback)
 			.service(set_user_feedback)
 			.service(get_chapters)
+			.service(set_chapter_new)
+			.service(get_chapter_new)
 			.service(auth::dev_session)
 			.service(Files::new("/", "./target/site").index_file("index.html"))
 			.app_data(db.clone())

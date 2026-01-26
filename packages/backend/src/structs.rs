@@ -159,3 +159,9 @@ pub struct StoryUpdate {
 	pub dislikes: i32,
 	pub date_cached: DateTime<Utc>,
 }
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct NewChapter {
+	pub title: String,
+	pub vote_duration: i32,
+}

@@ -1,9 +1,10 @@
 use crate::auth::SessionInfo;
 use crate::error::ErrorWrapper;
 use crate::html_templates::{
-	ban_user_html, chapters_html, sessions_html, update_user_info_html, update_user_role_html,
+	ban_user_html, chapters_html, new_chapter_html, sessions_html, update_user_info_html,
+	update_user_role_html,
 };
-use crate::structs::UserType;
+use crate::structs::{NewChapter, UserType};
 use crate::utility::redirect;
 use crate::{Db, html_templates::user_feedback_html};
 use crate::{FimficCfg, HttpClient};
@@ -252,4 +253,44 @@ pub async fn get_chapters(
 	Ok(HttpResponse::Ok()
 		.content_type("text/html; charset=utf-8")
 		.body(page))
+}
+
+#[get("/chapters/new")]
+pub async fn get_chapter_new(
+	db: ThinData<Db>, session: SessionInfo,
+) -> actix_web::Result<impl Responder> {
+	let user = db
+		.get_user(session.user_id)
+		.await
+		.map_err(ErrorWrapper)?
+		.expect(DATABASE_CONSTRAINT_EXPECT);
+	if user.user_type != UserType::Admin {
+		return Ok(HttpResponse::Unauthorized().finish());
+	}
+	let page = new_chapter_html();
+	Ok(HttpResponse::Ok()
+		.content_type("text/html; charset=utf-8")
+		.body(page))
+}
+
+#[post("/chapters/new")]
+pub async fn set_chapter_new(
+	body: String, db: ThinData<Db>, session: SessionInfo,
+) -> actix_web::Result<impl Responder> {
+	let user = db
+		.get_user(session.user_id)
+		.await
+		.map_err(ErrorWrapper)?
+		.expect(DATABASE_CONSTRAINT_EXPECT);
+	if user.user_type != UserType::Admin {
+		return Ok(HttpResponse::Unauthorized().finish());
+	}
+	let chapter = serde_urlencoded::from_str::<NewChapter>(&body)?;
+	let chapter = db
+		.insert_chapter(&chapter.title, chapter.vote_duration)
+		.await
+		.map_err(ErrorWrapper)?;
+	Ok(HttpResponse::SeeOther()
+		.append_header(("Location", format!("/chapters/{}", chapter.id)))
+		.finish())
 }
