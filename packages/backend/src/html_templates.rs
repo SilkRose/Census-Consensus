@@ -110,7 +110,7 @@ pub fn sessions_html(sessions: Vec<Session>) -> String {
 							th { "Created" }
 							th { "Last Seen" }
 						}
-						(session_table_row(&sessions[1], true, 0))
+						(session_table_row(&sessions[0], true, 0))
 						@for (num, session) in sessions.iter().enumerate().skip(1) {
 							(session_table_row(session, false, num))
 						}
