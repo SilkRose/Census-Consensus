@@ -116,7 +116,7 @@ pub fn sessions_html(sessions: Vec<Session>) -> String {
 	.into()
 }
 
-pub fn chapters_html(chapters: Vec<Chapter>) -> String {
+pub fn chapters_html(chapters: Vec<Chapter>, admin: bool) -> String {
 	html! {
 		(DOCTYPE) html lang = "en" {
 			body {
@@ -133,14 +133,18 @@ pub fn chapters_html(chapters: Vec<Chapter>) -> String {
 							th { "Outro Length" }
 							th { "Chapter Order" }
 							th { "Created" }
-							th { "Edit" }
+							@if admin {
+								th { "Edit" }
+							}
 						}
 						@for chapter in chapters.iter() {
-							(chapter_table_row(chapter))
+							(chapter_table_row(chapter, admin))
 						}
 					}
-					br;
-					button onclick = "window.location.href='/chapters/new';" { "New Chapter" }
+					@if admin {
+						br;
+						button onclick = "window.location.href='/chapters/new';" { "New Chapter" }
+					}
 			};
 		};
 	}
@@ -434,19 +438,21 @@ fn session_table_row(session: &Session, num: usize) -> PreEscaped<String> {
 	)
 }
 
-fn chapter_table_row(chapter: &Chapter) -> PreEscaped<String> {
+fn chapter_table_row(chapter: &Chapter, admin: bool) -> PreEscaped<String> {
 	html! (
 		tr {
 			td { (chapter.id) }
 			td { (chapter.title) }
 			td { (chapter.vote_duration) }
-			td { (chapter.minutes_left.unwrap_or_default()) }
-			td { (chapter.fimfic_ch_id.unwrap_or_default()) }
+			td { (chapter.minutes_left.map_or(String::default(), |m| m.to_string())) }
+			td { (chapter.fimfic_ch_id.map_or(String::default(), |m| m.to_string())) }
 			td { (chapter.intro_text.clone().map(|text| text.len()).unwrap_or_default()) }
 			td { (chapter.outro_text.clone().map(|text| text.len()).unwrap_or_default()) }
-			td { (chapter.chapter_order.unwrap_or_default()) }
+			td { (chapter.chapter_order.map_or(String::default(), |m| m.to_string())) }
 			td { (chapter.date_created.format("%d/%m/%Y %H:%M")) }
-			td { button onclick = (format!("window.location.href='/chapters/{}';", chapter.id)) { "Edit" } }
+			@if admin {
+				td { button onclick = (format!("window.location.href='/chapters/{}';", chapter.id)) { "Edit" } }
+			}
 		}
 	)
 }
