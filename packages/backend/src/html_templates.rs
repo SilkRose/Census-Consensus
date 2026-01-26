@@ -23,7 +23,7 @@ pub fn update_user_role_html() -> String {
 				form method = "post" action = "/user-role" {
 					label for = "id" { "User ID:" }
 					br;
-					input type = "text" id = "id" name = "id" inputmode = "numeric" pattern = r"\d*" minlength = "1" maxlength = "8" required {  }
+					(input_text_numeric_required("id", "id", 1, 8))
 					br;
 					label for = "role" { "User Role:" }
 					br;
@@ -49,11 +49,11 @@ pub fn ban_user_html() -> String {
 				form method = "post" action = "/ban-user" {
 					label for = "id" { "User ID:" }
 					br;
-					input type = "text" id = "id" name = "id" inputmode = "numeric" pattern = r"\d*" minlength = "1" maxlength = "8" required {  }
+					(input_text_numeric_required("id", "id", 1, 8))
 					br;
 					label for = "reason" { "Ban Reason:" }
 					br;
-					textarea type = "text" id = "reason" name = "reason" minlength = "8" maxlength = "256" rows = "4" cols = "40" required {}
+					(textarea_required("reason", "reason", 8, 256, None))
 					br;
 					button type = "submit" { "Ban User" }
 				}
@@ -73,20 +73,12 @@ pub fn user_feedback_html(
 					label for = "public" { h3  { "Public Feedback" } }
 					br;
 					p style = "opacity: 80%" { "May appear in a future blog post about this event." }
-					@if let Some(public_feedback) = public_feedback {
-							textarea id = "public" type = "text" name = "feedback_public" maxlength = "1000000" cols = "30" rows = "10" { (public_feedback) }
-					} @else {
-						textarea id = "public" type = "text" name = "feedback_public" maxlength = "1000000" cols = "30" rows = "10" {}
-					}
+					(textarea("public", "feedback_public", 1_000_000, public_feedback))
 					br;
 					label for = "private" { h3  { "Private Feedback" } }
 					br;
 					p style = "opacity: 80%" { "Shared only with the developers and writers of this event." }
-					@if let Some(private_feedback) = private_feedback {
-							textarea id = "private" type = "text" name = "feedback_private" maxlength = "1000000" cols = "30" rows = "10" { (private_feedback) }
-					} @else {
-						textarea id = "private" type = "text" name = "feedback_private" maxlength = "1000000" cols = "30" rows = "10" {}
-					}
+					(textarea("private", "feedback_private", 1_000_000, private_feedback))
 					br;
 					button type = "submit" { "Submit Feedback" }
 				}
@@ -94,6 +86,46 @@ pub fn user_feedback_html(
 		};
 	}
 	.into()
+}
+
+fn input_text_numeric_required(id: &str, name: &str, min: u32, max: u32) -> PreEscaped<String> {
+	html!	(
+		input
+			id = (id)
+			type = "text"
+			name = (name)
+			inputmode = "numeric"
+			pattern = r"\d*"
+			minlength = (min)
+			maxlength = (max)
+			required {}
+	)
+}
+
+fn textarea(id: &str, name: &str, max: u32, value: Option<String>) -> PreEscaped<String> {
+	html!	(
+		textarea
+			id = (id)
+			type = "text"
+			name = (name)
+			maxlength = (max)
+			{ (value.unwrap_or_default()) }
+	)
+}
+
+fn textarea_required(
+	id: &str, name: &str, min: u32, max: u32, value: Option<String>,
+) -> PreEscaped<String> {
+	html!	(
+		textarea
+			id = (id)
+			type = "text"
+			name = (name)
+			minlength = (min)
+			maxlength = (max)
+			required
+			{ (value.unwrap_or_default()) }
+	)
 }
 
 pub fn sessions_html(sessions: Vec<Session>) -> String {
