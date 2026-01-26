@@ -147,6 +147,56 @@ pub fn chapters_html(chapters: Vec<Chapter>) -> String {
 	.into()
 }
 
+pub fn new_chapter_html() -> String {
+	html! {
+		(DOCTYPE) html lang = "en" {
+			body {
+				form method = "post" action = "/chapters/new" {
+					h1 { "New Chapter" }
+					br;
+					@let name = "title";
+					label for = (name) { "Title:" }
+					br;
+					(input_text_required(name, name, 8, 256))
+					br;
+					@let name = "vote_duration";
+					label for = (name) { "Vote Duration:" }
+					br;
+					(input_number_required(name, name, 1, 100))
+					br;
+					button type = "submit" { "Create Chapter" }
+				}
+			};
+		};
+	}
+	.into()
+}
+
+pub fn edit_chapter_html(chapter: Chapter) -> String {
+	html! {
+		(DOCTYPE) html lang = "en" {
+			body {
+				form method = "post" action = (format!("/chapters/{}", chapter.id)) {
+					h1 { "Edit Chapter" }
+					br;
+					@let name = "title";
+					label for = (name) { "Title:" }
+					br;
+					(input_text_value_required(name, name, 8, 256, &chapter.title))
+					br;
+					@let name = "vote_duration";
+					label for = (name) { "Vote Duration:" }
+					br;
+					(input_number_value_required(name, name, 1, 100, chapter.vote_duration))
+					br;
+					button type = "submit" { "Save Chapter" }
+				}
+			};
+		};
+	}
+	.into()
+}
+
 // HTML components go below this comment:
 
 fn input_text(id: &str, name: &str, min: u32, max: u32) -> PreEscaped<String> {
@@ -200,7 +250,7 @@ fn input_text_value_required(
 	)
 }
 
-fn input_number_value(id: &str, name: &str, min: u32, max: u32, value: u32) -> PreEscaped<String> {
+fn input_number_value(id: &str, name: &str, min: u32, max: u32, value: i32) -> PreEscaped<String> {
 	html!	(
 		input
 			id = (id)
@@ -229,7 +279,7 @@ fn input_number_required(id: &str, name: &str, min: u32, max: u32) -> PreEscaped
 }
 
 fn input_number_value_required(
-	id: &str, name: &str, min: u32, max: u32, value: u32,
+	id: &str, name: &str, min: u32, max: u32, value: i32,
 ) -> PreEscaped<String> {
 	html!	(
 		input
