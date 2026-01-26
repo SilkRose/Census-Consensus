@@ -240,7 +240,7 @@ pub async fn get_chapters(
 		.await
 		.map_err(ErrorWrapper)?
 		.expect(DATABASE_CONSTRAINT_EXPECT);
-	if user.user_type != UserType::Admin {
+	if user.user_type == UserType::Voter {
 		return Ok(HttpResponse::Unauthorized().finish());
 	}
 	let chapters = db
