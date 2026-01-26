@@ -53,7 +53,7 @@ pub fn ban_user_html() -> String {
 					br;
 					label for = "reason" { "Ban Reason:" }
 					br;
-					(textarea_required("reason", "reason", 8, 256, None))
+					(textarea_required("reason", "reason", 8, 256))
 					br;
 					button type = "submit" { "Ban User" }
 				}
@@ -73,12 +73,12 @@ pub fn user_feedback_html(
 					label for = "public" { h3  { "Public Feedback" } }
 					br;
 					p style = "opacity: 80%" { "May appear in a future blog post about this event." }
-					(textarea("public", "feedback_public", 1_000_000, public_feedback))
+					(textarea_value("public", "feedback_public", 1_000_000, &public_feedback.unwrap_or_default()))
 					br;
 					label for = "private" { h3  { "Private Feedback" } }
 					br;
 					p style = "opacity: 80%" { "Shared only with the developers and writers of this event." }
-					(textarea("private", "feedback_private", 1_000_000, private_feedback))
+					(textarea_value("private", "feedback_private", 1_000_000, &private_feedback.unwrap_or_default()))
 					br;
 					button type = "submit" { "Submit Feedback" }
 				}
@@ -149,6 +149,132 @@ pub fn chapters_html(chapters: Vec<Chapter>) -> String {
 
 // HTML components go below this comment:
 
+fn input_text(id: &str, name: &str, min: u32, max: u32) -> PreEscaped<String> {
+	html!	(
+		input
+			id = (id)
+			type = "text"
+			name = (name)
+			minlength = (min)
+			maxlength = (max)
+			{}
+	)
+}
+
+fn input_text_value(id: &str, name: &str, min: u32, max: u32, value: &str) -> PreEscaped<String> {
+	html!	(
+		input
+			id = (id)
+			type = "text"
+			name = (name)
+			minlength = (min)
+			maxlength = (max)
+			{ (value) }
+	)
+}
+
+fn input_text_required(id: &str, name: &str, min: u32, max: u32) -> PreEscaped<String> {
+	html!	(
+		input
+			id = (id)
+			type = "text"
+			name = (name)
+			minlength = (min)
+			maxlength = (max)
+			required {}
+	)
+}
+
+fn input_text_value_required(
+	id: &str, name: &str, min: u32, max: u32, value: &str,
+) -> PreEscaped<String> {
+	html!	(
+		input
+			id = (id)
+			type = "text"
+			name = (name)
+			minlength = (min)
+			maxlength = (max)
+			required
+			{ (value) }
+	)
+}
+
+fn input_number_value(id: &str, name: &str, min: u32, max: u32, value: u32) -> PreEscaped<String> {
+	html!	(
+		input
+			id = (id)
+			type = "number"
+			name = (name)
+			inputmode = "numeric"
+			pattern = r"\d*"
+			min = (min)
+			max = (max)
+			{ (value) }
+	)
+}
+
+fn input_number_required(id: &str, name: &str, min: u32, max: u32) -> PreEscaped<String> {
+	html!	(
+		input
+			id = (id)
+			type = "number"
+			name = (name)
+			inputmode = "numeric"
+			pattern = r"\d*"
+			min = (min)
+			max = (max)
+			required {}
+	)
+}
+
+fn input_number_value_required(
+	id: &str, name: &str, min: u32, max: u32, value: u32,
+) -> PreEscaped<String> {
+	html!	(
+		input
+			id = (id)
+			type = "number"
+			name = (name)
+			inputmode = "numeric"
+			pattern = r"\d*"
+			min = (min)
+			max = (max)
+			required
+			{ (value) }
+	)
+}
+
+fn input_text_numeric(id: &str, name: &str, min: u32, max: u32) -> PreEscaped<String> {
+	html!	(
+		input
+			id = (id)
+			type = "text"
+			name = (name)
+			inputmode = "numeric"
+			pattern = r"\d*"
+			minlength = (min)
+			maxlength = (max)
+			{}
+	)
+}
+
+fn input_text_numeric_value(
+	id: &str, name: &str, min: u32, max: u32, value: &str,
+) -> PreEscaped<String> {
+	html!	(
+		input
+			id = (id)
+			type = "text"
+			name = (name)
+			inputmode = "numeric"
+			pattern = r"\d*"
+			minlength = (min)
+			maxlength = (max)
+			{ (value) }
+	)
+}
+
 fn input_text_numeric_required(id: &str, name: &str, min: u32, max: u32) -> PreEscaped<String> {
 	html!	(
 		input
@@ -163,19 +289,59 @@ fn input_text_numeric_required(id: &str, name: &str, min: u32, max: u32) -> PreE
 	)
 }
 
-fn textarea(id: &str, name: &str, max: u32, value: Option<String>) -> PreEscaped<String> {
+fn input_text_numeric_value_required(
+	id: &str, name: &str, min: u32, max: u32, value: &str,
+) -> PreEscaped<String> {
+	html!	(
+		input
+			id = (id)
+			type = "text"
+			name = (name)
+			inputmode = "numeric"
+			pattern = r"\d*"
+			minlength = (min)
+			maxlength = (max)
+			required
+			{ (value) }
+	)
+}
+
+fn textarea(id: &str, name: &str, max: u32) -> PreEscaped<String> {
 	html!	(
 		textarea
 			id = (id)
 			type = "text"
 			name = (name)
 			maxlength = (max)
-			{ (value.unwrap_or_default()) }
+			{}
 	)
 }
 
-fn textarea_required(
-	id: &str, name: &str, min: u32, max: u32, value: Option<String>,
+fn textarea_value(id: &str, name: &str, max: u32, value: &str) -> PreEscaped<String> {
+	html!	(
+		textarea
+			id = (id)
+			type = "text"
+			name = (name)
+			maxlength = (max)
+			{ (value) }
+	)
+}
+
+fn textarea_required(id: &str, name: &str, min: u32, max: u32) -> PreEscaped<String> {
+	html!	(
+		textarea
+			id = (id)
+			type = "text"
+			name = (name)
+			minlength = (min)
+			maxlength = (max)
+			required {}
+	)
+}
+
+fn textarea_value_required(
+	id: &str, name: &str, min: u32, max: u32, value: &str,
 ) -> PreEscaped<String> {
 	html!	(
 		textarea
@@ -185,7 +351,7 @@ fn textarea_required(
 			minlength = (min)
 			maxlength = (max)
 			required
-			{ (value.unwrap_or_default()) }
+			{ (value) }
 	)
 }
 
