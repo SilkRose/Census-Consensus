@@ -110,9 +110,9 @@ pub fn sessions_html(sessions: Vec<Session>) -> String {
 							th { "Created" }
 							th { "Last Seen" }
 						}
-						(session_table_row(&sessions[0], true, 0))
+						(session_table_row(&sessions[0], 0))
 						@for (num, session) in sessions.iter().enumerate().skip(1) {
-							(session_table_row(session, false, num))
+							(session_table_row(session, num))
 						}
 					}
 					br;
@@ -124,11 +124,11 @@ pub fn sessions_html(sessions: Vec<Session>) -> String {
 	.into()
 }
 
-fn session_table_row(session: &Session, active: bool, num: usize) -> PreEscaped<String> {
+fn session_table_row(session: &Session, num: usize) -> PreEscaped<String> {
 	html! (
 		tr {
 			td { input type = "checkbox" id = (num) name = (num) value = (session.token) {} }
-			@if active {
+			@if num == 0 {
 				td { b { "(Active) " } (session.user_agent) }
 			} @else {
 				td { (session.user_agent) }
