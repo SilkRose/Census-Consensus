@@ -1,4 +1,5 @@
-use maud::{DOCTYPE, html};
+use crate::structs::Session;
+use maud::{DOCTYPE, PreEscaped, html};
 
 pub fn update_user_info_html() -> String {
 	html! {
@@ -93,4 +94,47 @@ pub fn user_feedback_html(
 		};
 	}
 	.into()
+}
+
+pub fn sessions_html(sessions: Vec<Session>) -> String {
+	html! {
+		(DOCTYPE) html lang = "en" {
+			body {
+				form method = "post" action = "/revoke-sessions" {
+					h1 { "Sessions" }
+					br;
+					table {
+						tr {
+							th { "Revoke?" }
+							th { "User Agent" }
+							th { "Created" }
+							th { "Last Seen" }
+						}
+						(session_table_row(&sessions[1], true, 0))
+						@for (num, session) in sessions.iter().enumerate().skip(1) {
+							(session_table_row(session, false, num))
+						}
+					}
+					br;
+					button type = "submit" { "Revoke Sessions" }
+				}
+			};
+		};
+	}
+	.into()
+}
+
+fn session_table_row(session: &Session, active: bool, num: usize) -> PreEscaped<String> {
+	html! (
+		tr {
+			td { input type = "checkbox" id = (num) name = (num) value = (session.token) {} }
+			@if active {
+				td { b { "(Active) " } (session.user_agent) }
+			} @else {
+				td { (session.user_agent) }
+			}
+			td { (session.date_created.format("%d/%m/%Y %H:%M")) }
+			td { (session.last_seen.format("%d/%m/%Y %H:%M")) }
+		}
+	)
 }

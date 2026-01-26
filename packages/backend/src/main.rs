@@ -1,8 +1,8 @@
 #![feature(impl_trait_in_assoc_type)]
 
 use crate::endpoints::{
-	get_ban_user, get_update_user, get_update_user_role, get_user_feedback, set_ban_user,
-	set_update_user, set_update_user_role, set_user_feedback,
+	get_ban_user, get_sessions, get_update_user, get_update_user_role, get_user_feedback,
+	set_ban_user, set_revoke_sessions, set_update_user, set_update_user_role, set_user_feedback,
 };
 use crate::structs::UserType;
 
@@ -97,6 +97,8 @@ async fn main() -> Result<()> {
 		ActixApp::new()
 			.service(auth::fimfic_auth)
 			.service(auth::fimfic_auth_logout)
+			.service(get_sessions)
+			.service(set_revoke_sessions)
 			.service(set_update_user)
 			.service(get_update_user)
 			.service(get_update_user_role)

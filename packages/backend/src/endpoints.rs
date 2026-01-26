@@ -1,6 +1,8 @@
 use crate::auth::SessionInfo;
 use crate::error::ErrorWrapper;
-use crate::html_templates::{ban_user_html, update_user_info_html, update_user_role_html};
+use crate::html_templates::{
+	ban_user_html, sessions_html, update_user_info_html, update_user_role_html,
+};
 use crate::structs::UserType;
 use crate::utility::redirect;
 use crate::{Db, html_templates::user_feedback_html};
@@ -176,4 +178,52 @@ pub async fn set_user_feedback(
 	Ok(HttpResponse::SeeOther()
 		.append_header(("Location", redirect(req)))
 		.finish())
+}
+
+#[get("/sessions")]
+pub async fn get_sessions(
+	db: ThinData<Db>, session: SessionInfo,
+) -> actix_web::Result<impl Responder> {
+	let mut sessions = db
+		.get_all_user_sessions(session.user_id)
+		.await
+		.map_err(ErrorWrapper)?;
+	sessions.sort_by_key(|k| k.last_seen);
+	sessions.reverse();
+	let page = sessions_html(sessions);
+	Ok(HttpResponse::Ok()
+		.content_type("text/html; charset=utf-8")
+		.body(page))
+}
+
+#[post("/revoke-sessions")]
+pub async fn set_revoke_sessions(
+	req: HttpRequest, body: String, db: ThinData<Db>, session: SessionInfo,
+) -> actix_web::Result<impl Responder> {
+	let sessions = serde_urlencoded::from_str::<HashMap<u32, String>>(&body)?
+		.into_values()
+		.collect::<Vec<_>>();
+	let logout = sessions.contains(&session.token);
+	for session_del in sessions {
+		let check = db
+			.get_session_by_token(&session_del)
+			.await
+			.map_err(ErrorWrapper)?;
+		if let Some(check) = check
+			&& check.user_id == session.user_id
+		{
+			db.delete_session(&session_del)
+				.await
+				.map_err(ErrorWrapper)?;
+		}
+	}
+	if logout {
+		Ok(HttpResponse::SeeOther()
+			.append_header(("Location", "/logout"))
+			.finish())
+	} else {
+		Ok(HttpResponse::SeeOther()
+			.append_header(("Location", redirect(req)))
+			.finish())
+	}
 }
