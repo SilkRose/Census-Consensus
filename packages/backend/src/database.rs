@@ -499,7 +499,7 @@ impl Db {
 		.rows_affected())
 	}
 
-	pub async fn update_chapter_ordering(&self, id: i32, order: i32) -> Result<u64> {
+	pub async fn update_chapter_order(&self, id: i32, order: i32) -> Result<u64> {
 		Ok(sqlx::query!(
 			"UPDATE Chapters
 			SET
@@ -508,6 +508,21 @@ impl Db {
 			WHERE id = $1;",
 			id,
 			order
+		)
+		.execute(&self.pool)
+		.await
+		.context(UPDATE_ERROR)?
+		.rows_affected())
+	}
+
+	pub async fn update_chapter_order_none(&self, id: i32) -> Result<u64> {
+		Ok(sqlx::query!(
+			"UPDATE Chapters
+			SET
+				chapter_order = NULL,
+				last_edit = now()
+			WHERE id = $1;",
+			id,
 		)
 		.execute(&self.pool)
 		.await

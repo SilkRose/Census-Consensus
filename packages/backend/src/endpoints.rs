@@ -356,7 +356,7 @@ pub async fn set_chapter_order(
 	}
 	let chapters = db.get_all_chapters().await.map_err(ErrorWrapper)?;
 	let max = chapters.iter().filter_map(|c| c.chapter_order).max();
-	db.update_chapter_ordering(id, max.map_or(1, |i| i + 1))
+	db.update_chapter_order(id, max.map_or(1, |i| i + 1))
 		.await
 		.map_err(ErrorWrapper)?;
 	Ok(HttpResponse::SeeOther()
@@ -393,19 +393,21 @@ pub async fn set_chapter_order_move(
 			.map_err(ErrorWrapper)?;
 		if let Some(above) = chapter_above {
 			// Move chapter up 1000.
-			db.update_chapter_ordering(id, order + 1000)
+			db.update_chapter_order(id, order + 1000)
 				.await
 				.map_err(ErrorWrapper)?;
 			// Move second chapter to new spot.
-			db.update_chapter_ordering(above.id, order)
+			db.update_chapter_order(above.id, order)
 				.await
 				.map_err(ErrorWrapper)?;
 			// Move original chapter back.
-			db.update_chapter_ordering(id, order + movement)
+			db.update_chapter_order(id, order + movement)
 				.await
 				.map_err(ErrorWrapper)?;
 		} else {
-			return Ok(HttpResponse::BadRequest().finish());
+			db.update_chapter_order_none(id)
+				.await
+				.map_err(ErrorWrapper)?;
 		}
 	}
 	Ok(HttpResponse::SeeOther()
