@@ -170,9 +170,40 @@ pub struct NewChapter {
 pub struct EditChapter {
 	pub title: String,
 	pub vote_duration: i32,
+	#[serde(deserialize_with = "option_number")]
 	pub minutes_left: Option<i32>,
-	pub fimfic_ch_id: Option<i32>,
+	#[serde(deserialize_with = "option_string")]
 	pub intro_text: Option<String>,
+	#[serde(deserialize_with = "option_string")]
 	pub outro_text: Option<String>,
+	#[serde(deserialize_with = "option_number")]
 	pub chapter_order: Option<i32>,
+}
+
+use serde::{Deserializer, de::Error};
+
+fn option_number<'de, D>(deserializer: D) -> Result<Option<i32>, D::Error>
+where
+	D: Deserializer<'de>,
+{
+	let s: &str = Deserialize::deserialize(deserializer)?;
+	let res = if s.is_empty() {
+		None
+	} else {
+		Some(s.parse::<i32>().map_err(D::Error::custom)?)
+	};
+	Ok(res)
+}
+
+fn option_string<'de, D>(deserializer: D) -> Result<Option<String>, D::Error>
+where
+	D: Deserializer<'de>,
+{
+	let s: &str = Deserialize::deserialize(deserializer)?;
+	let res = if s.is_empty() {
+		None
+	} else {
+		Some(String::from(s))
+	};
+	Ok(res)
 }
