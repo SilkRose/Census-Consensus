@@ -483,11 +483,11 @@ fn chapter_table_row(chapter: &Chapter, admin: bool) -> PreEscaped<String> {
 				td {
 					@if let Some(order) = chapter.chapter_order {
 						@if order != 1 {
-							@let endpoint = format!("/chapters/{}/order-up", chapter.id);
+							@let endpoint = format!("/chapters/{}/ordered/-1", chapter.id);
 							(button_form("↑", &endpoint))
 						}
 						(order)
-						@let endpoint = format!("/chapters/{}/order-down", chapter.id);
+						@let endpoint = format!("/chapters/{}/ordered/1", chapter.id);
 						(button_form("↓", &endpoint))
 					} @else {
 						@let endpoint = format!("/chapters/{}/ordered", chapter.id);

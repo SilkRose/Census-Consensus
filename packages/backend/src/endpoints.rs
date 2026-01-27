@@ -364,11 +364,14 @@ pub async fn set_chapter_order(
 		.finish())
 }
 
-#[get("/chapters/{id}/order-up")]
-pub async fn set_chapter_order_up(
-	path: Path<i32>, db: ThinData<Db>, session: SessionInfo,
+#[get("/chapters/{id}/ordered/{movement}")]
+pub async fn set_chapter_order_move(
+	path: Path<(i32, i32)>, db: ThinData<Db>, session: SessionInfo,
 ) -> actix_web::Result<impl Responder> {
-	let id = path.into_inner();
+	let (id, movement) = path.into_inner();
+	if movement.abs() != 1 {
+		return Ok(HttpResponse::BadRequest().finish());
+	}
 	let user = db
 		.get_user(session.user_id)
 		.await
@@ -381,11 +384,11 @@ pub async fn set_chapter_order_up(
 	if let Some(chapter) = chapter
 		&& let Some(order) = chapter.chapter_order
 	{
-		if order == 1 {
+		if order + movement == 0 {
 			return Ok(HttpResponse::BadRequest().finish());
 		}
 		let chapter_above = db
-			.get_chapter_by_order(order - 1)
+			.get_chapter_by_order(order + movement)
 			.await
 			.map_err(ErrorWrapper)?;
 		if let Some(above) = chapter_above {
@@ -398,13 +401,11 @@ pub async fn set_chapter_order_up(
 				.await
 				.map_err(ErrorWrapper)?;
 			// Move original chapter back.
-			db.update_chapter_ordering(id, order - 1)
+			db.update_chapter_ordering(id, order + movement)
 				.await
 				.map_err(ErrorWrapper)?;
 		} else {
-			db.update_chapter_ordering(id, order - 1)
-				.await
-				.map_err(ErrorWrapper)?;
+			return Ok(HttpResponse::BadRequest().finish());
 		}
 	}
 	Ok(HttpResponse::SeeOther()

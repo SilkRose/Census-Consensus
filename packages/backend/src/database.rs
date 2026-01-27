@@ -503,7 +503,8 @@ impl Db {
 		Ok(sqlx::query!(
 			"UPDATE Chapters
 			SET
-				chapter_order = $2
+				chapter_order = $2,
+				last_edit = now()
 			WHERE id = $1;",
 			id,
 			order
