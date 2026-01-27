@@ -110,7 +110,11 @@ pub struct Chapter {
 
 impl Ord for Chapter {
 	fn cmp(&self, other: &Self) -> Ordering {
-		(self.chapter_order, self.id).cmp(&(other.chapter_order, other.id))
+		(self.chapter_order.is_none(), self.chapter_order, self.id).cmp(&(
+			other.chapter_order.is_none(),
+			other.chapter_order,
+			other.id,
+		))
 	}
 }
 
