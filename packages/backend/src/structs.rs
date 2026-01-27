@@ -22,36 +22,6 @@ where
 	Ok(s.filter(|s| !s.is_empty()).map(str::to_owned))
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
-pub enum Table {
-	Users,
-	Tokens,
-	BannedUsers,
-	Chapters,
-	Writings,
-	Questions,
-	Options,
-	Votes,
-	StoryUpdates,
-}
-
-impl fmt::Display for Table {
-	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-		let text = match self {
-			Table::Users => "Users",
-			Table::Tokens => "Tokens",
-			Table::BannedUsers => "Banned_users",
-			Table::Chapters => "Chapters",
-			Table::Writings => "Writings",
-			Table::Questions => "Questions",
-			Table::Options => "Options",
-			Table::Votes => "Votes",
-			Table::StoryUpdates => "Story_updates",
-		};
-		write!(f, "{text}")
-	}
-}
-
 #[derive(Clone, Debug, Deserialize, Serialize, Type, PartialEq, Eq)]
 #[sqlx(type_name = "user_type", rename_all = "snake_case")]
 pub enum UserType {

@@ -1,5 +1,5 @@
 use crate::structs::{
-	BannedUser, Chapter, Question, QuestionOption, QuestionType, Session, StoryUpdate, Table, User,
+	BannedUser, Chapter, Question, QuestionOption, QuestionType, Session, StoryUpdate, User,
 	UserType, Vote, Writing,
 };
 use anyhow::{Context as _, Result};
@@ -33,12 +33,6 @@ impl Db {
 		sqlx::migrate!().run(&pool).await?;
 
 		Ok(Self { pool })
-	}
-
-	pub async fn count_rows(&self, table: Table) -> Result<i64> {
-		let query = format!("SELECT count(*) FROM {table};");
-		let count: i64 = sqlx::query_scalar(&query).fetch_one(&self.pool).await?;
-		Ok(count)
 	}
 
 	pub async fn insert_user(
@@ -99,6 +93,14 @@ impl Db {
 		.fetch_all(&self.pool)
 		.await
 		.context(SELECT_ERROR)
+	}
+
+	pub async fn get_users_count(&self) -> Result<i64> {
+		sqlx::query!("SELECT count(*) FROM Users;")
+			.fetch_one(&self.pool)
+			.await?
+			.count
+			.context(SELECT_ERROR)
 	}
 
 	pub async fn update_user_role(&self, id: i32, role: UserType) -> Result<u64> {
@@ -222,6 +224,14 @@ impl Db {
 		.context(SELECT_ERROR)
 	}
 
+	pub async fn get_sessions_count(&self) -> Result<i64> {
+		sqlx::query!("SELECT count(*) FROM Tokens;")
+			.fetch_one(&self.pool)
+			.await?
+			.count
+			.context(SELECT_ERROR)
+	}
+
 	pub async fn delete_session(&self, token: &str) -> Result<u64> {
 		Ok(sqlx::query!("DELETE FROM Tokens WHERE token = $1;", token)
 			.execute(&self.pool)
@@ -291,6 +301,14 @@ impl Db {
 		.fetch_all(&self.pool)
 		.await
 		.context(SELECT_ERROR)
+	}
+
+	pub async fn get_banned_users_count(&self) -> Result<i64> {
+		sqlx::query!("SELECT count(*) FROM Banned_users;")
+			.fetch_one(&self.pool)
+			.await?
+			.count
+			.context(SELECT_ERROR)
 	}
 
 	pub async fn update_banned_user_reason(&self, id: i32, reason: &str) -> Result<u64> {
@@ -381,6 +399,14 @@ impl Db {
 		.fetch_all(&self.pool)
 		.await
 		.context(SELECT_ERROR)
+	}
+
+	pub async fn get_chapters_count(&self) -> Result<i64> {
+		sqlx::query!("SELECT count(*) FROM Chapters;")
+			.fetch_one(&self.pool)
+			.await?
+			.count
+			.context(SELECT_ERROR)
 	}
 
 	pub async fn update_chapter_title(&self, id: i32, title: &str) -> Result<u64> {
@@ -549,6 +575,14 @@ impl Db {
 		.context(SELECT_ERROR)
 	}
 
+	pub async fn get_writings_count(&self) -> Result<i64> {
+		sqlx::query!("SELECT count(*) FROM Writings;")
+			.fetch_one(&self.pool)
+			.await?
+			.count
+			.context(SELECT_ERROR)
+	}
+
 	pub async fn delete_writing(&self, id: i32) -> Result<u64> {
 		Ok(sqlx::query!("DELETE FROM Writings WHERE id = $1;", id)
 			.execute(&self.pool)
@@ -659,6 +693,14 @@ impl Db {
 		.fetch_all(&self.pool)
 		.await
 		.context(SELECT_ERROR)
+	}
+
+	pub async fn get_questions_count(&self) -> Result<i64> {
+		sqlx::query!("SELECT count(*) FROM Questions;")
+			.fetch_one(&self.pool)
+			.await?
+			.count
+			.context(SELECT_ERROR)
 	}
 
 	pub async fn update_question_text(&self, id: i32, text: &str) -> Result<u64> {
@@ -853,6 +895,14 @@ impl Db {
 		.context(SELECT_ERROR)
 	}
 
+	pub async fn get_options_count(&self) -> Result<i64> {
+		sqlx::query!("SELECT count(*) FROM Options;")
+			.fetch_one(&self.pool)
+			.await?
+			.count
+			.context(SELECT_ERROR)
+	}
+
 	pub async fn update_option_number(&self, id: i32, number: i32) -> Result<u64> {
 		Ok(sqlx::query!(
 			"UPDATE Options
@@ -1011,6 +1061,14 @@ impl Db {
 		.context(SELECT_ERROR)
 	}
 
+	pub async fn get_votes_count(&self) -> Result<i64> {
+		sqlx::query!("SELECT count(*) FROM Votes;")
+			.fetch_one(&self.pool)
+			.await?
+			.count
+			.context(SELECT_ERROR)
+	}
+
 	pub async fn delete_votes_by_user(&self, user_id: i32) -> Result<u64> {
 		Ok(
 			sqlx::query!("DELETE FROM Votes WHERE voter_id = $1;", user_id)
@@ -1106,6 +1164,14 @@ impl Db {
 		.fetch_all(&self.pool)
 		.await
 		.context(SELECT_ERROR)
+	}
+
+	pub async fn get_story_updates_count(&self) -> Result<i64> {
+		sqlx::query!("SELECT count(*) FROM Story_updates;")
+			.fetch_one(&self.pool)
+			.await?
+			.count
+			.context(SELECT_ERROR)
 	}
 
 	pub async fn delete_story_update(&self, date_cached: DateTime<Utc>) -> Result<u64> {
