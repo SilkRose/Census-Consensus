@@ -1,7 +1,26 @@
 use chrono::{DateTime, Utc};
-use serde::{Deserialize, Serialize};
+use serde::de::Error;
+use serde::{Deserialize, Deserializer, Serialize};
 use sqlx::Type;
 use std::fmt;
+
+fn option_number<'de, D>(deserializer: D) -> Result<Option<i32>, D::Error>
+where
+	D: Deserializer<'de>,
+{
+	let s: Option<&str> = Option::deserialize(deserializer)?;
+	s.filter(|s| !s.is_empty())
+		.map(|s| s.parse::<i32>().map_err(D::Error::custom))
+		.transpose()
+}
+
+fn option_string<'de, D>(deserializer: D) -> Result<Option<String>, D::Error>
+where
+	D: Deserializer<'de>,
+{
+	let s: Option<&str> = Option::deserialize(deserializer)?;
+	Ok(s.filter(|s| !s.is_empty()).map(str::to_owned))
+}
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub enum Table {
@@ -89,6 +108,26 @@ pub struct BannedUser {
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct NewChapter {
+	pub title: String,
+	pub vote_duration: i32,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct ChapterEdit {
+	pub title: String,
+	pub vote_duration: i32,
+	#[serde(deserialize_with = "option_number")]
+	pub minutes_left: Option<i32>,
+	#[serde(deserialize_with = "option_string")]
+	pub intro_text: Option<String>,
+	#[serde(deserialize_with = "option_string")]
+	pub outro_text: Option<String>,
+	#[serde(deserialize_with = "option_number")]
+	pub chapter_order: Option<i32>,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Chapter {
 	pub id: i32,
 	pub title: String,
@@ -158,52 +197,4 @@ pub struct StoryUpdate {
 	pub likes: i32,
 	pub dislikes: i32,
 	pub date_cached: DateTime<Utc>,
-}
-
-#[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct NewChapter {
-	pub title: String,
-	pub vote_duration: i32,
-}
-
-#[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct EditChapter {
-	pub title: String,
-	pub vote_duration: i32,
-	#[serde(deserialize_with = "option_number")]
-	pub minutes_left: Option<i32>,
-	#[serde(deserialize_with = "option_string")]
-	pub intro_text: Option<String>,
-	#[serde(deserialize_with = "option_string")]
-	pub outro_text: Option<String>,
-	#[serde(deserialize_with = "option_number")]
-	pub chapter_order: Option<i32>,
-}
-
-use serde::{Deserializer, de::Error};
-
-fn option_number<'de, D>(deserializer: D) -> Result<Option<i32>, D::Error>
-where
-	D: Deserializer<'de>,
-{
-	let s: &str = Deserialize::deserialize(deserializer)?;
-	let res = if s.is_empty() {
-		None
-	} else {
-		Some(s.parse::<i32>().map_err(D::Error::custom)?)
-	};
-	Ok(res)
-}
-
-fn option_string<'de, D>(deserializer: D) -> Result<Option<String>, D::Error>
-where
-	D: Deserializer<'de>,
-{
-	let s: &str = Deserialize::deserialize(deserializer)?;
-	let res = if s.is_empty() {
-		None
-	} else {
-		Some(String::from(s))
-	};
-	Ok(res)
 }
