@@ -1,14 +1,14 @@
 use crate::auth::SessionInfo;
 use crate::error::ErrorWrapper;
 use crate::html_templates::{
-	ban_user_html, chapters_html, new_chapter_html, sessions_html, update_user_info_html,
-	update_user_role_html,
+	ban_user_html, chapters_html, edit_chapter_html, new_chapter_html, sessions_html,
+	update_user_info_html, update_user_role_html,
 };
-use crate::structs::{NewChapter, UserType};
+use crate::structs::{Chapter, EditChapter, NewChapter, UserType};
 use crate::utility::redirect;
 use crate::{Db, html_templates::user_feedback_html};
 use crate::{FimficCfg, HttpClient};
-use actix_web::web::ThinData;
+use actix_web::web::{Path, ThinData};
 use actix_web::{HttpRequest, HttpResponse, Responder, get, post};
 use chrono::Utc;
 use std::collections::HashMap;
@@ -293,5 +293,49 @@ pub async fn set_chapter_new(
 		.map_err(ErrorWrapper)?;
 	Ok(HttpResponse::SeeOther()
 		.append_header(("Location", format!("/chapters/{}", chapter.id)))
+		.finish())
+}
+
+#[get("/chapters/{id}")]
+pub async fn get_chapter_edit(
+	path: Path<i32>, db: ThinData<Db>, session: SessionInfo,
+) -> actix_web::Result<impl Responder> {
+	let id = path.into_inner();
+	let user = db
+		.get_user(session.user_id)
+		.await
+		.map_err(ErrorWrapper)?
+		.expect(DATABASE_CONSTRAINT_EXPECT);
+	if user.user_type != UserType::Admin {
+		return Ok(HttpResponse::Unauthorized().finish());
+	}
+	let chapter = db
+		.get_chapter(id)
+		.await
+		.map_err(ErrorWrapper)?
+		.expect(DATABASE_CONSTRAINT_EXPECT);
+	let page = edit_chapter_html(chapter);
+	Ok(HttpResponse::Ok()
+		.content_type("text/html; charset=utf-8")
+		.body(page))
+}
+
+#[post("/chapters/{id}")]
+pub async fn set_chapter_edit(
+	path: Path<i32>, body: String, db: ThinData<Db>, session: SessionInfo,
+) -> actix_web::Result<impl Responder> {
+	let id = path.into_inner();
+	let user = db
+		.get_user(session.user_id)
+		.await
+		.map_err(ErrorWrapper)?
+		.expect(DATABASE_CONSTRAINT_EXPECT);
+	if user.user_type != UserType::Admin {
+		return Ok(HttpResponse::Unauthorized().finish());
+	}
+	let chapter = serde_urlencoded::from_str::<EditChapter>(&body)?;
+	println!("{chapter:?}");
+	Ok(HttpResponse::SeeOther()
+		.append_header(("Location", format!("/chapters/{id}")))
 		.finish())
 }

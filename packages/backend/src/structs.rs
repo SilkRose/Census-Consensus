@@ -165,3 +165,14 @@ pub struct NewChapter {
 	pub title: String,
 	pub vote_duration: i32,
 }
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct EditChapter {
+	pub title: String,
+	pub vote_duration: i32,
+	pub minutes_left: Option<i32>,
+	pub fimfic_ch_id: Option<i32>,
+	pub intro_text: Option<String>,
+	pub outro_text: Option<String>,
+	pub chapter_order: Option<i32>,
+}

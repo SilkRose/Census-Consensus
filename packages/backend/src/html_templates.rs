@@ -193,6 +193,26 @@ pub fn edit_chapter_html(chapter: Chapter) -> String {
 					br;
 					(input_number_value_required(name, name, 1, 100, chapter.vote_duration))
 					br;
+					@let name = "minutes_left";
+					label for = (name) { "Minutes Left:" }
+					br;
+					(input_number_value_option(name, name, 1, 100, chapter.minutes_left))
+					br;
+					@let name = "intro_text";
+					label for = (name) { "Intro:" }
+					br;
+					(textarea_value(name, name, 1_000_000, &chapter.intro_text.unwrap_or_default()))
+					br;
+					@let name = "outro_text";
+					label for = (name) { "Outro:" }
+					br;
+					(textarea_value(name, name, 1_000_000, &chapter.outro_text.unwrap_or_default()))
+					br;
+					@let name = "chapter_order";
+					label for = (name) { "Chapter Number:" }
+					br;
+					(input_number_value_option(name, name, 1, 100, chapter.chapter_order))
+					br;
 					button type = "submit" { "Save Chapter" }
 				}
 			};
@@ -223,7 +243,8 @@ fn input_text_value(id: &str, name: &str, min: u32, max: u32, value: &str) -> Pr
 			name = (name)
 			minlength = (min)
 			maxlength = (max)
-			{ (value) }
+			value = (value)
+			{}
 	)
 }
 
@@ -249,8 +270,8 @@ fn input_text_value_required(
 			name = (name)
 			minlength = (min)
 			maxlength = (max)
-			required
-			{ (value) }
+			value = (value)
+			required {}
 	)
 }
 
@@ -278,7 +299,25 @@ fn input_number_value(id: &str, name: &str, min: u32, max: u32, value: i32) -> P
 			pattern = r"\d*"
 			min = (min)
 			max = (max)
-			{ (value) }
+			value = (value)
+			{}
+	)
+}
+
+fn input_number_value_option(
+	id: &str, name: &str, min: u32, max: u32, value: Option<i32>,
+) -> PreEscaped<String> {
+	html!	(
+		input
+			id = (id)
+			type = "number"
+			name = (name)
+			inputmode = "numeric"
+			pattern = r"\d*"
+			min = (min)
+			max = (max)
+			value = (value.map_or(String::default(), |v| v.to_string()))
+			{}
 	)
 }
 
@@ -308,8 +347,8 @@ fn input_number_value_required(
 			pattern = r"\d*"
 			min = (min)
 			max = (max)
-			required
-			{ (value) }
+			value = (value)
+			required {}
 	)
 }
 
@@ -339,7 +378,8 @@ fn input_text_numeric_value(
 			pattern = r"\d*"
 			minlength = (min)
 			maxlength = (max)
-			{ (value) }
+			value = (value)
+			{}
 	)
 }
 
@@ -369,8 +409,8 @@ fn input_text_numeric_value_required(
 			pattern = r"\d*"
 			minlength = (min)
 			maxlength = (max)
-			required
-			{ (value) }
+			value = (value)
+			required {}
 	)
 }
 
