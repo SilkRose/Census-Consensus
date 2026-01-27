@@ -474,12 +474,29 @@ fn chapter_table_row(chapter: &Chapter, admin: bool) -> PreEscaped<String> {
 		tr {
 			td { (chapter.id) }
 			td { (chapter.title) }
-			td { (chapter.vote_duration) }
-			td { (chapter.minutes_left.map_or(String::default(), |m| m.to_string())) }
+			@if let Some(minutes_left) = chapter.minutes_left {
+				td { (chapter.vote_duration) }
+				td {
+					@let endpoint = format!("/chapters/{}/minutes-left/1", chapter.id);
+					(button_form("↑", &endpoint))
+					(minutes_left)
+					@let endpoint = format!("/chapters/{}/minutes-left/-1", chapter.id);
+					(button_form("↓", &endpoint))
+				}
+			} @else {
+				td {
+					@let endpoint = format!("/chapters/{}/vote-duration/1", chapter.id);
+					(button_form("↑", &endpoint))
+					(chapter.vote_duration)
+					@let endpoint = format!("/chapters/{}/vote-duration/-1", chapter.id);
+					(button_form("↓", &endpoint))
+				}
+				td {}
+			}
 			td { (chapter.fimfic_ch_id.map_or(String::default(), |m| m.to_string())) }
 			td { (chapter.intro_text.clone().map(|text| text.len()).unwrap_or_default()) }
 			td { (chapter.outro_text.clone().map(|text| text.len()).unwrap_or_default()) }
-			@if admin {
+			@if admin && chapter.fimfic_ch_id.is_none() {
 				td {
 					@if let Some(order) = chapter.chapter_order {
 						@if order != 1 {

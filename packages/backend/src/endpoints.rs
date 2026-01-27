@@ -414,3 +414,67 @@ pub async fn set_chapter_order_move(
 		.append_header(("Location", "/chapters"))
 		.finish())
 }
+
+#[get("/chapters/{id}/vote-duration/{movement}")]
+pub async fn set_chapter_vote_duration_move(
+	path: Path<(i32, i32)>, db: ThinData<Db>, session: SessionInfo,
+) -> actix_web::Result<impl Responder> {
+	let (id, movement) = path.into_inner();
+	if movement.abs() != 1 {
+		return Ok(HttpResponse::BadRequest().finish());
+	}
+	let user = db
+		.get_user(session.user_id)
+		.await
+		.map_err(ErrorWrapper)?
+		.expect(DATABASE_CONSTRAINT_EXPECT);
+	if user.user_type != UserType::Admin {
+		return Ok(HttpResponse::Unauthorized().finish());
+	}
+	let chapter = db.get_chapter(id).await.map_err(ErrorWrapper)?;
+	if let Some(chapter) = chapter {
+		let new_duratrion = chapter.vote_duration + movement;
+		if new_duratrion == 0 {
+			return Ok(HttpResponse::BadRequest().finish());
+		}
+		db.update_chapter_vote_duration(id, new_duratrion)
+			.await
+			.map_err(ErrorWrapper)?;
+	}
+	Ok(HttpResponse::SeeOther()
+		.append_header(("Location", "/chapters"))
+		.finish())
+}
+
+#[get("/chapters/{id}/minutes-left/{movement}")]
+pub async fn set_chapter_minutes_left_move(
+	path: Path<(i32, i32)>, db: ThinData<Db>, session: SessionInfo,
+) -> actix_web::Result<impl Responder> {
+	let (id, movement) = path.into_inner();
+	if movement.abs() != 1 {
+		return Ok(HttpResponse::BadRequest().finish());
+	}
+	let user = db
+		.get_user(session.user_id)
+		.await
+		.map_err(ErrorWrapper)?
+		.expect(DATABASE_CONSTRAINT_EXPECT);
+	if user.user_type != UserType::Admin {
+		return Ok(HttpResponse::Unauthorized().finish());
+	}
+	let chapter = db.get_chapter(id).await.map_err(ErrorWrapper)?;
+	if let Some(chapter) = chapter
+		&& let Some(minutes_left) = chapter.minutes_left
+	{
+		let new_left = minutes_left + movement;
+		if new_left < 0 {
+			return Ok(HttpResponse::BadRequest().finish());
+		}
+		db.update_chapter_minutes_left(id, new_left)
+			.await
+			.map_err(ErrorWrapper)?;
+	}
+	Ok(HttpResponse::SeeOther()
+		.append_header(("Location", "/chapters"))
+		.finish())
+}
