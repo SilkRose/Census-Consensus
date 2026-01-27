@@ -132,6 +132,7 @@ pub fn chapters_html(chapters: Vec<Chapter>, admin: bool) -> String {
 							th { "Intro Length" }
 							th { "Outro Length" }
 							th { "Chapter Order" }
+							th { "Last Edit" }
 							th { "Created" }
 							@if admin {
 								th { "Edit" }
@@ -193,11 +194,6 @@ pub fn edit_chapter_html(chapter: Chapter) -> String {
 					br;
 					(input_number_value_required(name, name, 1, 100, chapter.vote_duration))
 					br;
-					@let name = "minutes_left";
-					label for = (name) { "Minutes Left:" }
-					br;
-					(input_number_value_option(name, name, 1, 100, chapter.minutes_left))
-					br;
 					@let name = "intro_text";
 					label for = (name) { "Intro:" }
 					br;
@@ -207,11 +203,6 @@ pub fn edit_chapter_html(chapter: Chapter) -> String {
 					label for = (name) { "Outro:" }
 					br;
 					(textarea_value(name, name, 1_000_000, &chapter.outro_text.unwrap_or_default()))
-					br;
-					@let name = "chapter_order";
-					label for = (name) { "Chapter Number:" }
-					br;
-					(input_number_value_option(name, name, 1, 100, chapter.chapter_order))
 					br;
 					button type = "submit" { "Save Chapter" }
 				}
@@ -488,11 +479,35 @@ fn chapter_table_row(chapter: &Chapter, admin: bool) -> PreEscaped<String> {
 			td { (chapter.fimfic_ch_id.map_or(String::default(), |m| m.to_string())) }
 			td { (chapter.intro_text.clone().map(|text| text.len()).unwrap_or_default()) }
 			td { (chapter.outro_text.clone().map(|text| text.len()).unwrap_or_default()) }
-			td { (chapter.chapter_order.map_or(String::default(), |m| m.to_string())) }
+			@if admin {
+				td {
+					@if let Some(order) = chapter.chapter_order {
+						@if order != 1 {
+							@let endpoint = format!("/chapters/{}/order-up", chapter.id);
+							(button_form("↑", &endpoint))
+						}
+						(order)
+						@let endpoint = format!("/chapters/{}/order-down", chapter.id);
+						(button_form("↓", &endpoint))
+					} @else {
+						@let endpoint = format!("/chapters/{}/ordered", chapter.id);
+						(button_form("Add", &endpoint))
+					}
+				 }
+			} @else {
+				td { (chapter.chapter_order.map_or(String::default(), |m| m.to_string())) }
+			}
+			td { (chapter.last_edit.format("%d/%m/%Y %H:%M")) }
 			td { (chapter.date_created.format("%d/%m/%Y %H:%M")) }
 			@if admin {
 				td { button onclick = (format!("window.location.href='/chapters/{}';", chapter.id)) { "Edit" } }
 			}
 		}
+	)
+}
+
+fn button_form(text: &str, endpoint: &str) -> PreEscaped<String> {
+	html! (
+		button type = "submit" onclick = (format!("window.location.href='{endpoint}';")) { (text) }
 	)
 }

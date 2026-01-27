@@ -1,6 +1,6 @@
 use crate::structs::{
-	BannedUser, Chapter, Question, QuestionOption, QuestionType, Session, StoryUpdate, User,
-	UserType, Vote, Writing,
+	BannedUser, Chapter, ChapterEdit, Question, QuestionOption, QuestionType, Session, StoryUpdate,
+	User, UserType, Vote, Writing,
 };
 use anyhow::{Context as _, Result};
 use chrono::{DateTime, Utc};
@@ -350,8 +350,8 @@ impl Db {
 			VALUES
 				($1, $2)
 			RETURNING
-				id, title, vote_duration, minutes_left, fimfic_ch_id,
-				intro_text, outro_text, chapter_order, date_created;",
+				id, title, vote_duration, minutes_left, fimfic_ch_id, intro_text,
+				outro_text, chapter_order, last_edit, date_created;",
 			title,
 			vote_duration
 		)
@@ -364,8 +364,8 @@ impl Db {
 		sqlx::query_as!(
 			Chapter,
 			"SELECT
-				id, title, vote_duration, minutes_left, fimfic_ch_id,
-				intro_text, outro_text, chapter_order, date_created
+				id, title, vote_duration, minutes_left, fimfic_ch_id, intro_text,
+				outro_text, chapter_order, last_edit, date_created
 			FROM Chapters WHERE id = $1 LIMIT 1;",
 			id,
 		)
@@ -378,8 +378,8 @@ impl Db {
 		sqlx::query_as!(
 			Chapter,
 			"SELECT
-				id, title, vote_duration, minutes_left, fimfic_ch_id,
-				intro_text, outro_text, chapter_order, date_created
+				id, title, vote_duration, minutes_left, fimfic_ch_id, intro_text,
+				outro_text, chapter_order, last_edit, date_created
 			FROM Chapters WHERE chapter_order = $1 LIMIT 1;",
 			order,
 		)
@@ -392,8 +392,8 @@ impl Db {
 		sqlx::query_as!(
 			Chapter,
 			"SELECT
-				id, title, vote_duration, minutes_left, fimfic_ch_id,
-				intro_text, outro_text, chapter_order, date_created
+				id, title, vote_duration, minutes_left, fimfic_ch_id, intro_text,
+				outro_text, chapter_order, last_edit, date_created
 			FROM Chapters;",
 		)
 		.fetch_all(&self.pool)
@@ -507,6 +507,28 @@ impl Db {
 			WHERE id = $1;",
 			id,
 			order
+		)
+		.execute(&self.pool)
+		.await
+		.context(UPDATE_ERROR)?
+		.rows_affected())
+	}
+
+	pub async fn update_chapter(&self, id: i32, chapter: ChapterEdit) -> Result<u64> {
+		Ok(sqlx::query!(
+			"UPDATE Chapters
+			SET
+				title = $2,
+				vote_duration = $3,
+				intro_text = $4,
+				outro_text = $5,
+				last_edit = now()
+			WHERE id = $1;",
+			id,
+			chapter.title,
+			chapter.vote_duration,
+			chapter.intro_text,
+			chapter.outro_text
 		)
 		.execute(&self.pool)
 		.await

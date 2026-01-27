@@ -88,14 +88,10 @@ pub struct NewChapter {
 pub struct ChapterEdit {
 	pub title: String,
 	pub vote_duration: i32,
-	#[serde(deserialize_with = "option_number")]
-	pub minutes_left: Option<i32>,
 	#[serde(deserialize_with = "option_string")]
 	pub intro_text: Option<String>,
 	#[serde(deserialize_with = "option_string")]
 	pub outro_text: Option<String>,
-	#[serde(deserialize_with = "option_number")]
-	pub chapter_order: Option<i32>,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -108,6 +104,7 @@ pub struct Chapter {
 	pub intro_text: Option<String>,
 	pub outro_text: Option<String>,
 	pub chapter_order: Option<i32>,
+	pub last_edit: DateTime<Utc>,
 	pub date_created: DateTime<Utc>,
 }
 

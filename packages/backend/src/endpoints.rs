@@ -335,8 +335,79 @@ pub async fn set_chapter_edit(
 		return Ok(HttpResponse::Unauthorized().finish());
 	}
 	let chapter = serde_urlencoded::from_str::<ChapterEdit>(&body)?;
-	println!("{chapter:?}");
+	db.update_chapter(id, chapter).await.map_err(ErrorWrapper)?;
 	Ok(HttpResponse::SeeOther()
 		.append_header(("Location", format!("/chapters/{id}")))
+		.finish())
+}
+
+#[get("/chapters/{id}/ordered")]
+pub async fn set_chapter_order(
+	path: Path<i32>, db: ThinData<Db>, session: SessionInfo,
+) -> actix_web::Result<impl Responder> {
+	let id = path.into_inner();
+	let user = db
+		.get_user(session.user_id)
+		.await
+		.map_err(ErrorWrapper)?
+		.expect(DATABASE_CONSTRAINT_EXPECT);
+	if user.user_type != UserType::Admin {
+		return Ok(HttpResponse::Unauthorized().finish());
+	}
+	let chapters = db.get_all_chapters().await.map_err(ErrorWrapper)?;
+	let max = chapters.iter().filter_map(|c| c.chapter_order).max();
+	db.update_chapter_ordering(id, max.map_or(1, |i| i + 1))
+		.await
+		.map_err(ErrorWrapper)?;
+	Ok(HttpResponse::SeeOther()
+		.append_header(("Location", "/chapters"))
+		.finish())
+}
+
+#[get("/chapters/{id}/order-up")]
+pub async fn set_chapter_order_up(
+	path: Path<i32>, db: ThinData<Db>, session: SessionInfo,
+) -> actix_web::Result<impl Responder> {
+	let id = path.into_inner();
+	let user = db
+		.get_user(session.user_id)
+		.await
+		.map_err(ErrorWrapper)?
+		.expect(DATABASE_CONSTRAINT_EXPECT);
+	if user.user_type != UserType::Admin {
+		return Ok(HttpResponse::Unauthorized().finish());
+	}
+	let chapter = db.get_chapter(id).await.map_err(ErrorWrapper)?;
+	if let Some(chapter) = chapter
+		&& let Some(order) = chapter.chapter_order
+	{
+		if order == 1 {
+			return Ok(HttpResponse::BadRequest().finish());
+		}
+		let chapter_above = db
+			.get_chapter_by_order(order - 1)
+			.await
+			.map_err(ErrorWrapper)?;
+		if let Some(above) = chapter_above {
+			// Move chapter up 1000.
+			db.update_chapter_ordering(id, order + 1000)
+				.await
+				.map_err(ErrorWrapper)?;
+			// Move second chapter to new spot.
+			db.update_chapter_ordering(above.id, order)
+				.await
+				.map_err(ErrorWrapper)?;
+			// Move original chapter back.
+			db.update_chapter_ordering(id, order - 1)
+				.await
+				.map_err(ErrorWrapper)?;
+		} else {
+			db.update_chapter_ordering(id, order - 1)
+				.await
+				.map_err(ErrorWrapper)?;
+		}
+	}
+	Ok(HttpResponse::SeeOther()
+		.append_header(("Location", "/chapters"))
 		.finish())
 }

@@ -47,6 +47,7 @@ CREATE TABLE IF NOT EXISTS Chapters (
 	intro_text    text        NULL,
 	outro_text    text        NULL,
 	chapter_order integer     NULL     UNIQUE,
+	last_edit     timestamptz NOT NULL DEFAULT now(),
 	date_created  timestamptz NOT NULL DEFAULT now()
 );
 
