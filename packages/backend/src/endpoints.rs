@@ -245,11 +245,12 @@ pub async fn get_chapters(
 		return Ok(HttpResponse::Unauthorized().finish());
 	}
 	let admin = user.user_type == UserType::Admin;
-	let chapters = db
+	let mut chapters = db
 		.get_all_chapters()
 		.await
 		.map_err(ErrorWrapper)
 		.expect(DATABASE_CONSTRAINT_EXPECT);
+	chapters.sort();
 	let page = chapters_html(chapters, admin);
 	Ok(HttpResponse::Ok()
 		.content_type("text/html; charset=utf-8")

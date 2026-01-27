@@ -1,8 +1,9 @@
+use std::cmp::Ordering;
+
 use chrono::{DateTime, Utc};
 use serde::de::Error;
 use serde::{Deserialize, Deserializer, Serialize};
 use sqlx::Type;
-use std::fmt;
 
 fn option_number<'de, D>(deserializer: D) -> Result<Option<i32>, D::Error>
 where
@@ -109,6 +110,26 @@ pub struct Chapter {
 	pub chapter_order: Option<i32>,
 	pub date_created: DateTime<Utc>,
 }
+
+impl Ord for Chapter {
+	fn cmp(&self, other: &Self) -> Ordering {
+		(self.chapter_order, self.id).cmp(&(other.chapter_order, other.id))
+	}
+}
+
+impl PartialOrd for Chapter {
+	fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+		Some(self.cmp(other))
+	}
+}
+
+impl PartialEq for Chapter {
+	fn eq(&self, other: &Self) -> bool {
+		self.id == other.id
+	}
+}
+
+impl Eq for Chapter {}
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Writing {
