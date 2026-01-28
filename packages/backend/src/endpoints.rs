@@ -41,7 +41,8 @@ pub async fn set_update_user(
 	let user_update = http_client
 		.get_fimfic_user(user.id, &fimfic_cfg.bearer_token)
 		.await?;
-	db.insert_user(user.id, &user_update.data, user.user_type).await?;
+	db.insert_user(user.id, &user_update.data, user.user_type)
+		.await?;
 	Ok(HttpResponse::SeeOther()
 		.append_header(("Location", redirect(req)))
 		.finish())
@@ -175,9 +176,7 @@ pub async fn set_user_feedback(
 pub async fn get_sessions(
 	mut db: ThinData<Db>, session: SessionInfo,
 ) -> actix_web::Result<impl Responder> {
-	let mut sessions = db
-		.get_all_user_sessions(session.user_id)
-		.await?;
+	let mut sessions = db.get_all_user_sessions(session.user_id).await?;
 	sessions.sort_by_key(|k| k.last_seen);
 	sessions.reverse();
 	let page = sessions_html(sessions);
@@ -195,9 +194,7 @@ pub async fn set_revoke_sessions(
 		.collect::<Vec<_>>();
 	let logout = sessions.contains(&session.token);
 	for session_del in sessions {
-		let check = db
-			.get_session_by_token(&session_del)
-			.await?;
+		let check = db.get_session_by_token(&session_del).await?;
 		if let Some(check) = check
 			&& check.user_id == session.user_id
 		{
@@ -287,10 +284,7 @@ pub async fn get_chapter_edit(
 	if user.user_type != UserType::Admin {
 		return Ok(HttpResponse::Unauthorized().finish());
 	}
-	let chapter = db
-		.get_chapter(id)
-		.await?
-		.expect(DATABASE_CONSTRAINT_EXPECT);
+	let chapter = db.get_chapter(id).await?.expect(DATABASE_CONSTRAINT_EXPECT);
 	let page = edit_chapter_html(chapter);
 	Ok(HttpResponse::Ok()
 		.content_type("text/html; charset=utf-8")
@@ -330,7 +324,8 @@ pub async fn set_chapter_order(
 	}
 	let chapters = db.get_all_chapters().await?;
 	let max = chapters.iter().filter_map(|c| c.chapter_order).max();
-	db.update_chapter_order(id, max.map_or(1, |i| i + 1)).await?;
+	db.update_chapter_order(id, max.map_or(1, |i| i + 1))
+		.await?;
 	Ok(HttpResponse::SeeOther()
 		.append_header(("Location", "/chapters"))
 		.finish())
@@ -358,11 +353,10 @@ pub async fn set_chapter_order_move(
 		if order + movement == 0 {
 			return Ok(HttpResponse::BadRequest().finish());
 		}
-		let chapter_above = db
-			.get_chapter_by_order(order + movement)
-			.await?;
+		let chapter_above = db.get_chapter_by_order(order + movement).await?;
 		if let Some(above) = chapter_above {
-			db.swap_chapters_by_order(id, above.id, order, movement).await?;
+			db.swap_chapters_by_order(id, above.id, order, movement)
+				.await?;
 		} else {
 			db.update_chapter_order_none(id).await?;
 		}
@@ -423,8 +417,7 @@ pub async fn set_chapter_minutes_left_move(
 		if new_left < 0 {
 			return Ok(HttpResponse::BadRequest().finish());
 		}
-		db.update_chapter_minutes_left(id, new_left)
-			.await?;
+		db.update_chapter_minutes_left(id, new_left).await?;
 	}
 	Ok(HttpResponse::SeeOther()
 		.append_header(("Location", "/chapters"))

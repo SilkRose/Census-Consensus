@@ -1,4 +1,4 @@
-use std::env::{ self, VarError };
+use std::env::{self, VarError};
 
 pub fn load_dotenv() {
 	if let Err(err) = dotenvy::dotenv() {
@@ -45,15 +45,16 @@ macro_rules! declare_env_fn {
 }
 
 fn required_inner(key: &str) -> Box<str> {
-	optional_inner(key)
-		.unwrap_or_else(|| panic!("environment variable `{key}` is not set"))
+	optional_inner(key).unwrap_or_else(|| panic!("environment variable `{key}` is not set"))
 }
 
 fn optional_inner(key: &str) -> Option<Box<str>> {
 	match env::var(key) {
-		Ok(var) => { Some(var.into_boxed_str()) }
-		Err(VarError::NotPresent) => { None }
-		Err(VarError::NotUnicode(_)) => { panic!("environment variable `{key}` is set, but not valid UTF-8") }
+		Ok(var) => Some(var.into_boxed_str()),
+		Err(VarError::NotPresent) => None,
+		Err(VarError::NotUnicode(_)) => {
+			panic!("environment variable `{key}` is set, but not valid UTF-8")
+		}
 	}
 }
 

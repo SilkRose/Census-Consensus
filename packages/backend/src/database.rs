@@ -42,11 +42,7 @@ impl Db {
 	}
 
 	pub async fn swap_chapters_by_order(
-		&mut self,
-		self_id: i32,
-		other_id: i32,
-		order: i32,
-		movement: i32,
+		&mut self, self_id: i32, other_id: i32, order: i32, movement: i32,
 	) -> Result<()> {
 		let mut tx = self.transaction().await?;
 
@@ -67,7 +63,7 @@ impl DbExecutor for Db {
 }
 
 pub struct DbTransaction<'c> {
-	tx: sqlx::Transaction<'c, Postgres>
+	tx: sqlx::Transaction<'c, Postgres>,
 }
 
 impl<'c> DbTransaction<'c> {
@@ -78,7 +74,8 @@ impl<'c> DbTransaction<'c> {
 }
 
 impl<'c> DbExecutor for DbTransaction<'c> {
-	type Executor<'c2> = &'c2 mut sqlx::PgConnection
+	type Executor<'c2>
+		= &'c2 mut sqlx::PgConnection
 	where
 		Self: 'c2;
 
@@ -87,7 +84,10 @@ impl<'c> DbExecutor for DbTransaction<'c> {
 	}
 }
 
-#[expect(async_fn_in_trait, reason = "we don't need any implemented auto traits")]
+#[expect(
+	async_fn_in_trait,
+	reason = "we don't need any implemented auto traits"
+)]
 pub trait DbExecutor {
 	type Executor<'c>: sqlx::Executor<'c, Database = Postgres>
 	where

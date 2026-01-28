@@ -1,6 +1,6 @@
-use base64ct::{ Base64Url, Encoding as _ };
+use base64ct::{Base64Url, Encoding as _};
 use rand::RngCore as _;
-use rand::rngs::{ ReseedingRng, OsRng };
+use rand::rngs::{OsRng, ReseedingRng};
 use rand_chacha::ChaCha20Core;
 use std::cell::RefCell;
 

@@ -248,9 +248,7 @@ fn get_unverified_session_info(req: &HttpRequest) -> Option<SessionInfo> {
 	})
 }
 
-async fn verify_session_info(
-	req: &HttpRequest, session_info: &SessionInfo,
-) -> Result<()> {
+async fn verify_session_info(req: &HttpRequest, session_info: &SessionInfo) -> Result<()> {
 	let mut db = req
 		.app_data::<Data<Db>>()
 		.context("no ThinData<Db> found")?
