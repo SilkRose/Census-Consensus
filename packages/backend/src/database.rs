@@ -1,8 +1,9 @@
+use crate::error::Result;
 use crate::structs::{
 	BannedUser, Chapter, ChapterEdit, Question, QuestionOption, QuestionType, Session, StoryUpdate,
 	User, UserType, Vote, Writing,
 };
-use anyhow::{Context as _, Result};
+use anyhow::Context as _;
 use chrono::{DateTime, Utc};
 use pony::fimfiction_api::story::StoryData;
 use pony::fimfiction_api::user::UserData;
@@ -97,7 +98,7 @@ pub trait DbExecutor {
 	async fn insert_user(
 		&mut self, id: i32, data: &UserData<i32>, user_type: UserType,
 	) -> Result<User> {
-		sqlx::query_as!(
+		Ok(sqlx::query_as!(
 			User,
 			r#"INSERT INTO Users
 				(id, name, pfp_url, type)
@@ -124,11 +125,11 @@ pub trait DbExecutor {
 		)
 		.fetch_one(self.executor())
 		.await
-		.context(INSERT_ERROR)
+		.context(INSERT_ERROR)?)
 	}
 
 	async fn get_user(&mut self, id: i32) -> Result<Option<User>> {
-		sqlx::query_as!(
+		Ok(sqlx::query_as!(
 			User,
 			r#"SELECT
 				id, name, pfp_url, type AS "user_type: UserType", feedback_private,
@@ -138,11 +139,11 @@ pub trait DbExecutor {
 		)
 		.fetch_optional(self.executor())
 		.await
-		.context(SELECT_ERROR)
+		.context(SELECT_ERROR)?)
 	}
 
 	async fn get_all_users(&mut self) -> Result<Vec<User>> {
-		sqlx::query_as!(
+		Ok(sqlx::query_as!(
 			User,
 			r#"SELECT
 				id, name, pfp_url, type AS "user_type: UserType", feedback_private,
@@ -151,15 +152,15 @@ pub trait DbExecutor {
 		)
 		.fetch_all(self.executor())
 		.await
-		.context(SELECT_ERROR)
+		.context(SELECT_ERROR)?)
 	}
 
 	async fn get_users_count(&mut self) -> Result<i64> {
-		sqlx::query!("SELECT count(*) FROM Users;")
+		Ok(sqlx::query!("SELECT count(*) FROM Users;")
 			.fetch_one(self.executor())
 			.await?
 			.count
-			.context(SELECT_ERROR)
+			.context(SELECT_ERROR)?)
 	}
 
 	async fn update_user_role(&mut self, id: i32, role: UserType) -> Result<u64> {
@@ -215,7 +216,7 @@ pub trait DbExecutor {
 	async fn insert_session(
 		&mut self, token: &str, user_id: i32, user_agent: &str,
 	) -> Result<Session> {
-		sqlx::query_as!(
+		Ok(sqlx::query_as!(
 			Session,
 			"INSERT INTO Tokens
 				(token, user_id, user_agent)
@@ -229,12 +230,12 @@ pub trait DbExecutor {
 		)
 		.fetch_one(self.executor())
 		.await
-		.context(INSERT_ERROR)
+		.context(INSERT_ERROR)?)
 	}
 
 	/// Use when you need to get the session without updating the last seen time.
 	async fn get_session_by_token(&mut self, token: &str) -> Result<Option<Session>> {
-		sqlx::query_as!(
+		Ok(sqlx::query_as!(
 			Session,
 			"SELECT token, user_id, user_agent, last_seen, date_created
 			FROM Tokens WHERE token = $1;",
@@ -242,12 +243,12 @@ pub trait DbExecutor {
 		)
 		.fetch_optional(self.executor())
 		.await
-		.context(SELECT_ERROR)
+		.context(SELECT_ERROR)?)
 	}
 
 	/// Use when you need to get the session and update the last seen time.
 	async fn update_session_last_seen(&mut self, token: &str) -> Result<Option<Session>> {
-		sqlx::query_as!(
+		Ok(sqlx::query_as!(
 			Session,
 			"UPDATE Tokens SET last_seen = now() WHERE token = $1
 			RETURNING
@@ -256,11 +257,11 @@ pub trait DbExecutor {
 		)
 		.fetch_optional(self.executor())
 		.await
-		.context(SELECT_ERROR)
+		.context(SELECT_ERROR)?)
 	}
 
 	async fn get_all_user_sessions(&mut self, user_id: i32) -> Result<Vec<Session>> {
-		sqlx::query_as!(
+		Ok(sqlx::query_as!(
 			Session,
 			"SELECT
 				token, user_id, user_agent, last_seen, date_created
@@ -270,25 +271,25 @@ pub trait DbExecutor {
 		)
 		.fetch_all(self.executor())
 		.await
-		.context(SELECT_ERROR)
+		.context(SELECT_ERROR)?)
 	}
 
 	async fn get_all_sessions(&mut self) -> Result<Vec<Session>> {
-		sqlx::query_as!(
+		Ok(sqlx::query_as!(
 			Session,
 			"SELECT token, user_id, user_agent, last_seen, date_created FROM Tokens;",
 		)
 		.fetch_all(self.executor())
 		.await
-		.context(SELECT_ERROR)
+		.context(SELECT_ERROR)?)
 	}
 
 	async fn get_sessions_count(&mut self) -> Result<i64> {
-		sqlx::query!("SELECT count(*) FROM Tokens;")
+		Ok(sqlx::query!("SELECT count(*) FROM Tokens;")
 			.fetch_one(self.executor())
 			.await?
 			.count
-			.context(SELECT_ERROR)
+			.context(SELECT_ERROR)?)
 	}
 
 	async fn delete_session(&mut self, token: &str) -> Result<u64> {
@@ -318,7 +319,7 @@ pub trait DbExecutor {
 	}
 
 	async fn insert_banned_user(&mut self, user_id: i32, reason: &str) -> Result<BannedUser> {
-		sqlx::query_as!(
+		Ok(sqlx::query_as!(
 			BannedUser,
 			"INSERT INTO Banned_users
 				(id, reason)
@@ -333,11 +334,11 @@ pub trait DbExecutor {
 		)
 		.fetch_one(self.executor())
 		.await
-		.context(INSERT_ERROR)
+		.context(INSERT_ERROR)?)
 	}
 
 	async fn get_banned_user(&mut self, id: i32) -> Result<Option<BannedUser>> {
-		sqlx::query_as!(
+		Ok(sqlx::query_as!(
 			BannedUser,
 			"SELECT
 				id, reason, date_banned
@@ -349,25 +350,25 @@ pub trait DbExecutor {
 		)
 		.fetch_optional(self.executor())
 		.await
-		.context(SELECT_ERROR)
+		.context(SELECT_ERROR)?)
 	}
 
 	async fn get_all_banned_users(&mut self) -> Result<Vec<BannedUser>> {
-		sqlx::query_as!(
+		Ok(sqlx::query_as!(
 			BannedUser,
 			"SELECT id, reason, date_banned FROM Banned_users;",
 		)
 		.fetch_all(self.executor())
 		.await
-		.context(SELECT_ERROR)
+		.context(SELECT_ERROR)?)
 	}
 
 	async fn get_banned_users_count(&mut self) -> Result<i64> {
-		sqlx::query!("SELECT count(*) FROM Banned_users;")
+		Ok(sqlx::query!("SELECT count(*) FROM Banned_users;")
 			.fetch_one(self.executor())
 			.await?
 			.count
-			.context(SELECT_ERROR)
+			.context(SELECT_ERROR)?)
 	}
 
 	async fn update_banned_user_reason(&mut self, id: i32, reason: &str) -> Result<u64> {
@@ -402,7 +403,7 @@ pub trait DbExecutor {
 	}
 
 	async fn insert_chapter(&mut self, title: &str, vote_duration: i32) -> Result<Chapter> {
-		sqlx::query_as!(
+		Ok(sqlx::query_as!(
 			Chapter,
 			"INSERT INTO Chapters
 				(title, vote_duration)
@@ -416,11 +417,11 @@ pub trait DbExecutor {
 		)
 		.fetch_one(self.executor())
 		.await
-		.context(INSERT_ERROR)
+		.context(INSERT_ERROR)?)
 	}
 
 	async fn get_chapter(&mut self, id: i32) -> Result<Option<Chapter>> {
-		sqlx::query_as!(
+		Ok(sqlx::query_as!(
 			Chapter,
 			"SELECT
 				id, title, vote_duration, minutes_left, fimfic_ch_id, intro_text,
@@ -430,11 +431,11 @@ pub trait DbExecutor {
 		)
 		.fetch_optional(self.executor())
 		.await
-		.context(SELECT_ERROR)
+		.context(SELECT_ERROR)?)
 	}
 
 	async fn get_chapter_by_order(&mut self, order: i32) -> Result<Option<Chapter>> {
-		sqlx::query_as!(
+		Ok(sqlx::query_as!(
 			Chapter,
 			"SELECT
 				id, title, vote_duration, minutes_left, fimfic_ch_id, intro_text,
@@ -444,11 +445,11 @@ pub trait DbExecutor {
 		)
 		.fetch_optional(self.executor())
 		.await
-		.context(SELECT_ERROR)
+		.context(SELECT_ERROR)?)
 	}
 
 	async fn get_all_chapters(&mut self) -> Result<Vec<Chapter>> {
-		sqlx::query_as!(
+		Ok(sqlx::query_as!(
 			Chapter,
 			"SELECT
 				id, title, vote_duration, minutes_left, fimfic_ch_id, intro_text,
@@ -457,15 +458,15 @@ pub trait DbExecutor {
 		)
 		.fetch_all(self.executor())
 		.await
-		.context(SELECT_ERROR)
+		.context(SELECT_ERROR)?)
 	}
 
 	async fn get_chapters_count(&mut self) -> Result<i64> {
-		sqlx::query!("SELECT count(*) FROM Chapters;")
+		Ok(sqlx::query!("SELECT count(*) FROM Chapters;")
 			.fetch_one(self.executor())
 			.await?
 			.count
-			.context(SELECT_ERROR)
+			.context(SELECT_ERROR)?)
 	}
 
 	async fn update_chapter_title(&mut self, id: i32, title: &str) -> Result<u64> {
@@ -630,7 +631,7 @@ pub trait DbExecutor {
 	async fn insert_writing(
 		&mut self, text: &str, creator_id: i32, previous_id: Option<i32>,
 	) -> Result<Writing> {
-		sqlx::query_as!(
+		Ok(sqlx::query_as!(
 			Writing,
 			"INSERT INTO Writings
 				(writing, created_by, previous_revision)
@@ -644,11 +645,11 @@ pub trait DbExecutor {
 		)
 		.fetch_one(self.executor())
 		.await
-		.context(INSERT_ERROR)
+		.context(INSERT_ERROR)?)
 	}
 
 	async fn get_writing(&mut self, id: i32) -> Result<Option<Writing>> {
-		sqlx::query_as!(
+		Ok(sqlx::query_as!(
 			Writing,
 			"SELECT
 				id, writing, created_by, previous_revision, date_created
@@ -657,11 +658,11 @@ pub trait DbExecutor {
 		)
 		.fetch_optional(self.executor())
 		.await
-		.context(SELECT_ERROR)
+		.context(SELECT_ERROR)?)
 	}
 
 	async fn get_all_writings(&mut self) -> Result<Vec<Writing>> {
-		sqlx::query_as!(
+		Ok(sqlx::query_as!(
 			Writing,
 			"SELECT
 				id, writing, created_by, previous_revision, date_created
@@ -669,15 +670,15 @@ pub trait DbExecutor {
 		)
 		.fetch_all(self.executor())
 		.await
-		.context(SELECT_ERROR)
+		.context(SELECT_ERROR)?)
 	}
 
 	async fn get_writings_count(&mut self) -> Result<i64> {
-		sqlx::query!("SELECT count(*) FROM Writings;")
+		Ok(sqlx::query!("SELECT count(*) FROM Writings;")
 			.fetch_one(self.executor())
 			.await?
 			.count
-			.context(SELECT_ERROR)
+			.context(SELECT_ERROR)?)
 	}
 
 	async fn delete_writing(&mut self, id: i32) -> Result<u64> {
@@ -700,7 +701,7 @@ pub trait DbExecutor {
 		&mut self, text: &str, question_type: QuestionType, percent: f64, asked_by: &str,
 		creator_id: i32, claiment_id: Option<i32>,
 	) -> Result<Question> {
-		sqlx::query_as!(
+		Ok(sqlx::query_as!(
 			Question,
 			r#"INSERT INTO Questions
 				(text, type, response_percent, asked_by, created_by, claimed_by)
@@ -718,11 +719,11 @@ pub trait DbExecutor {
 		)
 		.fetch_one(self.executor())
 		.await
-		.context(INSERT_ERROR)
+		.context(INSERT_ERROR)?)
 	}
 
 	async fn get_question(&mut self, id: i32) -> Result<Option<Question>> {
-		sqlx::query_as!(
+		Ok(sqlx::query_as!(
 			Question,
 			r#"SELECT
 				id, text, type AS "type: QuestionType", response_percent, asked_by, created_by,
@@ -732,11 +733,11 @@ pub trait DbExecutor {
 		)
 		.fetch_optional(self.executor())
 		.await
-		.context(SELECT_ERROR)
+		.context(SELECT_ERROR)?)
 	}
 
 	async fn get_questions_by_chapter(&mut self, chapter_id: Option<i32>) -> Result<Vec<Question>> {
-		sqlx::query_as!(
+		Ok(sqlx::query_as!(
 			Question,
 			r#"SELECT
 				id, text, type AS "type: QuestionType", response_percent, asked_by, created_by,
@@ -746,11 +747,11 @@ pub trait DbExecutor {
 		)
 		.fetch_all(self.executor())
 		.await
-		.context(SELECT_ERROR)
+		.context(SELECT_ERROR)?)
 	}
 
 	async fn get_questions_by_crator(&mut self, creator_id: i32) -> Result<Vec<Question>> {
-		sqlx::query_as!(
+		Ok(sqlx::query_as!(
 			Question,
 			r#"SELECT
 				id, text, type AS "type: QuestionType", response_percent, asked_by, created_by,
@@ -760,13 +761,13 @@ pub trait DbExecutor {
 		)
 		.fetch_all(self.executor())
 		.await
-		.context(SELECT_ERROR)
+		.context(SELECT_ERROR)?)
 	}
 
 	async fn get_questions_by_claiment(
 		&mut self, claiment_id: Option<i32>,
 	) -> Result<Vec<Question>> {
-		sqlx::query_as!(
+		Ok(sqlx::query_as!(
 			Question,
 			r#"SELECT
 				id, text, type AS "type: QuestionType", response_percent, asked_by, created_by,
@@ -776,11 +777,11 @@ pub trait DbExecutor {
 		)
 		.fetch_all(self.executor())
 		.await
-		.context(SELECT_ERROR)
+		.context(SELECT_ERROR)?)
 	}
 
 	async fn get_all_questions(&mut self) -> Result<Vec<Question>> {
-		sqlx::query_as!(
+		Ok(sqlx::query_as!(
 			Question,
 			r#"SELECT
 				id, text, type AS "type: QuestionType", response_percent, asked_by, created_by,
@@ -789,15 +790,15 @@ pub trait DbExecutor {
 		)
 		.fetch_all(self.executor())
 		.await
-		.context(SELECT_ERROR)
+		.context(SELECT_ERROR)?)
 	}
 
 	async fn get_questions_count(&mut self) -> Result<i64> {
-		sqlx::query!("SELECT count(*) FROM Questions;")
+		Ok(sqlx::query!("SELECT count(*) FROM Questions;")
 			.fetch_one(self.executor())
 			.await?
 			.count
-			.context(SELECT_ERROR)
+			.context(SELECT_ERROR)?)
 	}
 
 	async fn update_question_text(&mut self, id: i32, text: &str) -> Result<u64> {
@@ -932,7 +933,7 @@ pub trait DbExecutor {
 	async fn insert_option(
 		&mut self, question_id: i32, option_number: i32, text: &str, order_rank: i32,
 	) -> Result<QuestionOption> {
-		sqlx::query_as!(
+		Ok(sqlx::query_as!(
 			QuestionOption,
 			"INSERT INTO Options
 				(question_id, option_number, text, order_rank)
@@ -948,11 +949,11 @@ pub trait DbExecutor {
 		)
 		.fetch_one(self.executor())
 		.await
-		.context(INSERT_ERROR)
+		.context(INSERT_ERROR)?)
 	}
 
 	async fn get_option(&mut self, id: i32) -> Result<Option<QuestionOption>> {
-		sqlx::query_as!(
+		Ok(sqlx::query_as!(
 			QuestionOption,
 			"SELECT
 				id, question_id, option_number, text,
@@ -962,11 +963,11 @@ pub trait DbExecutor {
 		)
 		.fetch_optional(self.executor())
 		.await
-		.context(SELECT_ERROR)
+		.context(SELECT_ERROR)?)
 	}
 
 	async fn get_options_by_question(&mut self, question_id: i32) -> Result<Vec<QuestionOption>> {
-		sqlx::query_as!(
+		Ok(sqlx::query_as!(
 			QuestionOption,
 			"SELECT
 				id, question_id, option_number, text,
@@ -976,11 +977,11 @@ pub trait DbExecutor {
 		)
 		.fetch_all(self.executor())
 		.await
-		.context(SELECT_ERROR)
+		.context(SELECT_ERROR)?)
 	}
 
 	async fn get_all_options(&mut self) -> Result<Vec<QuestionOption>> {
-		sqlx::query_as!(
+		Ok(sqlx::query_as!(
 			QuestionOption,
 			"SELECT
 				id, question_id, option_number, text,
@@ -989,15 +990,15 @@ pub trait DbExecutor {
 		)
 		.fetch_all(self.executor())
 		.await
-		.context(SELECT_ERROR)
+		.context(SELECT_ERROR)?)
 	}
 
 	async fn get_options_count(&mut self) -> Result<i64> {
-		sqlx::query!("SELECT count(*) FROM Options;")
+		Ok(sqlx::query!("SELECT count(*) FROM Options;")
 			.fetch_one(self.executor())
 			.await?
 			.count
-			.context(SELECT_ERROR)
+			.context(SELECT_ERROR)?)
 	}
 
 	async fn update_option_number(&mut self, id: i32, number: i32) -> Result<u64> {
@@ -1089,7 +1090,7 @@ pub trait DbExecutor {
 	async fn insert_vote(
 		&mut self, user_id: i32, question_id: i32, option_id: i32,
 	) -> Result<Vote> {
-		sqlx::query_as!(
+		Ok(sqlx::query_as!(
 			Vote,
 			"INSERT INTO Votes
 				(voter_id, question_id, option_id)
@@ -1103,11 +1104,11 @@ pub trait DbExecutor {
 		)
 		.fetch_one(self.executor())
 		.await
-		.context(INSERT_ERROR)
+		.context(INSERT_ERROR)?)
 	}
 
 	async fn get_all_votes_by_user(&mut self, user_id: i32) -> Result<Vec<Vote>> {
-		sqlx::query_as!(
+		Ok(sqlx::query_as!(
 			Vote,
 			"SELECT
 				voter_id, question_id, option_id, date_created
@@ -1117,11 +1118,11 @@ pub trait DbExecutor {
 		)
 		.fetch_all(self.executor())
 		.await
-		.context(SELECT_ERROR)
+		.context(SELECT_ERROR)?)
 	}
 
 	async fn get_all_votes_by_question(&mut self, question_id: i32) -> Result<Vec<Vote>> {
-		sqlx::query_as!(
+		Ok(sqlx::query_as!(
 			Vote,
 			"SELECT
 				voter_id, question_id, option_id, date_created
@@ -1131,11 +1132,11 @@ pub trait DbExecutor {
 		)
 		.fetch_all(self.executor())
 		.await
-		.context(SELECT_ERROR)
+		.context(SELECT_ERROR)?)
 	}
 
 	async fn get_all_votes_by_option(&mut self, option_id: i32) -> Result<Vec<Vote>> {
-		sqlx::query_as!(
+		Ok(sqlx::query_as!(
 			Vote,
 			"SELECT
 				voter_id, question_id, option_id, date_created
@@ -1145,25 +1146,25 @@ pub trait DbExecutor {
 		)
 		.fetch_all(self.executor())
 		.await
-		.context(SELECT_ERROR)
+		.context(SELECT_ERROR)?)
 	}
 
 	async fn get_all_votes(&mut self) -> Result<Vec<Vote>> {
-		sqlx::query_as!(
+		Ok(sqlx::query_as!(
 			Vote,
 			"SELECT voter_id, question_id, option_id, date_created FROM Votes;",
 		)
 		.fetch_all(self.executor())
 		.await
-		.context(SELECT_ERROR)
+		.context(SELECT_ERROR)?)
 	}
 
 	async fn get_votes_count(&mut self) -> Result<i64> {
-		sqlx::query!("SELECT count(*) FROM Votes;")
+		Ok(sqlx::query!("SELECT count(*) FROM Votes;")
 			.fetch_one(self.executor())
 			.await?
 			.count
-			.context(SELECT_ERROR)
+			.context(SELECT_ERROR)?)
 	}
 
 	async fn delete_votes_by_user(&mut self, user_id: i32) -> Result<u64> {
@@ -1205,7 +1206,7 @@ pub trait DbExecutor {
 	}
 
 	async fn insert_story_update(&mut self, data: StoryData<i32>) -> Result<StoryUpdate> {
-		sqlx::query_as!(
+		Ok(sqlx::query_as!(
 			StoryUpdate,
 			"INSERT INTO Story_updates
 				(title, short_description, description, views, total_views,
@@ -1229,13 +1230,13 @@ pub trait DbExecutor {
 		)
 		.fetch_one(self.executor())
 		.await
-		.context(INSERT_ERROR)
+		.context(INSERT_ERROR)?)
 	}
 
 	async fn get_story_updates_in_range(
 		&mut self, start: DateTime<Utc>, end: DateTime<Utc>,
 	) -> Result<Vec<StoryUpdate>> {
-		sqlx::query_as!(
+		Ok(sqlx::query_as!(
 			StoryUpdate,
 			"SELECT
 				title, short_description, description, views, total_views,
@@ -1247,11 +1248,11 @@ pub trait DbExecutor {
 		)
 		.fetch_all(self.executor())
 		.await
-		.context(SELECT_ERROR)
+		.context(SELECT_ERROR)?)
 	}
 
 	async fn get_all_story_updates(&mut self) -> Result<Vec<StoryUpdate>> {
-		sqlx::query_as!(
+		Ok(sqlx::query_as!(
 			StoryUpdate,
 			"SELECT
 				title, short_description, description, views, total_views,
@@ -1260,15 +1261,15 @@ pub trait DbExecutor {
 		)
 		.fetch_all(self.executor())
 		.await
-		.context(SELECT_ERROR)
+		.context(SELECT_ERROR)?)
 	}
 
 	async fn get_story_updates_count(&mut self) -> Result<i64> {
-		sqlx::query!("SELECT count(*) FROM Story_updates;")
+		Ok(sqlx::query!("SELECT count(*) FROM Story_updates;")
 			.fetch_one(self.executor())
 			.await?
 			.count
-			.context(SELECT_ERROR)
+			.context(SELECT_ERROR)?)
 	}
 
 	async fn delete_story_update(&mut self, date_cached: DateTime<Utc>) -> Result<u64> {

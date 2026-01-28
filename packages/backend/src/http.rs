@@ -1,5 +1,5 @@
+use crate::error::Result;
 use crate::fimfic_cfg::FimficCfg;
-use anyhow::Result;
 use pony::fimfiction_api::user::UserApi;
 use reqwest::{
 	Client as ReqwestClient, IntoUrl, RequestBuilder,

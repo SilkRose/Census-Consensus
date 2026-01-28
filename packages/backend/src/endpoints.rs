@@ -1,6 +1,5 @@
 use crate::auth::SessionInfo;
 use crate::database::*;
-use crate::error::ErrorWrapper;
 use crate::html_templates::user_feedback_html;
 use crate::html_templates::{
 	ban_user_html, chapters_html, edit_chapter_html, new_chapter_html, sessions_html,
@@ -33,8 +32,7 @@ pub async fn set_update_user(
 ) -> actix_web::Result<impl Responder> {
 	let user = db
 		.get_user(session.user_id)
-		.await
-		.map_err(ErrorWrapper)?
+		.await?
 		.expect(DATABASE_CONSTRAINT_EXPECT);
 	let next_fetch_time = user.date_last_fetch + Duration::from_hours(1);
 	if Utc::now() < next_fetch_time {
@@ -42,11 +40,8 @@ pub async fn set_update_user(
 	}
 	let user_update = http_client
 		.get_fimfic_user(user.id, &fimfic_cfg.bearer_token)
-		.await
-		.map_err(ErrorWrapper)?;
-	db.insert_user(user.id, &user_update.data, user.user_type)
-		.await
-		.map_err(ErrorWrapper)?;
+		.await?;
+	db.insert_user(user.id, &user_update.data, user.user_type).await?;
 	Ok(HttpResponse::SeeOther()
 		.append_header(("Location", redirect(req)))
 		.finish())
@@ -58,8 +53,7 @@ pub async fn get_update_user_role(
 ) -> actix_web::Result<impl Responder> {
 	let user = db
 		.get_user(session.user_id)
-		.await
-		.map_err(ErrorWrapper)?
+		.await?
 		.expect(DATABASE_CONSTRAINT_EXPECT);
 	if user.user_type != UserType::Admin {
 		return Ok(HttpResponse::Unauthorized().finish());
@@ -76,8 +70,7 @@ pub async fn set_update_user_role(
 ) -> actix_web::Result<impl Responder> {
 	let user = db
 		.get_user(session.user_id)
-		.await
-		.map_err(ErrorWrapper)?
+		.await?
 		.expect(DATABASE_CONSTRAINT_EXPECT);
 	if user.user_type != UserType::Admin {
 		return Ok(HttpResponse::Unauthorized().finish());
@@ -88,13 +81,11 @@ pub async fn set_update_user_role(
 	if user_id.is_none() || role.is_none() {
 		return Ok(HttpResponse::BadRequest().finish());
 	}
-	let user = db.get_user(user_id.unwrap()).await.map_err(ErrorWrapper)?;
+	let user = db.get_user(user_id.unwrap()).await?;
 	if user.is_none() {
 		return Ok(HttpResponse::BadRequest().finish());
 	}
-	db.update_user_role(user_id.unwrap(), role.unwrap())
-		.await
-		.map_err(ErrorWrapper)?;
+	db.update_user_role(user_id.unwrap(), role.unwrap()).await?;
 	Ok(HttpResponse::SeeOther()
 		.append_header(("Location", redirect(req)))
 		.finish())
@@ -106,8 +97,7 @@ pub async fn get_ban_user(
 ) -> actix_web::Result<impl Responder> {
 	let user = db
 		.get_user(session.user_id)
-		.await
-		.map_err(ErrorWrapper)?
+		.await?
 		.expect(DATABASE_CONSTRAINT_EXPECT);
 	if user.user_type != UserType::Admin {
 		return Ok(HttpResponse::Unauthorized().finish());
@@ -124,8 +114,7 @@ pub async fn set_ban_user(
 ) -> actix_web::Result<impl Responder> {
 	let user = db
 		.get_user(session.user_id)
-		.await
-		.map_err(ErrorWrapper)?
+		.await?
 		.expect(DATABASE_CONSTRAINT_EXPECT);
 	if user.user_type != UserType::Admin {
 		return Ok(HttpResponse::Unauthorized().finish());
@@ -140,8 +129,7 @@ pub async fn set_ban_user(
 		return Ok(HttpResponse::BadRequest().finish());
 	}
 	db.insert_banned_user(user_id.unwrap(), &reason.unwrap())
-		.await
-		.map_err(ErrorWrapper)?;
+		.await?;
 	Ok(HttpResponse::SeeOther()
 		.append_header(("Location", redirect(req)))
 		.finish())
@@ -153,8 +141,7 @@ pub async fn get_user_feedback(
 ) -> actix_web::Result<impl Responder> {
 	let user = db
 		.get_user(session.user_id)
-		.await
-		.map_err(ErrorWrapper)?
+		.await?
 		.expect(DATABASE_CONSTRAINT_EXPECT);
 	let page = user_feedback_html(user.feedback_private, user.feedback_public);
 	Ok(HttpResponse::Ok()
@@ -177,8 +164,7 @@ pub async fn set_user_feedback(
 		.cloned();
 
 	db.update_user_feedback(session.user_id, private_feedback, public_feedback)
-		.await
-		.map_err(ErrorWrapper)?;
+		.await?;
 
 	Ok(HttpResponse::SeeOther()
 		.append_header(("Location", redirect(req)))
@@ -191,8 +177,7 @@ pub async fn get_sessions(
 ) -> actix_web::Result<impl Responder> {
 	let mut sessions = db
 		.get_all_user_sessions(session.user_id)
-		.await
-		.map_err(ErrorWrapper)?;
+		.await?;
 	sessions.sort_by_key(|k| k.last_seen);
 	sessions.reverse();
 	let page = sessions_html(sessions);
@@ -212,14 +197,11 @@ pub async fn set_revoke_sessions(
 	for session_del in sessions {
 		let check = db
 			.get_session_by_token(&session_del)
-			.await
-			.map_err(ErrorWrapper)?;
+			.await?;
 		if let Some(check) = check
 			&& check.user_id == session.user_id
 		{
-			db.delete_session(&session_del)
-				.await
-				.map_err(ErrorWrapper)?;
+			db.delete_session(&session_del).await?;
 		}
 	}
 	if logout {
@@ -239,8 +221,7 @@ pub async fn get_chapters(
 ) -> actix_web::Result<impl Responder> {
 	let user = db
 		.get_user(session.user_id)
-		.await
-		.map_err(ErrorWrapper)?
+		.await?
 		.expect(DATABASE_CONSTRAINT_EXPECT);
 	if user.user_type == UserType::Voter {
 		return Ok(HttpResponse::Unauthorized().finish());
@@ -249,7 +230,6 @@ pub async fn get_chapters(
 	let mut chapters = db
 		.get_all_chapters()
 		.await
-		.map_err(ErrorWrapper)
 		.expect(DATABASE_CONSTRAINT_EXPECT);
 	chapters.sort();
 	let page = chapters_html(chapters, admin);
@@ -264,8 +244,7 @@ pub async fn get_chapter_new(
 ) -> actix_web::Result<impl Responder> {
 	let user = db
 		.get_user(session.user_id)
-		.await
-		.map_err(ErrorWrapper)?
+		.await?
 		.expect(DATABASE_CONSTRAINT_EXPECT);
 	if user.user_type != UserType::Admin {
 		return Ok(HttpResponse::Unauthorized().finish());
@@ -282,8 +261,7 @@ pub async fn set_chapter_new(
 ) -> actix_web::Result<impl Responder> {
 	let user = db
 		.get_user(session.user_id)
-		.await
-		.map_err(ErrorWrapper)?
+		.await?
 		.expect(DATABASE_CONSTRAINT_EXPECT);
 	if user.user_type != UserType::Admin {
 		return Ok(HttpResponse::Unauthorized().finish());
@@ -291,8 +269,7 @@ pub async fn set_chapter_new(
 	let chapter = serde_urlencoded::from_str::<NewChapter>(&body)?;
 	let chapter = db
 		.insert_chapter(&chapter.title, chapter.vote_duration)
-		.await
-		.map_err(ErrorWrapper)?;
+		.await?;
 	Ok(HttpResponse::SeeOther()
 		.append_header(("Location", format!("/chapters/{}", chapter.id)))
 		.finish())
@@ -305,16 +282,14 @@ pub async fn get_chapter_edit(
 	let id = path.into_inner();
 	let user = db
 		.get_user(session.user_id)
-		.await
-		.map_err(ErrorWrapper)?
+		.await?
 		.expect(DATABASE_CONSTRAINT_EXPECT);
 	if user.user_type != UserType::Admin {
 		return Ok(HttpResponse::Unauthorized().finish());
 	}
 	let chapter = db
 		.get_chapter(id)
-		.await
-		.map_err(ErrorWrapper)?
+		.await?
 		.expect(DATABASE_CONSTRAINT_EXPECT);
 	let page = edit_chapter_html(chapter);
 	Ok(HttpResponse::Ok()
@@ -329,14 +304,13 @@ pub async fn set_chapter_edit(
 	let id = path.into_inner();
 	let user = db
 		.get_user(session.user_id)
-		.await
-		.map_err(ErrorWrapper)?
+		.await?
 		.expect(DATABASE_CONSTRAINT_EXPECT);
 	if user.user_type != UserType::Admin {
 		return Ok(HttpResponse::Unauthorized().finish());
 	}
 	let chapter = serde_urlencoded::from_str::<ChapterEdit>(&body)?;
-	db.update_chapter(id, chapter).await.map_err(ErrorWrapper)?;
+	db.update_chapter(id, chapter).await?;
 	Ok(HttpResponse::SeeOther()
 		.append_header(("Location", format!("/chapters/{id}")))
 		.finish())
@@ -349,17 +323,14 @@ pub async fn set_chapter_order(
 	let id = path.into_inner();
 	let user = db
 		.get_user(session.user_id)
-		.await
-		.map_err(ErrorWrapper)?
+		.await?
 		.expect(DATABASE_CONSTRAINT_EXPECT);
 	if user.user_type != UserType::Admin {
 		return Ok(HttpResponse::Unauthorized().finish());
 	}
-	let chapters = db.get_all_chapters().await.map_err(ErrorWrapper)?;
+	let chapters = db.get_all_chapters().await?;
 	let max = chapters.iter().filter_map(|c| c.chapter_order).max();
-	db.update_chapter_order(id, max.map_or(1, |i| i + 1))
-		.await
-		.map_err(ErrorWrapper)?;
+	db.update_chapter_order(id, max.map_or(1, |i| i + 1)).await?;
 	Ok(HttpResponse::SeeOther()
 		.append_header(("Location", "/chapters"))
 		.finish())
@@ -375,13 +346,12 @@ pub async fn set_chapter_order_move(
 	}
 	let user = db
 		.get_user(session.user_id)
-		.await
-		.map_err(ErrorWrapper)?
+		.await?
 		.expect(DATABASE_CONSTRAINT_EXPECT);
 	if user.user_type != UserType::Admin {
 		return Ok(HttpResponse::Unauthorized().finish());
 	}
-	let chapter = db.get_chapter(id).await.map_err(ErrorWrapper)?;
+	let chapter = db.get_chapter(id).await?;
 	if let Some(chapter) = chapter
 		&& let Some(order) = chapter.chapter_order
 	{
@@ -390,16 +360,11 @@ pub async fn set_chapter_order_move(
 		}
 		let chapter_above = db
 			.get_chapter_by_order(order + movement)
-			.await
-			.map_err(ErrorWrapper)?;
+			.await?;
 		if let Some(above) = chapter_above {
-			db.swap_chapters_by_order(id, above.id, order, movement)
-				.await
-				.map_err(ErrorWrapper)?;
+			db.swap_chapters_by_order(id, above.id, order, movement).await?;
 		} else {
-			db.update_chapter_order_none(id)
-				.await
-				.map_err(ErrorWrapper)?;
+			db.update_chapter_order_none(id).await?;
 		}
 	}
 	Ok(HttpResponse::SeeOther()
@@ -417,21 +382,18 @@ pub async fn set_chapter_vote_duration_move(
 	}
 	let user = db
 		.get_user(session.user_id)
-		.await
-		.map_err(ErrorWrapper)?
+		.await?
 		.expect(DATABASE_CONSTRAINT_EXPECT);
 	if user.user_type != UserType::Admin {
 		return Ok(HttpResponse::Unauthorized().finish());
 	}
-	let chapter = db.get_chapter(id).await.map_err(ErrorWrapper)?;
+	let chapter = db.get_chapter(id).await?;
 	if let Some(chapter) = chapter {
 		let new_duratrion = chapter.vote_duration + movement;
 		if new_duratrion == 0 {
 			return Ok(HttpResponse::BadRequest().finish());
 		}
-		db.update_chapter_vote_duration(id, new_duratrion)
-			.await
-			.map_err(ErrorWrapper)?;
+		db.update_chapter_vote_duration(id, new_duratrion).await?;
 	}
 	Ok(HttpResponse::SeeOther()
 		.append_header(("Location", "/chapters"))
@@ -448,13 +410,12 @@ pub async fn set_chapter_minutes_left_move(
 	}
 	let user = db
 		.get_user(session.user_id)
-		.await
-		.map_err(ErrorWrapper)?
+		.await?
 		.expect(DATABASE_CONSTRAINT_EXPECT);
 	if user.user_type != UserType::Admin {
 		return Ok(HttpResponse::Unauthorized().finish());
 	}
-	let chapter = db.get_chapter(id).await.map_err(ErrorWrapper)?;
+	let chapter = db.get_chapter(id).await?;
 	if let Some(chapter) = chapter
 		&& let Some(minutes_left) = chapter.minutes_left
 	{
@@ -463,8 +424,7 @@ pub async fn set_chapter_minutes_left_move(
 			return Ok(HttpResponse::BadRequest().finish());
 		}
 		db.update_chapter_minutes_left(id, new_left)
-			.await
-			.map_err(ErrorWrapper)?;
+			.await?;
 	}
 	Ok(HttpResponse::SeeOther()
 		.append_header(("Location", "/chapters"))

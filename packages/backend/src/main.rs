@@ -10,6 +10,7 @@ use crate::endpoints::{
 use crate::structs::UserType;
 
 pub use self::database::*;
+pub use self::error::Result;
 pub use self::fimfic_cfg::FimficCfg;
 pub use self::http::HttpClient;
 
@@ -17,7 +18,6 @@ pub use actix_files::Files;
 pub use actix_web::middleware::Compress;
 pub use actix_web::web::ThinData as Data;
 pub use actix_web::{App as ActixApp, HttpServer};
-pub use anyhow::Result;
 
 mod auth;
 mod database;

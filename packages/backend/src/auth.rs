@@ -1,5 +1,5 @@
 use crate::database::*;
-use crate::error::ErrorWrapper;
+use crate::error::{Error, Result};
 use crate::fimfic_cfg::FimficCfg;
 use crate::http::{FimficTokenExchangeResponse, HttpClient};
 use crate::rand::{gen_auth_state, gen_auth_token};
@@ -204,8 +204,8 @@ pub struct MaybeSessionInfo {
 }
 
 impl FromRequest for SessionInfo {
-	type Error = ErrorWrapper;
-	type Future = impl Future<Output = Result<SessionInfo, ErrorWrapper>>;
+	type Error = Error;
+	type Future = impl Future<Output = Result<SessionInfo>>;
 
 	fn from_request(req: &HttpRequest, _payload: &mut Payload) -> Self::Future {
 		let req = req.clone();
@@ -219,8 +219,8 @@ impl FromRequest for SessionInfo {
 }
 
 impl FromRequest for MaybeSessionInfo {
-	type Error = ErrorWrapper;
-	type Future = impl Future<Output = Result<MaybeSessionInfo, ErrorWrapper>>;
+	type Error = Error;
+	type Future = impl Future<Output = Result<MaybeSessionInfo>>;
 
 	fn from_request(req: &HttpRequest, _payload: &mut Payload) -> Self::Future {
 		// req has inner Rc so it's cheap to clone
@@ -250,7 +250,7 @@ fn get_unverified_session_info(req: &HttpRequest) -> Option<SessionInfo> {
 
 async fn verify_session_info(
 	req: &HttpRequest, session_info: &SessionInfo,
-) -> Result<(), ErrorWrapper> {
+) -> Result<()> {
 	let mut db = req
 		.app_data::<Data<Db>>()
 		.context("no ThinData<Db> found")?
