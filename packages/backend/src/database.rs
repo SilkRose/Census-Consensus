@@ -51,9 +51,8 @@ impl Db {
 		tx.commit().await
 	}
 
-	pub async fn remove_chapter_order(&mut self, id: i32, order: i32) -> Result<()> {
+	pub async fn remove_chapter_order(&mut self, id: i32, mut order: i32) -> Result<()> {
 		let mut tx = self.transaction().await?;
-		let mut order = order;
 		tx.update_chapter_order_none(id).await?;
 		let chapters = tx.get_chapters_after_order(order).await?;
 		for chapter in chapters {
