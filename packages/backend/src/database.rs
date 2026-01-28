@@ -34,6 +34,11 @@ impl Db {
 
 		Ok(Self { pool })
 	}
+
+	pub async fn transaction(&self) -> Result<DbTransaction<'_>> {
+		let tx = self.pool.begin().await?;
+		Ok(DbTransaction { tx })
+	}
 }
 
 impl DbExecutor for Db {
@@ -41,6 +46,20 @@ impl DbExecutor for Db {
 
 	fn executor(&mut self) -> &Pool<Postgres> {
 		&self.pool
+	}
+}
+
+pub struct DbTransaction<'c> {
+	tx: sqlx::Transaction<'c, Postgres>
+}
+
+impl<'c> DbExecutor for DbTransaction<'c> {
+	type Executor<'c2> = &'c2 mut sqlx::PgConnection
+	where
+		Self: 'c2;
+
+	fn executor(&mut self) -> &mut sqlx::PgConnection {
+		&mut self.tx
 	}
 }
 
