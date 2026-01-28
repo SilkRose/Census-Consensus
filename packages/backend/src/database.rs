@@ -52,6 +52,18 @@ impl Db {
 
 		tx.commit().await
 	}
+
+	pub async fn remove_chapter_order(&mut self, id: i32, order: i32) -> Result<()> {
+		let mut tx = self.transaction().await?;
+		let mut order = order;
+		tx.update_chapter_order_none(id).await?;
+		let chapters = tx.get_chapters_after_order(order).await?;
+		for chapter in chapters {
+			tx.update_chapter_order(chapter.id, order).await?;
+			order += 1;
+		}
+		tx.commit().await
+	}
 }
 
 impl DbExecutor for Db {
@@ -444,6 +456,22 @@ pub trait DbExecutor {
 			order,
 		)
 		.fetch_optional(self.executor())
+		.await
+		.context(SELECT_ERROR)?)
+	}
+
+	async fn get_chapters_after_order(&mut self, order: i32) -> Result<Vec<Chapter>> {
+		Ok(sqlx::query_as!(
+			Chapter,
+			"SELECT
+				id, title, vote_duration, minutes_left, fimfic_ch_id, intro_text,
+				outro_text, chapter_order, last_edit, date_created
+			FROM Chapters
+			WHERE chapter_order > $1
+			ORDER BY chapter_order;",
+			order,
+		)
+		.fetch_all(self.executor())
 		.await
 		.context(SELECT_ERROR)?)
 	}
