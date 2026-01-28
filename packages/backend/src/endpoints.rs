@@ -1,13 +1,13 @@
 use crate::auth::SessionInfo;
 use crate::database::*;
 use crate::error::ErrorWrapper;
+use crate::html_templates::user_feedback_html;
 use crate::html_templates::{
 	ban_user_html, chapters_html, edit_chapter_html, new_chapter_html, sessions_html,
 	update_user_info_html, update_user_role_html,
 };
 use crate::structs::{ChapterEdit, NewChapter, UserType};
 use crate::utility::redirect;
-use crate::html_templates::user_feedback_html;
 use crate::{FimficCfg, HttpClient};
 use actix_web::web::{Path, ThinData};
 use actix_web::{HttpRequest, HttpResponse, Responder, get, post};
@@ -28,8 +28,8 @@ pub async fn get_update_user() -> actix_web::Result<impl Responder> {
 
 #[post("/update-user")]
 pub async fn set_update_user(
-	req: HttpRequest, mut db: ThinData<Db>, session: SessionInfo, http_client: ThinData<HttpClient>,
-	fimfic_cfg: ThinData<FimficCfg>,
+	req: HttpRequest, mut db: ThinData<Db>, session: SessionInfo,
+	http_client: ThinData<HttpClient>, fimfic_cfg: ThinData<FimficCfg>,
 ) -> actix_web::Result<impl Responder> {
 	let user = db
 		.get_user(session.user_id)
@@ -393,16 +393,7 @@ pub async fn set_chapter_order_move(
 			.await
 			.map_err(ErrorWrapper)?;
 		if let Some(above) = chapter_above {
-			// Move chapter up 1000.
-			db.update_chapter_order(id, order + 1000)
-				.await
-				.map_err(ErrorWrapper)?;
-			// Move second chapter to new spot.
-			db.update_chapter_order(above.id, order)
-				.await
-				.map_err(ErrorWrapper)?;
-			// Move original chapter back.
-			db.update_chapter_order(id, order + movement)
+			db.swap_chapters_by_order(id, above.id, order, movement)
 				.await
 				.map_err(ErrorWrapper)?;
 		} else {
