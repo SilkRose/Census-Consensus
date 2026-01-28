@@ -1,4 +1,5 @@
 use crate::auth::SessionInfo;
+use crate::database::*;
 use crate::error::ErrorWrapper;
 use crate::html_templates::{
 	ban_user_html, chapters_html, edit_chapter_html, new_chapter_html, sessions_html,
@@ -6,7 +7,7 @@ use crate::html_templates::{
 };
 use crate::structs::{ChapterEdit, NewChapter, UserType};
 use crate::utility::redirect;
-use crate::{Db, html_templates::user_feedback_html};
+use crate::html_templates::user_feedback_html;
 use crate::{FimficCfg, HttpClient};
 use actix_web::web::{Path, ThinData};
 use actix_web::{HttpRequest, HttpResponse, Responder, get, post};

@@ -1,4 +1,4 @@
-use crate::database::Db;
+use crate::database::*;
 use crate::error::ErrorWrapper;
 use crate::fimfic_cfg::FimficCfg;
 use crate::http::{FimficTokenExchangeResponse, HttpClient};

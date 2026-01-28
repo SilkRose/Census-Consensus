@@ -9,7 +9,7 @@ use crate::endpoints::{
 };
 use crate::structs::UserType;
 
-pub use self::database::Db;
+pub use self::database::*;
 pub use self::fimfic_cfg::FimficCfg;
 pub use self::http::HttpClient;
 

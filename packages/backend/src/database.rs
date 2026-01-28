@@ -34,7 +34,26 @@ impl Db {
 
 		Ok(Self { pool })
 	}
+}
 
+impl DbExecutor for Db {
+	type Executor<'c> = &'c Pool<Postgres>;
+
+	fn executor(&mut self) -> &Pool<Postgres> {
+		&self.pool
+	}
+}
+
+pub trait DbExecutor {
+	type Executor<'c>: sqlx::Executor<'c, Database = Postgres>
+	where
+		Self: 'c;
+
+	fn executor(&mut self) -> Self::Executor<'_>;
+
+}
+
+impl Db {
 	pub async fn insert_user(
 		&mut self, id: i32, data: &UserData<i32>, user_type: UserType,
 	) -> Result<User> {
