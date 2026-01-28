@@ -45,11 +45,9 @@ impl Db {
 		&mut self, self_id: i32, other_id: i32, order: i32, movement: i32,
 	) -> Result<()> {
 		let mut tx = self.transaction().await?;
-
-		tx.update_chapter_order(self_id, -1).await?;
+		tx.update_chapter_order_none(self_id).await?;
 		tx.update_chapter_order(other_id, order).await?;
 		tx.update_chapter_order(self_id, order + movement).await?;
-
 		tx.commit().await
 	}
 
