@@ -55,7 +55,7 @@ pub async fn fimfic_auth_logout(req: HttpRequest, mut db: Data<Db>) -> HttpRespo
 		response.cookie(cookie::create_unset_session_cookie());
 	}
 
-	if cookie::try_get_session_info_cookie_value(&req).is_some() {
+	if cookie::try_get_session_info_cookie(&req).is_some() {
 		response.cookie(cookie::create_unset_session_info_cookie());
 	}
 
