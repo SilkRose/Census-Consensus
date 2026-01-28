@@ -480,7 +480,8 @@ pub trait DbExecutor {
 			"SELECT
 				id, title, vote_duration, minutes_left, fimfic_ch_id, intro_text,
 				outro_text, chapter_order, last_edit, date_created
-			FROM Chapters;",
+			FROM Chapters
+			ORDER BY chapter_order NULLS LAST, id;",
 		)
 		.fetch_all(self.executor())
 		.await
