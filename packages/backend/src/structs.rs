@@ -1,27 +1,8 @@
-use std::cmp::Ordering;
-
 use chrono::{DateTime, Utc};
-use serde::de::Error;
-use serde::{Deserialize, Deserializer, Serialize};
+use pony::{option_sort, structs::option_string};
+use serde::{Deserialize, Serialize};
 use sqlx::Type;
-
-fn option_number<'de, D>(deserializer: D) -> Result<Option<i32>, D::Error>
-where
-	D: Deserializer<'de>,
-{
-	let s: Option<&str> = Option::deserialize(deserializer)?;
-	s.filter(|s| !s.is_empty())
-		.map(|s| s.parse::<i32>().map_err(D::Error::custom))
-		.transpose()
-}
-
-fn option_string<'de, D>(deserializer: D) -> Result<Option<String>, D::Error>
-where
-	D: Deserializer<'de>,
-{
-	let s: Option<&str> = Option::deserialize(deserializer)?;
-	Ok(s.filter(|s| !s.is_empty()).map(str::to_owned))
-}
+use std::cmp::Ordering;
 
 #[derive(Clone, Debug, Deserialize, Serialize, Type, PartialEq, Eq)]
 #[sqlx(type_name = "user_type", rename_all = "snake_case")]
@@ -108,29 +89,7 @@ pub struct Chapter {
 	pub date_created: DateTime<Utc>,
 }
 
-impl Ord for Chapter {
-	fn cmp(&self, other: &Self) -> Ordering {
-		(self.chapter_order.is_none(), self.chapter_order, self.id).cmp(&(
-			other.chapter_order.is_none(),
-			other.chapter_order,
-			other.id,
-		))
-	}
-}
-
-impl PartialOrd for Chapter {
-	fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-		Some(self.cmp(other))
-	}
-}
-
-impl PartialEq for Chapter {
-	fn eq(&self, other: &Self) -> bool {
-		self.id == other.id
-	}
-}
-
-impl Eq for Chapter {}
+option_sort!(Chapter, chapter_order, id);
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Writing {
