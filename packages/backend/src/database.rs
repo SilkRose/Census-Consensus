@@ -39,6 +39,22 @@ impl Db {
 		let tx = self.pool.begin().await?;
 		Ok(DbTransaction { tx })
 	}
+
+	pub async fn swap_chapters_by_order(
+		&mut self,
+		self_id: i32,
+		other_id: i32,
+		order: i32,
+		movement: i32,
+	) -> Result<()> {
+		let mut tx = self.transaction().await?;
+
+		tx.update_chapter_order(self_id, -1).await?;
+		tx.update_chapter_order(other_id, order).await?;
+		tx.update_chapter_order(self_id, order + movement).await?;
+
+		tx.commit().await
+	}
 }
 
 impl DbExecutor for Db {
