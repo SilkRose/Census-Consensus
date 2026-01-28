@@ -36,7 +36,7 @@ impl Db {
 	}
 
 	pub async fn insert_user(
-		&self, id: i32, data: &UserData<i32>, user_type: UserType,
+		&mut self, id: i32, data: &UserData<i32>, user_type: UserType,
 	) -> Result<User> {
 		sqlx::query_as!(
 			User,
@@ -68,7 +68,7 @@ impl Db {
 		.context(INSERT_ERROR)
 	}
 
-	pub async fn get_user(&self, id: i32) -> Result<Option<User>> {
+	pub async fn get_user(&mut self, id: i32) -> Result<Option<User>> {
 		sqlx::query_as!(
 			User,
 			r#"SELECT
@@ -82,7 +82,7 @@ impl Db {
 		.context(SELECT_ERROR)
 	}
 
-	pub async fn get_all_users(&self) -> Result<Vec<User>> {
+	pub async fn get_all_users(&mut self) -> Result<Vec<User>> {
 		sqlx::query_as!(
 			User,
 			r#"SELECT
@@ -95,7 +95,7 @@ impl Db {
 		.context(SELECT_ERROR)
 	}
 
-	pub async fn get_users_count(&self) -> Result<i64> {
+	pub async fn get_users_count(&mut self) -> Result<i64> {
 		sqlx::query!("SELECT count(*) FROM Users;")
 			.fetch_one(&self.pool)
 			.await?
@@ -103,7 +103,7 @@ impl Db {
 			.context(SELECT_ERROR)
 	}
 
-	pub async fn update_user_role(&self, id: i32, role: UserType) -> Result<u64> {
+	pub async fn update_user_role(&mut self, id: i32, role: UserType) -> Result<u64> {
 		Ok(sqlx::query!(
 			"UPDATE Users
 			SET
@@ -119,7 +119,7 @@ impl Db {
 	}
 
 	pub async fn update_user_feedback(
-		&self, id: i32, private_msg: Option<String>, public_msg: Option<String>,
+		&mut self, id: i32, private_msg: Option<String>, public_msg: Option<String>,
 	) -> Result<u64> {
 		Ok(sqlx::query!(
 			"UPDATE Users
@@ -137,7 +137,7 @@ impl Db {
 		.rows_affected())
 	}
 
-	pub async fn delete_user(&self, id: i32) -> Result<u64> {
+	pub async fn delete_user(&mut self, id: i32) -> Result<u64> {
 		Ok(sqlx::query!("DELETE FROM Users WHERE id = $1;", id)
 			.execute(&self.pool)
 			.await
@@ -145,7 +145,7 @@ impl Db {
 			.rows_affected())
 	}
 
-	pub async fn delete_all_users(&self) -> Result<u64> {
+	pub async fn delete_all_users(&mut self) -> Result<u64> {
 		Ok(sqlx::query!("DELETE FROM Users;")
 			.execute(&self.pool)
 			.await
@@ -154,7 +154,7 @@ impl Db {
 	}
 
 	pub async fn insert_session(
-		&self, token: &str, user_id: i32, user_agent: &str,
+		&mut self, token: &str, user_id: i32, user_agent: &str,
 	) -> Result<Session> {
 		sqlx::query_as!(
 			Session,
@@ -174,7 +174,7 @@ impl Db {
 	}
 
 	/// Use when you need to get the session without updating the last seen time.
-	pub async fn get_session_by_token(&self, token: &str) -> Result<Option<Session>> {
+	pub async fn get_session_by_token(&mut self, token: &str) -> Result<Option<Session>> {
 		sqlx::query_as!(
 			Session,
 			"SELECT token, user_id, user_agent, last_seen, date_created
@@ -187,7 +187,7 @@ impl Db {
 	}
 
 	/// Use when you need to get the session and update the last seen time.
-	pub async fn update_session_last_seen(&self, token: &str) -> Result<Option<Session>> {
+	pub async fn update_session_last_seen(&mut self, token: &str) -> Result<Option<Session>> {
 		sqlx::query_as!(
 			Session,
 			"UPDATE Tokens SET last_seen = now() WHERE token = $1
@@ -200,7 +200,7 @@ impl Db {
 		.context(SELECT_ERROR)
 	}
 
-	pub async fn get_all_user_sessions(&self, user_id: i32) -> Result<Vec<Session>> {
+	pub async fn get_all_user_sessions(&mut self, user_id: i32) -> Result<Vec<Session>> {
 		sqlx::query_as!(
 			Session,
 			"SELECT
@@ -214,7 +214,7 @@ impl Db {
 		.context(SELECT_ERROR)
 	}
 
-	pub async fn get_all_sessions(&self) -> Result<Vec<Session>> {
+	pub async fn get_all_sessions(&mut self) -> Result<Vec<Session>> {
 		sqlx::query_as!(
 			Session,
 			"SELECT token, user_id, user_agent, last_seen, date_created FROM Tokens;",
@@ -224,7 +224,7 @@ impl Db {
 		.context(SELECT_ERROR)
 	}
 
-	pub async fn get_sessions_count(&self) -> Result<i64> {
+	pub async fn get_sessions_count(&mut self) -> Result<i64> {
 		sqlx::query!("SELECT count(*) FROM Tokens;")
 			.fetch_one(&self.pool)
 			.await?
@@ -232,7 +232,7 @@ impl Db {
 			.context(SELECT_ERROR)
 	}
 
-	pub async fn delete_session(&self, token: &str) -> Result<u64> {
+	pub async fn delete_session(&mut self, token: &str) -> Result<u64> {
 		Ok(sqlx::query!("DELETE FROM Tokens WHERE token = $1;", token)
 			.execute(&self.pool)
 			.await
@@ -240,7 +240,7 @@ impl Db {
 			.rows_affected())
 	}
 
-	pub async fn delete_sessions_by_user_id(&self, user_id: i32) -> Result<u64> {
+	pub async fn delete_sessions_by_user_id(&mut self, user_id: i32) -> Result<u64> {
 		Ok(
 			sqlx::query!("DELETE FROM Tokens WHERE user_id = $1;", user_id)
 				.execute(&self.pool)
@@ -250,7 +250,7 @@ impl Db {
 		)
 	}
 
-	pub async fn delete_all_sessions(&self) -> Result<u64> {
+	pub async fn delete_all_sessions(&mut self) -> Result<u64> {
 		Ok(sqlx::query!("DELETE FROM Tokens;")
 			.execute(&self.pool)
 			.await
@@ -258,7 +258,7 @@ impl Db {
 			.rows_affected())
 	}
 
-	pub async fn insert_banned_user(&self, user_id: i32, reason: &str) -> Result<BannedUser> {
+	pub async fn insert_banned_user(&mut self, user_id: i32, reason: &str) -> Result<BannedUser> {
 		sqlx::query_as!(
 			BannedUser,
 			"INSERT INTO Banned_users
@@ -277,7 +277,7 @@ impl Db {
 		.context(INSERT_ERROR)
 	}
 
-	pub async fn get_banned_user(&self, id: i32) -> Result<Option<BannedUser>> {
+	pub async fn get_banned_user(&mut self, id: i32) -> Result<Option<BannedUser>> {
 		sqlx::query_as!(
 			BannedUser,
 			"SELECT
@@ -293,7 +293,7 @@ impl Db {
 		.context(SELECT_ERROR)
 	}
 
-	pub async fn get_all_banned_users(&self) -> Result<Vec<BannedUser>> {
+	pub async fn get_all_banned_users(&mut self) -> Result<Vec<BannedUser>> {
 		sqlx::query_as!(
 			BannedUser,
 			"SELECT id, reason, date_banned FROM Banned_users;",
@@ -303,7 +303,7 @@ impl Db {
 		.context(SELECT_ERROR)
 	}
 
-	pub async fn get_banned_users_count(&self) -> Result<i64> {
+	pub async fn get_banned_users_count(&mut self) -> Result<i64> {
 		sqlx::query!("SELECT count(*) FROM Banned_users;")
 			.fetch_one(&self.pool)
 			.await?
@@ -311,7 +311,7 @@ impl Db {
 			.context(SELECT_ERROR)
 	}
 
-	pub async fn update_banned_user_reason(&self, id: i32, reason: &str) -> Result<u64> {
+	pub async fn update_banned_user_reason(&mut self, id: i32, reason: &str) -> Result<u64> {
 		Ok(sqlx::query!(
 			"UPDATE Banned_users
 			SET
@@ -326,7 +326,7 @@ impl Db {
 		.rows_affected())
 	}
 
-	pub async fn delete_banned_user(&self, id: i32) -> Result<u64> {
+	pub async fn delete_banned_user(&mut self, id: i32) -> Result<u64> {
 		Ok(sqlx::query!("DELETE FROM Banned_users WHERE id = $1;", id)
 			.execute(&self.pool)
 			.await
@@ -334,7 +334,7 @@ impl Db {
 			.rows_affected())
 	}
 
-	pub async fn delete_all_banned_users(&self) -> Result<u64> {
+	pub async fn delete_all_banned_users(&mut self) -> Result<u64> {
 		Ok(sqlx::query!("DELETE FROM Banned_users;")
 			.execute(&self.pool)
 			.await
@@ -342,7 +342,7 @@ impl Db {
 			.rows_affected())
 	}
 
-	pub async fn insert_chapter(&self, title: &str, vote_duration: i32) -> Result<Chapter> {
+	pub async fn insert_chapter(&mut self, title: &str, vote_duration: i32) -> Result<Chapter> {
 		sqlx::query_as!(
 			Chapter,
 			"INSERT INTO Chapters
@@ -360,7 +360,7 @@ impl Db {
 		.context(INSERT_ERROR)
 	}
 
-	pub async fn get_chapter(&self, id: i32) -> Result<Option<Chapter>> {
+	pub async fn get_chapter(&mut self, id: i32) -> Result<Option<Chapter>> {
 		sqlx::query_as!(
 			Chapter,
 			"SELECT
@@ -374,7 +374,7 @@ impl Db {
 		.context(SELECT_ERROR)
 	}
 
-	pub async fn get_chapter_by_order(&self, order: i32) -> Result<Option<Chapter>> {
+	pub async fn get_chapter_by_order(&mut self, order: i32) -> Result<Option<Chapter>> {
 		sqlx::query_as!(
 			Chapter,
 			"SELECT
@@ -388,7 +388,7 @@ impl Db {
 		.context(SELECT_ERROR)
 	}
 
-	pub async fn get_all_chapters(&self) -> Result<Vec<Chapter>> {
+	pub async fn get_all_chapters(&mut self) -> Result<Vec<Chapter>> {
 		sqlx::query_as!(
 			Chapter,
 			"SELECT
@@ -401,7 +401,7 @@ impl Db {
 		.context(SELECT_ERROR)
 	}
 
-	pub async fn get_chapters_count(&self) -> Result<i64> {
+	pub async fn get_chapters_count(&mut self) -> Result<i64> {
 		sqlx::query!("SELECT count(*) FROM Chapters;")
 			.fetch_one(&self.pool)
 			.await?
@@ -409,7 +409,7 @@ impl Db {
 			.context(SELECT_ERROR)
 	}
 
-	pub async fn update_chapter_title(&self, id: i32, title: &str) -> Result<u64> {
+	pub async fn update_chapter_title(&mut self, id: i32, title: &str) -> Result<u64> {
 		Ok(sqlx::query!(
 			"UPDATE Chapters
 			SET
@@ -424,7 +424,7 @@ impl Db {
 		.rows_affected())
 	}
 
-	pub async fn update_chapter_vote_duration(&self, id: i32, duration: i32) -> Result<u64> {
+	pub async fn update_chapter_vote_duration(&mut self, id: i32, duration: i32) -> Result<u64> {
 		Ok(sqlx::query!(
 			"UPDATE Chapters
 			SET
@@ -439,7 +439,7 @@ impl Db {
 		.rows_affected())
 	}
 
-	pub async fn update_chapter_minutes_left(&self, id: i32, minutes: i32) -> Result<u64> {
+	pub async fn update_chapter_minutes_left(&mut self, id: i32, minutes: i32) -> Result<u64> {
 		Ok(sqlx::query!(
 			"UPDATE Chapters
 			SET
@@ -454,7 +454,7 @@ impl Db {
 		.rows_affected())
 	}
 
-	pub async fn update_chapter_fimfic_id(&self, id: i32, fimfic_id: i32) -> Result<u64> {
+	pub async fn update_chapter_fimfic_id(&mut self, id: i32, fimfic_id: i32) -> Result<u64> {
 		Ok(sqlx::query!(
 			"UPDATE Chapters
 			SET
@@ -469,7 +469,7 @@ impl Db {
 		.rows_affected())
 	}
 
-	pub async fn update_chapter_intro(&self, id: i32, text: &str) -> Result<u64> {
+	pub async fn update_chapter_intro(&mut self, id: i32, text: &str) -> Result<u64> {
 		Ok(sqlx::query!(
 			"UPDATE Chapters
 			SET
@@ -484,7 +484,7 @@ impl Db {
 		.rows_affected())
 	}
 
-	pub async fn update_chapter_outro(&self, id: i32, text: &str) -> Result<u64> {
+	pub async fn update_chapter_outro(&mut self, id: i32, text: &str) -> Result<u64> {
 		Ok(sqlx::query!(
 			"UPDATE Chapters
 			SET
@@ -499,7 +499,7 @@ impl Db {
 		.rows_affected())
 	}
 
-	pub async fn update_chapter_order(&self, id: i32, order: i32) -> Result<u64> {
+	pub async fn update_chapter_order(&mut self, id: i32, order: i32) -> Result<u64> {
 		Ok(sqlx::query!(
 			"UPDATE Chapters
 			SET
@@ -515,7 +515,7 @@ impl Db {
 		.rows_affected())
 	}
 
-	pub async fn update_chapter_order_none(&self, id: i32) -> Result<u64> {
+	pub async fn update_chapter_order_none(&mut self, id: i32) -> Result<u64> {
 		Ok(sqlx::query!(
 			"UPDATE Chapters
 			SET
@@ -530,7 +530,7 @@ impl Db {
 		.rows_affected())
 	}
 
-	pub async fn update_chapter(&self, id: i32, chapter: ChapterEdit) -> Result<u64> {
+	pub async fn update_chapter(&mut self, id: i32, chapter: ChapterEdit) -> Result<u64> {
 		Ok(sqlx::query!(
 			"UPDATE Chapters
 			SET
@@ -552,7 +552,7 @@ impl Db {
 		.rows_affected())
 	}
 
-	pub async fn delete_chapter(&self, id: i32) -> Result<u64> {
+	pub async fn delete_chapter(&mut self, id: i32) -> Result<u64> {
 		Ok(sqlx::query!("DELETE FROM Chapters WHERE id = $1;", id)
 			.execute(&self.pool)
 			.await
@@ -560,7 +560,7 @@ impl Db {
 			.rows_affected())
 	}
 
-	pub async fn delete_all_chapters(&self) -> Result<u64> {
+	pub async fn delete_all_chapters(&mut self) -> Result<u64> {
 		Ok(sqlx::query!("DELETE FROM Chapters;")
 			.execute(&self.pool)
 			.await
@@ -569,7 +569,7 @@ impl Db {
 	}
 
 	pub async fn insert_writing(
-		&self, text: &str, creator_id: i32, previous_id: Option<i32>,
+		&mut self, text: &str, creator_id: i32, previous_id: Option<i32>,
 	) -> Result<Writing> {
 		sqlx::query_as!(
 			Writing,
@@ -588,7 +588,7 @@ impl Db {
 		.context(INSERT_ERROR)
 	}
 
-	pub async fn get_writing(&self, id: i32) -> Result<Option<Writing>> {
+	pub async fn get_writing(&mut self, id: i32) -> Result<Option<Writing>> {
 		sqlx::query_as!(
 			Writing,
 			"SELECT
@@ -601,7 +601,7 @@ impl Db {
 		.context(SELECT_ERROR)
 	}
 
-	pub async fn get_all_writings(&self) -> Result<Vec<Writing>> {
+	pub async fn get_all_writings(&mut self) -> Result<Vec<Writing>> {
 		sqlx::query_as!(
 			Writing,
 			"SELECT
@@ -613,7 +613,7 @@ impl Db {
 		.context(SELECT_ERROR)
 	}
 
-	pub async fn get_writings_count(&self) -> Result<i64> {
+	pub async fn get_writings_count(&mut self) -> Result<i64> {
 		sqlx::query!("SELECT count(*) FROM Writings;")
 			.fetch_one(&self.pool)
 			.await?
@@ -621,7 +621,7 @@ impl Db {
 			.context(SELECT_ERROR)
 	}
 
-	pub async fn delete_writing(&self, id: i32) -> Result<u64> {
+	pub async fn delete_writing(&mut self, id: i32) -> Result<u64> {
 		Ok(sqlx::query!("DELETE FROM Writings WHERE id = $1;", id)
 			.execute(&self.pool)
 			.await
@@ -629,7 +629,7 @@ impl Db {
 			.rows_affected())
 	}
 
-	pub async fn delete_all_writings(&self) -> Result<u64> {
+	pub async fn delete_all_writings(&mut self) -> Result<u64> {
 		Ok(sqlx::query!("DELETE FROM Writings;")
 			.execute(&self.pool)
 			.await
@@ -638,7 +638,7 @@ impl Db {
 	}
 
 	pub async fn insert_question(
-		&self, text: &str, question_type: QuestionType, percent: f64, asked_by: &str,
+		&mut self, text: &str, question_type: QuestionType, percent: f64, asked_by: &str,
 		creator_id: i32, claiment_id: Option<i32>,
 	) -> Result<Question> {
 		sqlx::query_as!(
@@ -662,7 +662,7 @@ impl Db {
 		.context(INSERT_ERROR)
 	}
 
-	pub async fn get_question(&self, id: i32) -> Result<Option<Question>> {
+	pub async fn get_question(&mut self, id: i32) -> Result<Option<Question>> {
 		sqlx::query_as!(
 			Question,
 			r#"SELECT
@@ -676,7 +676,7 @@ impl Db {
 		.context(SELECT_ERROR)
 	}
 
-	pub async fn get_questions_by_chapter(&self, chapter_id: Option<i32>) -> Result<Vec<Question>> {
+	pub async fn get_questions_by_chapter(&mut self, chapter_id: Option<i32>) -> Result<Vec<Question>> {
 		sqlx::query_as!(
 			Question,
 			r#"SELECT
@@ -690,7 +690,7 @@ impl Db {
 		.context(SELECT_ERROR)
 	}
 
-	pub async fn get_questions_by_crator(&self, creator_id: i32) -> Result<Vec<Question>> {
+	pub async fn get_questions_by_crator(&mut self, creator_id: i32) -> Result<Vec<Question>> {
 		sqlx::query_as!(
 			Question,
 			r#"SELECT
@@ -705,7 +705,7 @@ impl Db {
 	}
 
 	pub async fn get_questions_by_claiment(
-		&self, claiment_id: Option<i32>,
+		&mut self, claiment_id: Option<i32>,
 	) -> Result<Vec<Question>> {
 		sqlx::query_as!(
 			Question,
@@ -720,7 +720,7 @@ impl Db {
 		.context(SELECT_ERROR)
 	}
 
-	pub async fn get_all_questions(&self) -> Result<Vec<Question>> {
+	pub async fn get_all_questions(&mut self) -> Result<Vec<Question>> {
 		sqlx::query_as!(
 			Question,
 			r#"SELECT
@@ -733,7 +733,7 @@ impl Db {
 		.context(SELECT_ERROR)
 	}
 
-	pub async fn get_questions_count(&self) -> Result<i64> {
+	pub async fn get_questions_count(&mut self) -> Result<i64> {
 		sqlx::query!("SELECT count(*) FROM Questions;")
 			.fetch_one(&self.pool)
 			.await?
@@ -741,7 +741,7 @@ impl Db {
 			.context(SELECT_ERROR)
 	}
 
-	pub async fn update_question_text(&self, id: i32, text: &str) -> Result<u64> {
+	pub async fn update_question_text(&mut self, id: i32, text: &str) -> Result<u64> {
 		Ok(sqlx::query!(
 			"UPDATE Questions
 			SET
@@ -756,7 +756,7 @@ impl Db {
 		.rows_affected())
 	}
 
-	pub async fn update_question_repsonse_percent(&self, id: i32, percent: f64) -> Result<u64> {
+	pub async fn update_question_repsonse_percent(&mut self, id: i32, percent: f64) -> Result<u64> {
 		Ok(sqlx::query!(
 			"UPDATE Questions
 			SET
@@ -771,7 +771,7 @@ impl Db {
 		.rows_affected())
 	}
 
-	pub async fn update_question_asked_by(&self, id: i32, asked_by: &str) -> Result<u64> {
+	pub async fn update_question_asked_by(&mut self, id: i32, asked_by: &str) -> Result<u64> {
 		Ok(sqlx::query!(
 			"UPDATE Questions
 			SET
@@ -787,7 +787,7 @@ impl Db {
 	}
 
 	pub async fn update_question_claimed_by(
-		&self, id: i32, claimed_by: Option<i32>,
+		&mut self, id: i32, claimed_by: Option<i32>,
 	) -> Result<u64> {
 		Ok(sqlx::query!(
 			"UPDATE Questions
@@ -804,7 +804,7 @@ impl Db {
 	}
 
 	pub async fn update_question_chapter_id(
-		&self, id: i32, chapter_id: Option<i32>,
+		&mut self, id: i32, chapter_id: Option<i32>,
 	) -> Result<u64> {
 		Ok(sqlx::query!(
 			"UPDATE Questions
@@ -821,7 +821,7 @@ impl Db {
 	}
 
 	pub async fn update_question_chapter_order(
-		&self, id: i32, chapter_order: Option<i32>,
+		&mut self, id: i32, chapter_order: Option<i32>,
 	) -> Result<u64> {
 		Ok(sqlx::query!(
 			"UPDATE Questions
@@ -838,7 +838,7 @@ impl Db {
 	}
 
 	pub async fn update_question_latest_writing(
-		&self, id: i32, writing_id: Option<i32>,
+		&mut self, id: i32, writing_id: Option<i32>,
 	) -> Result<u64> {
 		Ok(sqlx::query!(
 			"UPDATE Questions
@@ -854,7 +854,7 @@ impl Db {
 		.rows_affected())
 	}
 
-	pub async fn delete_question(&self, id: i32) -> Result<u64> {
+	pub async fn delete_question(&mut self, id: i32) -> Result<u64> {
 		Ok(sqlx::query!("DELETE FROM Questions WHERE id = $1;", id)
 			.execute(&self.pool)
 			.await
@@ -862,7 +862,7 @@ impl Db {
 			.rows_affected())
 	}
 
-	pub async fn delete_all_questions(&self) -> Result<u64> {
+	pub async fn delete_all_questions(&mut self) -> Result<u64> {
 		Ok(sqlx::query!("DELETE FROM Questions;")
 			.execute(&self.pool)
 			.await
@@ -871,7 +871,7 @@ impl Db {
 	}
 
 	pub async fn insert_option(
-		&self, question_id: i32, option_number: i32, text: &str, order_rank: i32,
+		&mut self, question_id: i32, option_number: i32, text: &str, order_rank: i32,
 	) -> Result<QuestionOption> {
 		sqlx::query_as!(
 			QuestionOption,
@@ -892,7 +892,7 @@ impl Db {
 		.context(INSERT_ERROR)
 	}
 
-	pub async fn get_option(&self, id: i32) -> Result<Option<QuestionOption>> {
+	pub async fn get_option(&mut self, id: i32) -> Result<Option<QuestionOption>> {
 		sqlx::query_as!(
 			QuestionOption,
 			"SELECT
@@ -906,7 +906,7 @@ impl Db {
 		.context(SELECT_ERROR)
 	}
 
-	pub async fn get_options_by_question(&self, question_id: i32) -> Result<Vec<QuestionOption>> {
+	pub async fn get_options_by_question(&mut self, question_id: i32) -> Result<Vec<QuestionOption>> {
 		sqlx::query_as!(
 			QuestionOption,
 			"SELECT
@@ -920,7 +920,7 @@ impl Db {
 		.context(SELECT_ERROR)
 	}
 
-	pub async fn get_all_options(&self) -> Result<Vec<QuestionOption>> {
+	pub async fn get_all_options(&mut self) -> Result<Vec<QuestionOption>> {
 		sqlx::query_as!(
 			QuestionOption,
 			"SELECT
@@ -933,7 +933,7 @@ impl Db {
 		.context(SELECT_ERROR)
 	}
 
-	pub async fn get_options_count(&self) -> Result<i64> {
+	pub async fn get_options_count(&mut self) -> Result<i64> {
 		sqlx::query!("SELECT count(*) FROM Options;")
 			.fetch_one(&self.pool)
 			.await?
@@ -941,7 +941,7 @@ impl Db {
 			.context(SELECT_ERROR)
 	}
 
-	pub async fn update_option_number(&self, id: i32, number: i32) -> Result<u64> {
+	pub async fn update_option_number(&mut self, id: i32, number: i32) -> Result<u64> {
 		Ok(sqlx::query!(
 			"UPDATE Options
 			SET
@@ -956,7 +956,7 @@ impl Db {
 		.rows_affected())
 	}
 
-	pub async fn update_option_text(&self, id: i32, text: &str) -> Result<u64> {
+	pub async fn update_option_text(&mut self, id: i32, text: &str) -> Result<u64> {
 		Ok(sqlx::query!(
 			"UPDATE Options
 			SET
@@ -971,7 +971,7 @@ impl Db {
 		.rows_affected())
 	}
 
-	pub async fn update_option_writing_id(&self, id: i32, writing_id: Option<i32>) -> Result<u64> {
+	pub async fn update_option_writing_id(&mut self, id: i32, writing_id: Option<i32>) -> Result<u64> {
 		Ok(sqlx::query!(
 			"UPDATE Options
 			SET
@@ -986,7 +986,7 @@ impl Db {
 		.rows_affected())
 	}
 
-	pub async fn update_option_order_rank(&self, id: i32, order_rank: i32) -> Result<u64> {
+	pub async fn update_option_order_rank(&mut self, id: i32, order_rank: i32) -> Result<u64> {
 		Ok(sqlx::query!(
 			"UPDATE Options
 			SET
@@ -1001,7 +1001,7 @@ impl Db {
 		.rows_affected())
 	}
 
-	pub async fn delete_option(&self, id: i32) -> Result<u64> {
+	pub async fn delete_option(&mut self, id: i32) -> Result<u64> {
 		Ok(sqlx::query!("DELETE FROM Options WHERE id = $1;", id)
 			.execute(&self.pool)
 			.await
@@ -1009,7 +1009,7 @@ impl Db {
 			.rows_affected())
 	}
 
-	pub async fn delete_options_by_question_id(&self, question_id: i32) -> Result<u64> {
+	pub async fn delete_options_by_question_id(&mut self, question_id: i32) -> Result<u64> {
 		Ok(
 			sqlx::query!("DELETE FROM Options WHERE question_id = $1;", question_id)
 				.execute(&self.pool)
@@ -1019,7 +1019,7 @@ impl Db {
 		)
 	}
 
-	pub async fn delete_all_options(&self) -> Result<u64> {
+	pub async fn delete_all_options(&mut self) -> Result<u64> {
 		Ok(sqlx::query!("DELETE FROM options;")
 			.execute(&self.pool)
 			.await
@@ -1028,7 +1028,7 @@ impl Db {
 	}
 
 	pub async fn insert_vote(
-		&self, user_id: i32, question_id: i32, option_id: i32,
+		&mut self, user_id: i32, question_id: i32, option_id: i32,
 	) -> Result<Vote> {
 		sqlx::query_as!(
 			Vote,
@@ -1047,7 +1047,7 @@ impl Db {
 		.context(INSERT_ERROR)
 	}
 
-	pub async fn get_all_votes_by_user(&self, user_id: i32) -> Result<Vec<Vote>> {
+	pub async fn get_all_votes_by_user(&mut self, user_id: i32) -> Result<Vec<Vote>> {
 		sqlx::query_as!(
 			Vote,
 			"SELECT
@@ -1061,7 +1061,7 @@ impl Db {
 		.context(SELECT_ERROR)
 	}
 
-	pub async fn get_all_votes_by_question(&self, question_id: i32) -> Result<Vec<Vote>> {
+	pub async fn get_all_votes_by_question(&mut self, question_id: i32) -> Result<Vec<Vote>> {
 		sqlx::query_as!(
 			Vote,
 			"SELECT
@@ -1075,7 +1075,7 @@ impl Db {
 		.context(SELECT_ERROR)
 	}
 
-	pub async fn get_all_votes_by_option(&self, option_id: i32) -> Result<Vec<Vote>> {
+	pub async fn get_all_votes_by_option(&mut self, option_id: i32) -> Result<Vec<Vote>> {
 		sqlx::query_as!(
 			Vote,
 			"SELECT
@@ -1089,7 +1089,7 @@ impl Db {
 		.context(SELECT_ERROR)
 	}
 
-	pub async fn get_all_votes(&self) -> Result<Vec<Vote>> {
+	pub async fn get_all_votes(&mut self) -> Result<Vec<Vote>> {
 		sqlx::query_as!(
 			Vote,
 			"SELECT voter_id, question_id, option_id, date_created FROM Votes;",
@@ -1099,7 +1099,7 @@ impl Db {
 		.context(SELECT_ERROR)
 	}
 
-	pub async fn get_votes_count(&self) -> Result<i64> {
+	pub async fn get_votes_count(&mut self) -> Result<i64> {
 		sqlx::query!("SELECT count(*) FROM Votes;")
 			.fetch_one(&self.pool)
 			.await?
@@ -1107,7 +1107,7 @@ impl Db {
 			.context(SELECT_ERROR)
 	}
 
-	pub async fn delete_votes_by_user(&self, user_id: i32) -> Result<u64> {
+	pub async fn delete_votes_by_user(&mut self, user_id: i32) -> Result<u64> {
 		Ok(
 			sqlx::query!("DELETE FROM Votes WHERE voter_id = $1;", user_id)
 				.execute(&self.pool)
@@ -1117,7 +1117,7 @@ impl Db {
 		)
 	}
 
-	pub async fn delete_votes_by_option(&self, question_id: i32) -> Result<u64> {
+	pub async fn delete_votes_by_option(&mut self, question_id: i32) -> Result<u64> {
 		Ok(
 			sqlx::query!("DELETE FROM Votes WHERE question_id = $1;", question_id)
 				.execute(&self.pool)
@@ -1127,7 +1127,7 @@ impl Db {
 		)
 	}
 
-	pub async fn delete_votes_by_question(&self, option_id: i32) -> Result<u64> {
+	pub async fn delete_votes_by_question(&mut self, option_id: i32) -> Result<u64> {
 		Ok(
 			sqlx::query!("DELETE FROM Votes WHERE option_id = $1;", option_id)
 				.execute(&self.pool)
@@ -1137,7 +1137,7 @@ impl Db {
 		)
 	}
 
-	pub async fn delete_all_votes(&self) -> Result<u64> {
+	pub async fn delete_all_votes(&mut self) -> Result<u64> {
 		Ok(sqlx::query!("DELETE FROM Votes;")
 			.execute(&self.pool)
 			.await
@@ -1145,7 +1145,7 @@ impl Db {
 			.rows_affected())
 	}
 
-	pub async fn insert_story_update(&self, data: StoryData<i32>) -> Result<StoryUpdate> {
+	pub async fn insert_story_update(&mut self, data: StoryData<i32>) -> Result<StoryUpdate> {
 		sqlx::query_as!(
 			StoryUpdate,
 			"INSERT INTO Story_updates
@@ -1174,7 +1174,7 @@ impl Db {
 	}
 
 	pub async fn get_story_updates_in_range(
-		&self, start: DateTime<Utc>, end: DateTime<Utc>,
+		&mut self, start: DateTime<Utc>, end: DateTime<Utc>,
 	) -> Result<Vec<StoryUpdate>> {
 		sqlx::query_as!(
 			StoryUpdate,
@@ -1191,7 +1191,7 @@ impl Db {
 		.context(SELECT_ERROR)
 	}
 
-	pub async fn get_all_story_updates(&self) -> Result<Vec<StoryUpdate>> {
+	pub async fn get_all_story_updates(&mut self) -> Result<Vec<StoryUpdate>> {
 		sqlx::query_as!(
 			StoryUpdate,
 			"SELECT
@@ -1204,7 +1204,7 @@ impl Db {
 		.context(SELECT_ERROR)
 	}
 
-	pub async fn get_story_updates_count(&self) -> Result<i64> {
+	pub async fn get_story_updates_count(&mut self) -> Result<i64> {
 		sqlx::query!("SELECT count(*) FROM Story_updates;")
 			.fetch_one(&self.pool)
 			.await?
@@ -1212,7 +1212,7 @@ impl Db {
 			.context(SELECT_ERROR)
 	}
 
-	pub async fn delete_story_update(&self, date_cached: DateTime<Utc>) -> Result<u64> {
+	pub async fn delete_story_update(&mut self, date_cached: DateTime<Utc>) -> Result<u64> {
 		Ok(sqlx::query!(
 			"DELETE FROM Story_updates WHERE date_cached = $1;",
 			date_cached
@@ -1224,7 +1224,7 @@ impl Db {
 	}
 
 	pub async fn delete_story_updates_in_range(
-		&self, start: DateTime<Utc>, end: DateTime<Utc>,
+		&mut self, start: DateTime<Utc>, end: DateTime<Utc>,
 	) -> Result<u64> {
 		Ok(sqlx::query!(
 			"DELETE FROM Story_updates
@@ -1238,7 +1238,7 @@ impl Db {
 		.rows_affected())
 	}
 
-	pub async fn delete_all_story_updates(&self) -> Result<u64> {
+	pub async fn delete_all_story_updates(&mut self) -> Result<u64> {
 		Ok(sqlx::query!("DELETE FROM Story_updates;")
 			.execute(&self.pool)
 			.await

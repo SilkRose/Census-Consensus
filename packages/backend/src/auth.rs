@@ -44,7 +44,7 @@ pub async fn fimfic_auth(
 }
 
 #[get("/logout")]
-pub async fn fimfic_auth_logout(req: HttpRequest, db: Data<Db>) -> HttpResponse {
+pub async fn fimfic_auth_logout(req: HttpRequest, mut db: Data<Db>) -> HttpResponse {
 	let mut response = HttpResponse::SeeOther();
 	response.insert_header(("location", "/"));
 
@@ -63,7 +63,7 @@ pub async fn fimfic_auth_logout(req: HttpRequest, db: Data<Db>) -> HttpResponse 
 }
 
 async fn fimfic_auth_redirect(
-	req: HttpRequest, db: Data<Db>, fimfic_cfg: Data<FimficCfg>,
+	req: HttpRequest, mut db: Data<Db>, fimfic_cfg: Data<FimficCfg>,
 ) -> HttpResponse {
 	if let Some(session_cookie) = cookie::try_get_session_cookie(&req) {
 		let session = db.update_session_last_seen(session_cookie.value()).await;
@@ -102,7 +102,7 @@ async fn fimfic_auth_redirect(
 
 #[builder]
 async fn fimfic_auth_return(
-	req: HttpRequest, db: Data<Db>, fimfic_cfg: Data<FimficCfg>, http_client: Data<HttpClient>,
+	req: HttpRequest, mut db: Data<Db>, fimfic_cfg: Data<FimficCfg>, http_client: Data<HttpClient>,
 	code: String, state: String,
 ) -> HttpResponse {
 	let Some(state_cookie) = cookie::try_get_state_cookie(&req) else {
@@ -251,9 +251,10 @@ fn get_unverified_session_info(req: &HttpRequest) -> Option<SessionInfo> {
 async fn verify_session_info(
 	req: &HttpRequest, session_info: &SessionInfo,
 ) -> Result<(), ErrorWrapper> {
-	let db = req
+	let mut db = req
 		.app_data::<Data<Db>>()
-		.context("no ThinData<Db> found")?;
+		.context("no ThinData<Db> found")?
+		.clone();
 	let db_session_info = db
 		.update_session_last_seen(&session_info.token)
 		.await?
@@ -295,7 +296,7 @@ impl DevSession {
 
 #[get("/dev-session/{token}")]
 pub async fn dev_session(
-	req: HttpRequest, path: Path<String>, db: Data<Db>, dev_session: Data<Option<DevSession>>,
+	req: HttpRequest, path: Path<String>, mut db: Data<Db>, dev_session: Data<Option<DevSession>>,
 ) -> HttpResponse {
 	let Some(DevSession { inner: dev_session }) = &*dev_session else {
 		return HttpResponse::NotFound().finish();

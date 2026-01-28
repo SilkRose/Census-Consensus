@@ -27,7 +27,7 @@ pub async fn get_update_user() -> actix_web::Result<impl Responder> {
 
 #[post("/update-user")]
 pub async fn set_update_user(
-	req: HttpRequest, db: ThinData<Db>, session: SessionInfo, http_client: ThinData<HttpClient>,
+	req: HttpRequest, mut db: ThinData<Db>, session: SessionInfo, http_client: ThinData<HttpClient>,
 	fimfic_cfg: ThinData<FimficCfg>,
 ) -> actix_web::Result<impl Responder> {
 	let user = db
@@ -53,7 +53,7 @@ pub async fn set_update_user(
 
 #[get("/user-role")]
 pub async fn get_update_user_role(
-	db: ThinData<Db>, session: SessionInfo,
+	mut db: ThinData<Db>, session: SessionInfo,
 ) -> actix_web::Result<impl Responder> {
 	let user = db
 		.get_user(session.user_id)
@@ -71,7 +71,7 @@ pub async fn get_update_user_role(
 
 #[post("/user-role")]
 pub async fn set_update_user_role(
-	req: HttpRequest, body: String, db: ThinData<Db>, session: SessionInfo,
+	req: HttpRequest, body: String, mut db: ThinData<Db>, session: SessionInfo,
 ) -> actix_web::Result<impl Responder> {
 	let user = db
 		.get_user(session.user_id)
@@ -101,7 +101,7 @@ pub async fn set_update_user_role(
 
 #[get("/ban-user")]
 pub async fn get_ban_user(
-	db: ThinData<Db>, session: SessionInfo,
+	mut db: ThinData<Db>, session: SessionInfo,
 ) -> actix_web::Result<impl Responder> {
 	let user = db
 		.get_user(session.user_id)
@@ -119,7 +119,7 @@ pub async fn get_ban_user(
 
 #[post("/ban-user")]
 pub async fn set_ban_user(
-	req: HttpRequest, body: String, db: ThinData<Db>, session: SessionInfo,
+	req: HttpRequest, body: String, mut db: ThinData<Db>, session: SessionInfo,
 ) -> actix_web::Result<impl Responder> {
 	let user = db
 		.get_user(session.user_id)
@@ -148,7 +148,7 @@ pub async fn set_ban_user(
 
 #[get("/user-feedback")]
 pub async fn get_user_feedback(
-	db: ThinData<Db>, session: SessionInfo,
+	mut db: ThinData<Db>, session: SessionInfo,
 ) -> actix_web::Result<impl Responder> {
 	let user = db
 		.get_user(session.user_id)
@@ -163,7 +163,7 @@ pub async fn get_user_feedback(
 
 #[post("/user-feedback")]
 pub async fn set_user_feedback(
-	req: HttpRequest, body: String, db: ThinData<Db>, session: SessionInfo,
+	req: HttpRequest, body: String, mut db: ThinData<Db>, session: SessionInfo,
 ) -> actix_web::Result<impl Responder> {
 	let feedback = serde_urlencoded::from_str::<HashMap<String, String>>(&body)?;
 	let private_feedback = feedback
@@ -186,7 +186,7 @@ pub async fn set_user_feedback(
 
 #[get("/sessions")]
 pub async fn get_sessions(
-	db: ThinData<Db>, session: SessionInfo,
+	mut db: ThinData<Db>, session: SessionInfo,
 ) -> actix_web::Result<impl Responder> {
 	let mut sessions = db
 		.get_all_user_sessions(session.user_id)
@@ -202,7 +202,7 @@ pub async fn get_sessions(
 
 #[post("/revoke-sessions")]
 pub async fn set_revoke_sessions(
-	req: HttpRequest, body: String, db: ThinData<Db>, session: SessionInfo,
+	req: HttpRequest, body: String, mut db: ThinData<Db>, session: SessionInfo,
 ) -> actix_web::Result<impl Responder> {
 	let sessions = serde_urlencoded::from_str::<HashMap<u32, String>>(&body)?
 		.into_values()
@@ -234,7 +234,7 @@ pub async fn set_revoke_sessions(
 
 #[get("/chapters")]
 pub async fn get_chapters(
-	db: ThinData<Db>, session: SessionInfo,
+	mut db: ThinData<Db>, session: SessionInfo,
 ) -> actix_web::Result<impl Responder> {
 	let user = db
 		.get_user(session.user_id)
@@ -259,7 +259,7 @@ pub async fn get_chapters(
 
 #[get("/chapters/new")]
 pub async fn get_chapter_new(
-	db: ThinData<Db>, session: SessionInfo,
+	mut db: ThinData<Db>, session: SessionInfo,
 ) -> actix_web::Result<impl Responder> {
 	let user = db
 		.get_user(session.user_id)
@@ -277,7 +277,7 @@ pub async fn get_chapter_new(
 
 #[post("/chapters/new")]
 pub async fn set_chapter_new(
-	body: String, db: ThinData<Db>, session: SessionInfo,
+	body: String, mut db: ThinData<Db>, session: SessionInfo,
 ) -> actix_web::Result<impl Responder> {
 	let user = db
 		.get_user(session.user_id)
@@ -299,7 +299,7 @@ pub async fn set_chapter_new(
 
 #[get("/chapters/{id}")]
 pub async fn get_chapter_edit(
-	path: Path<i32>, db: ThinData<Db>, session: SessionInfo,
+	path: Path<i32>, mut db: ThinData<Db>, session: SessionInfo,
 ) -> actix_web::Result<impl Responder> {
 	let id = path.into_inner();
 	let user = db
@@ -323,7 +323,7 @@ pub async fn get_chapter_edit(
 
 #[post("/chapters/{id}")]
 pub async fn set_chapter_edit(
-	path: Path<i32>, body: String, db: ThinData<Db>, session: SessionInfo,
+	path: Path<i32>, body: String, mut db: ThinData<Db>, session: SessionInfo,
 ) -> actix_web::Result<impl Responder> {
 	let id = path.into_inner();
 	let user = db
@@ -343,7 +343,7 @@ pub async fn set_chapter_edit(
 
 #[get("/chapters/{id}/ordered")]
 pub async fn set_chapter_order(
-	path: Path<i32>, db: ThinData<Db>, session: SessionInfo,
+	path: Path<i32>, mut db: ThinData<Db>, session: SessionInfo,
 ) -> actix_web::Result<impl Responder> {
 	let id = path.into_inner();
 	let user = db
@@ -366,7 +366,7 @@ pub async fn set_chapter_order(
 
 #[get("/chapters/{id}/ordered/{movement}")]
 pub async fn set_chapter_order_move(
-	path: Path<(i32, i32)>, db: ThinData<Db>, session: SessionInfo,
+	path: Path<(i32, i32)>, mut db: ThinData<Db>, session: SessionInfo,
 ) -> actix_web::Result<impl Responder> {
 	let (id, movement) = path.into_inner();
 	if movement.abs() != 1 {
@@ -417,7 +417,7 @@ pub async fn set_chapter_order_move(
 
 #[get("/chapters/{id}/vote-duration/{movement}")]
 pub async fn set_chapter_vote_duration_move(
-	path: Path<(i32, i32)>, db: ThinData<Db>, session: SessionInfo,
+	path: Path<(i32, i32)>, mut db: ThinData<Db>, session: SessionInfo,
 ) -> actix_web::Result<impl Responder> {
 	let (id, movement) = path.into_inner();
 	if movement.abs() != 1 {
@@ -448,7 +448,7 @@ pub async fn set_chapter_vote_duration_move(
 
 #[get("/chapters/{id}/minutes-left/{movement}")]
 pub async fn set_chapter_minutes_left_move(
-	path: Path<(i32, i32)>, db: ThinData<Db>, session: SessionInfo,
+	path: Path<(i32, i32)>, mut db: ThinData<Db>, session: SessionInfo,
 ) -> actix_web::Result<impl Responder> {
 	let (id, movement) = path.into_inner();
 	if movement.abs() != 1 {

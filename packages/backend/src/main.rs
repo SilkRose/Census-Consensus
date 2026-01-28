@@ -37,7 +37,7 @@ async fn main() -> Result<()> {
 	env_vars::check();
 
 	let db = Db::new(&env_vars::database_url()).await?;
-	let db = Data(db);
+	let mut db = Data(db);
 
 	let admin_id = env_vars::admin_id().parse::<i32>()?;
 	let bearer_token = env_vars::bearer_token();
