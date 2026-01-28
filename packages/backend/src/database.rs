@@ -53,6 +53,13 @@ pub struct DbTransaction<'c> {
 	tx: sqlx::Transaction<'c, Postgres>
 }
 
+impl<'c> DbTransaction<'c> {
+	async fn commit(self) -> Result<()> {
+		self.tx.commit().await?;
+		Ok(())
+	}
+}
+
 impl<'c> DbExecutor for DbTransaction<'c> {
 	type Executor<'c2> = &'c2 mut sqlx::PgConnection
 	where
