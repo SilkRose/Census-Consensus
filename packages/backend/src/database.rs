@@ -82,7 +82,7 @@ impl Db {
 			),
 			user_type as _,
 		)
-		.fetch_one(&self.pool)
+		.fetch_one(self.executor())
 		.await
 		.context(INSERT_ERROR)
 	}
@@ -96,7 +96,7 @@ impl Db {
 			FROM Users WHERE id = $1 LIMIT 1;"#,
 			id,
 		)
-		.fetch_optional(&self.pool)
+		.fetch_optional(self.executor())
 		.await
 		.context(SELECT_ERROR)
 	}
@@ -109,14 +109,14 @@ impl Db {
 				feedback_public, date_last_fetch, date_joined
 			FROM Users;"#,
 		)
-		.fetch_all(&self.pool)
+		.fetch_all(self.executor())
 		.await
 		.context(SELECT_ERROR)
 	}
 
 	pub async fn get_users_count(&mut self) -> Result<i64> {
 		sqlx::query!("SELECT count(*) FROM Users;")
-			.fetch_one(&self.pool)
+			.fetch_one(self.executor())
 			.await?
 			.count
 			.context(SELECT_ERROR)
@@ -131,7 +131,7 @@ impl Db {
 			id,
 			role as _
 		)
-		.execute(&self.pool)
+		.execute(self.executor())
 		.await
 		.context(UPDATE_ERROR)?
 		.rows_affected())
@@ -150,7 +150,7 @@ impl Db {
 			private_msg,
 			public_msg
 		)
-		.execute(&self.pool)
+		.execute(self.executor())
 		.await
 		.context(UPDATE_ERROR)?
 		.rows_affected())
@@ -158,7 +158,7 @@ impl Db {
 
 	pub async fn delete_user(&mut self, id: i32) -> Result<u64> {
 		Ok(sqlx::query!("DELETE FROM Users WHERE id = $1;", id)
-			.execute(&self.pool)
+			.execute(self.executor())
 			.await
 			.context(DELETE_ERROR)?
 			.rows_affected())
@@ -166,7 +166,7 @@ impl Db {
 
 	pub async fn delete_all_users(&mut self) -> Result<u64> {
 		Ok(sqlx::query!("DELETE FROM Users;")
-			.execute(&self.pool)
+			.execute(self.executor())
 			.await
 			.context(DELETE_ERROR)?
 			.rows_affected())
@@ -187,7 +187,7 @@ impl Db {
 			user_id,
 			user_agent
 		)
-		.fetch_one(&self.pool)
+		.fetch_one(self.executor())
 		.await
 		.context(INSERT_ERROR)
 	}
@@ -200,7 +200,7 @@ impl Db {
 			FROM Tokens WHERE token = $1;",
 			token
 		)
-		.fetch_optional(&self.pool)
+		.fetch_optional(self.executor())
 		.await
 		.context(SELECT_ERROR)
 	}
@@ -214,7 +214,7 @@ impl Db {
 				token, user_id, user_agent, last_seen, date_created;",
 			token
 		)
-		.fetch_optional(&self.pool)
+		.fetch_optional(self.executor())
 		.await
 		.context(SELECT_ERROR)
 	}
@@ -228,7 +228,7 @@ impl Db {
 			WHERE user_id = $1;",
 			user_id
 		)
-		.fetch_all(&self.pool)
+		.fetch_all(self.executor())
 		.await
 		.context(SELECT_ERROR)
 	}
@@ -238,14 +238,14 @@ impl Db {
 			Session,
 			"SELECT token, user_id, user_agent, last_seen, date_created FROM Tokens;",
 		)
-		.fetch_all(&self.pool)
+		.fetch_all(self.executor())
 		.await
 		.context(SELECT_ERROR)
 	}
 
 	pub async fn get_sessions_count(&mut self) -> Result<i64> {
 		sqlx::query!("SELECT count(*) FROM Tokens;")
-			.fetch_one(&self.pool)
+			.fetch_one(self.executor())
 			.await?
 			.count
 			.context(SELECT_ERROR)
@@ -253,7 +253,7 @@ impl Db {
 
 	pub async fn delete_session(&mut self, token: &str) -> Result<u64> {
 		Ok(sqlx::query!("DELETE FROM Tokens WHERE token = $1;", token)
-			.execute(&self.pool)
+			.execute(self.executor())
 			.await
 			.context(DELETE_ERROR)?
 			.rows_affected())
@@ -262,7 +262,7 @@ impl Db {
 	pub async fn delete_sessions_by_user_id(&mut self, user_id: i32) -> Result<u64> {
 		Ok(
 			sqlx::query!("DELETE FROM Tokens WHERE user_id = $1;", user_id)
-				.execute(&self.pool)
+				.execute(self.executor())
 				.await
 				.context(DELETE_ERROR)?
 				.rows_affected(),
@@ -271,7 +271,7 @@ impl Db {
 
 	pub async fn delete_all_sessions(&mut self) -> Result<u64> {
 		Ok(sqlx::query!("DELETE FROM Tokens;")
-			.execute(&self.pool)
+			.execute(self.executor())
 			.await
 			.context(DELETE_ERROR)?
 			.rows_affected())
@@ -291,7 +291,7 @@ impl Db {
 			user_id,
 			reason
 		)
-		.fetch_one(&self.pool)
+		.fetch_one(self.executor())
 		.await
 		.context(INSERT_ERROR)
 	}
@@ -307,7 +307,7 @@ impl Db {
 			LIMIT 1;",
 			id
 		)
-		.fetch_optional(&self.pool)
+		.fetch_optional(self.executor())
 		.await
 		.context(SELECT_ERROR)
 	}
@@ -317,14 +317,14 @@ impl Db {
 			BannedUser,
 			"SELECT id, reason, date_banned FROM Banned_users;",
 		)
-		.fetch_all(&self.pool)
+		.fetch_all(self.executor())
 		.await
 		.context(SELECT_ERROR)
 	}
 
 	pub async fn get_banned_users_count(&mut self) -> Result<i64> {
 		sqlx::query!("SELECT count(*) FROM Banned_users;")
-			.fetch_one(&self.pool)
+			.fetch_one(self.executor())
 			.await?
 			.count
 			.context(SELECT_ERROR)
@@ -339,7 +339,7 @@ impl Db {
 			id,
 			reason
 		)
-		.execute(&self.pool)
+		.execute(self.executor())
 		.await
 		.context(UPDATE_ERROR)?
 		.rows_affected())
@@ -347,7 +347,7 @@ impl Db {
 
 	pub async fn delete_banned_user(&mut self, id: i32) -> Result<u64> {
 		Ok(sqlx::query!("DELETE FROM Banned_users WHERE id = $1;", id)
-			.execute(&self.pool)
+			.execute(self.executor())
 			.await
 			.context(DELETE_ERROR)?
 			.rows_affected())
@@ -355,7 +355,7 @@ impl Db {
 
 	pub async fn delete_all_banned_users(&mut self) -> Result<u64> {
 		Ok(sqlx::query!("DELETE FROM Banned_users;")
-			.execute(&self.pool)
+			.execute(self.executor())
 			.await
 			.context(DELETE_ERROR)?
 			.rows_affected())
@@ -374,7 +374,7 @@ impl Db {
 			title,
 			vote_duration
 		)
-		.fetch_one(&self.pool)
+		.fetch_one(self.executor())
 		.await
 		.context(INSERT_ERROR)
 	}
@@ -388,7 +388,7 @@ impl Db {
 			FROM Chapters WHERE id = $1 LIMIT 1;",
 			id,
 		)
-		.fetch_optional(&self.pool)
+		.fetch_optional(self.executor())
 		.await
 		.context(SELECT_ERROR)
 	}
@@ -402,7 +402,7 @@ impl Db {
 			FROM Chapters WHERE chapter_order = $1 LIMIT 1;",
 			order,
 		)
-		.fetch_optional(&self.pool)
+		.fetch_optional(self.executor())
 		.await
 		.context(SELECT_ERROR)
 	}
@@ -415,14 +415,14 @@ impl Db {
 				outro_text, chapter_order, last_edit, date_created
 			FROM Chapters;",
 		)
-		.fetch_all(&self.pool)
+		.fetch_all(self.executor())
 		.await
 		.context(SELECT_ERROR)
 	}
 
 	pub async fn get_chapters_count(&mut self) -> Result<i64> {
 		sqlx::query!("SELECT count(*) FROM Chapters;")
-			.fetch_one(&self.pool)
+			.fetch_one(self.executor())
 			.await?
 			.count
 			.context(SELECT_ERROR)
@@ -437,7 +437,7 @@ impl Db {
 			id,
 			title
 		)
-		.execute(&self.pool)
+		.execute(self.executor())
 		.await
 		.context(UPDATE_ERROR)?
 		.rows_affected())
@@ -452,7 +452,7 @@ impl Db {
 			id,
 			duration
 		)
-		.execute(&self.pool)
+		.execute(self.executor())
 		.await
 		.context(UPDATE_ERROR)?
 		.rows_affected())
@@ -467,7 +467,7 @@ impl Db {
 			id,
 			minutes
 		)
-		.execute(&self.pool)
+		.execute(self.executor())
 		.await
 		.context(UPDATE_ERROR)?
 		.rows_affected())
@@ -482,7 +482,7 @@ impl Db {
 			id,
 			fimfic_id
 		)
-		.execute(&self.pool)
+		.execute(self.executor())
 		.await
 		.context(UPDATE_ERROR)?
 		.rows_affected())
@@ -497,7 +497,7 @@ impl Db {
 			id,
 			text
 		)
-		.execute(&self.pool)
+		.execute(self.executor())
 		.await
 		.context(UPDATE_ERROR)?
 		.rows_affected())
@@ -512,7 +512,7 @@ impl Db {
 			id,
 			text
 		)
-		.execute(&self.pool)
+		.execute(self.executor())
 		.await
 		.context(UPDATE_ERROR)?
 		.rows_affected())
@@ -528,7 +528,7 @@ impl Db {
 			id,
 			order
 		)
-		.execute(&self.pool)
+		.execute(self.executor())
 		.await
 		.context(UPDATE_ERROR)?
 		.rows_affected())
@@ -543,7 +543,7 @@ impl Db {
 			WHERE id = $1;",
 			id,
 		)
-		.execute(&self.pool)
+		.execute(self.executor())
 		.await
 		.context(UPDATE_ERROR)?
 		.rows_affected())
@@ -565,7 +565,7 @@ impl Db {
 			chapter.intro_text,
 			chapter.outro_text
 		)
-		.execute(&self.pool)
+		.execute(self.executor())
 		.await
 		.context(UPDATE_ERROR)?
 		.rows_affected())
@@ -573,7 +573,7 @@ impl Db {
 
 	pub async fn delete_chapter(&mut self, id: i32) -> Result<u64> {
 		Ok(sqlx::query!("DELETE FROM Chapters WHERE id = $1;", id)
-			.execute(&self.pool)
+			.execute(self.executor())
 			.await
 			.context(DELETE_ERROR)?
 			.rows_affected())
@@ -581,7 +581,7 @@ impl Db {
 
 	pub async fn delete_all_chapters(&mut self) -> Result<u64> {
 		Ok(sqlx::query!("DELETE FROM Chapters;")
-			.execute(&self.pool)
+			.execute(self.executor())
 			.await
 			.context(DELETE_ERROR)?
 			.rows_affected())
@@ -602,7 +602,7 @@ impl Db {
 			creator_id,
 			previous_id
 		)
-		.fetch_one(&self.pool)
+		.fetch_one(self.executor())
 		.await
 		.context(INSERT_ERROR)
 	}
@@ -615,7 +615,7 @@ impl Db {
 			FROM Writings WHERE id = $1 LIMIT 1;",
 			id,
 		)
-		.fetch_optional(&self.pool)
+		.fetch_optional(self.executor())
 		.await
 		.context(SELECT_ERROR)
 	}
@@ -627,14 +627,14 @@ impl Db {
 				id, writing, created_by, previous_revision, date_created
 			FROM Writings;",
 		)
-		.fetch_all(&self.pool)
+		.fetch_all(self.executor())
 		.await
 		.context(SELECT_ERROR)
 	}
 
 	pub async fn get_writings_count(&mut self) -> Result<i64> {
 		sqlx::query!("SELECT count(*) FROM Writings;")
-			.fetch_one(&self.pool)
+			.fetch_one(self.executor())
 			.await?
 			.count
 			.context(SELECT_ERROR)
@@ -642,7 +642,7 @@ impl Db {
 
 	pub async fn delete_writing(&mut self, id: i32) -> Result<u64> {
 		Ok(sqlx::query!("DELETE FROM Writings WHERE id = $1;", id)
-			.execute(&self.pool)
+			.execute(self.executor())
 			.await
 			.context(DELETE_ERROR)?
 			.rows_affected())
@@ -650,7 +650,7 @@ impl Db {
 
 	pub async fn delete_all_writings(&mut self) -> Result<u64> {
 		Ok(sqlx::query!("DELETE FROM Writings;")
-			.execute(&self.pool)
+			.execute(self.executor())
 			.await
 			.context(DELETE_ERROR)?
 			.rows_affected())
@@ -676,7 +676,7 @@ impl Db {
 			creator_id,
 			claiment_id
 		)
-		.fetch_one(&self.pool)
+		.fetch_one(self.executor())
 		.await
 		.context(INSERT_ERROR)
 	}
@@ -690,7 +690,7 @@ impl Db {
 			FROM Questions WHERE id = $1 LIMIT 1;"#,
 			id,
 		)
-		.fetch_optional(&self.pool)
+		.fetch_optional(self.executor())
 		.await
 		.context(SELECT_ERROR)
 	}
@@ -704,7 +704,7 @@ impl Db {
 			FROM Questions WHERE chapter_id = $1;"#,
 			chapter_id
 		)
-		.fetch_all(&self.pool)
+		.fetch_all(self.executor())
 		.await
 		.context(SELECT_ERROR)
 	}
@@ -718,7 +718,7 @@ impl Db {
 			FROM Questions WHERE created_by = $1;"#,
 			creator_id
 		)
-		.fetch_all(&self.pool)
+		.fetch_all(self.executor())
 		.await
 		.context(SELECT_ERROR)
 	}
@@ -734,7 +734,7 @@ impl Db {
 			FROM Questions WHERE claimed_by = $1;"#,
 			claiment_id
 		)
-		.fetch_all(&self.pool)
+		.fetch_all(self.executor())
 		.await
 		.context(SELECT_ERROR)
 	}
@@ -747,14 +747,14 @@ impl Db {
 				claimed_by, chapter_id, chapter_order, latest_writing, date_created
 			FROM Questions;"#,
 		)
-		.fetch_all(&self.pool)
+		.fetch_all(self.executor())
 		.await
 		.context(SELECT_ERROR)
 	}
 
 	pub async fn get_questions_count(&mut self) -> Result<i64> {
 		sqlx::query!("SELECT count(*) FROM Questions;")
-			.fetch_one(&self.pool)
+			.fetch_one(self.executor())
 			.await?
 			.count
 			.context(SELECT_ERROR)
@@ -769,7 +769,7 @@ impl Db {
 			id,
 			text
 		)
-		.execute(&self.pool)
+		.execute(self.executor())
 		.await
 		.context(UPDATE_ERROR)?
 		.rows_affected())
@@ -784,7 +784,7 @@ impl Db {
 			id,
 			percent
 		)
-		.execute(&self.pool)
+		.execute(self.executor())
 		.await
 		.context(UPDATE_ERROR)?
 		.rows_affected())
@@ -799,7 +799,7 @@ impl Db {
 			id,
 			asked_by
 		)
-		.execute(&self.pool)
+		.execute(self.executor())
 		.await
 		.context(UPDATE_ERROR)?
 		.rows_affected())
@@ -816,7 +816,7 @@ impl Db {
 			id,
 			claimed_by
 		)
-		.execute(&self.pool)
+		.execute(self.executor())
 		.await
 		.context(UPDATE_ERROR)?
 		.rows_affected())
@@ -833,7 +833,7 @@ impl Db {
 			id,
 			chapter_id
 		)
-		.execute(&self.pool)
+		.execute(self.executor())
 		.await
 		.context(UPDATE_ERROR)?
 		.rows_affected())
@@ -850,7 +850,7 @@ impl Db {
 			id,
 			chapter_order
 		)
-		.execute(&self.pool)
+		.execute(self.executor())
 		.await
 		.context(UPDATE_ERROR)?
 		.rows_affected())
@@ -867,7 +867,7 @@ impl Db {
 			id,
 			writing_id
 		)
-		.execute(&self.pool)
+		.execute(self.executor())
 		.await
 		.context(UPDATE_ERROR)?
 		.rows_affected())
@@ -875,7 +875,7 @@ impl Db {
 
 	pub async fn delete_question(&mut self, id: i32) -> Result<u64> {
 		Ok(sqlx::query!("DELETE FROM Questions WHERE id = $1;", id)
-			.execute(&self.pool)
+			.execute(self.executor())
 			.await
 			.context(DELETE_ERROR)?
 			.rows_affected())
@@ -883,7 +883,7 @@ impl Db {
 
 	pub async fn delete_all_questions(&mut self) -> Result<u64> {
 		Ok(sqlx::query!("DELETE FROM Questions;")
-			.execute(&self.pool)
+			.execute(self.executor())
 			.await
 			.context(DELETE_ERROR)?
 			.rows_affected())
@@ -906,7 +906,7 @@ impl Db {
 			text,
 			order_rank
 		)
-		.fetch_one(&self.pool)
+		.fetch_one(self.executor())
 		.await
 		.context(INSERT_ERROR)
 	}
@@ -920,7 +920,7 @@ impl Db {
 			FROM Options WHERE id = $1 LIMIT 1;",
 			id,
 		)
-		.fetch_optional(&self.pool)
+		.fetch_optional(self.executor())
 		.await
 		.context(SELECT_ERROR)
 	}
@@ -934,7 +934,7 @@ impl Db {
 			FROM Options WHERE question_id = $1 LIMIT 1;",
 			question_id,
 		)
-		.fetch_all(&self.pool)
+		.fetch_all(self.executor())
 		.await
 		.context(SELECT_ERROR)
 	}
@@ -947,14 +947,14 @@ impl Db {
 				writing_id, order_rank, date_created
 			FROM Options;",
 		)
-		.fetch_all(&self.pool)
+		.fetch_all(self.executor())
 		.await
 		.context(SELECT_ERROR)
 	}
 
 	pub async fn get_options_count(&mut self) -> Result<i64> {
 		sqlx::query!("SELECT count(*) FROM Options;")
-			.fetch_one(&self.pool)
+			.fetch_one(self.executor())
 			.await?
 			.count
 			.context(SELECT_ERROR)
@@ -969,7 +969,7 @@ impl Db {
 			id,
 			number
 		)
-		.execute(&self.pool)
+		.execute(self.executor())
 		.await
 		.context(UPDATE_ERROR)?
 		.rows_affected())
@@ -984,7 +984,7 @@ impl Db {
 			id,
 			text
 		)
-		.execute(&self.pool)
+		.execute(self.executor())
 		.await
 		.context(UPDATE_ERROR)?
 		.rows_affected())
@@ -999,7 +999,7 @@ impl Db {
 			id,
 			writing_id
 		)
-		.execute(&self.pool)
+		.execute(self.executor())
 		.await
 		.context(UPDATE_ERROR)?
 		.rows_affected())
@@ -1014,7 +1014,7 @@ impl Db {
 			id,
 			order_rank
 		)
-		.execute(&self.pool)
+		.execute(self.executor())
 		.await
 		.context(UPDATE_ERROR)?
 		.rows_affected())
@@ -1022,7 +1022,7 @@ impl Db {
 
 	pub async fn delete_option(&mut self, id: i32) -> Result<u64> {
 		Ok(sqlx::query!("DELETE FROM Options WHERE id = $1;", id)
-			.execute(&self.pool)
+			.execute(self.executor())
 			.await
 			.context(DELETE_ERROR)?
 			.rows_affected())
@@ -1031,7 +1031,7 @@ impl Db {
 	pub async fn delete_options_by_question_id(&mut self, question_id: i32) -> Result<u64> {
 		Ok(
 			sqlx::query!("DELETE FROM Options WHERE question_id = $1;", question_id)
-				.execute(&self.pool)
+				.execute(self.executor())
 				.await
 				.context(DELETE_ERROR)?
 				.rows_affected(),
@@ -1040,7 +1040,7 @@ impl Db {
 
 	pub async fn delete_all_options(&mut self) -> Result<u64> {
 		Ok(sqlx::query!("DELETE FROM options;")
-			.execute(&self.pool)
+			.execute(self.executor())
 			.await
 			.context(DELETE_ERROR)?
 			.rows_affected())
@@ -1061,7 +1061,7 @@ impl Db {
 			question_id,
 			option_id
 		)
-		.fetch_one(&self.pool)
+		.fetch_one(self.executor())
 		.await
 		.context(INSERT_ERROR)
 	}
@@ -1075,7 +1075,7 @@ impl Db {
 			WHERE voter_id = $1;",
 			user_id
 		)
-		.fetch_all(&self.pool)
+		.fetch_all(self.executor())
 		.await
 		.context(SELECT_ERROR)
 	}
@@ -1089,7 +1089,7 @@ impl Db {
 			WHERE question_id = $1;",
 			question_id
 		)
-		.fetch_all(&self.pool)
+		.fetch_all(self.executor())
 		.await
 		.context(SELECT_ERROR)
 	}
@@ -1103,7 +1103,7 @@ impl Db {
 			WHERE option_id = $1;",
 			option_id
 		)
-		.fetch_all(&self.pool)
+		.fetch_all(self.executor())
 		.await
 		.context(SELECT_ERROR)
 	}
@@ -1113,14 +1113,14 @@ impl Db {
 			Vote,
 			"SELECT voter_id, question_id, option_id, date_created FROM Votes;",
 		)
-		.fetch_all(&self.pool)
+		.fetch_all(self.executor())
 		.await
 		.context(SELECT_ERROR)
 	}
 
 	pub async fn get_votes_count(&mut self) -> Result<i64> {
 		sqlx::query!("SELECT count(*) FROM Votes;")
-			.fetch_one(&self.pool)
+			.fetch_one(self.executor())
 			.await?
 			.count
 			.context(SELECT_ERROR)
@@ -1129,7 +1129,7 @@ impl Db {
 	pub async fn delete_votes_by_user(&mut self, user_id: i32) -> Result<u64> {
 		Ok(
 			sqlx::query!("DELETE FROM Votes WHERE voter_id = $1;", user_id)
-				.execute(&self.pool)
+				.execute(self.executor())
 				.await
 				.context(DELETE_ERROR)?
 				.rows_affected(),
@@ -1139,7 +1139,7 @@ impl Db {
 	pub async fn delete_votes_by_option(&mut self, question_id: i32) -> Result<u64> {
 		Ok(
 			sqlx::query!("DELETE FROM Votes WHERE question_id = $1;", question_id)
-				.execute(&self.pool)
+				.execute(self.executor())
 				.await
 				.context(DELETE_ERROR)?
 				.rows_affected(),
@@ -1149,7 +1149,7 @@ impl Db {
 	pub async fn delete_votes_by_question(&mut self, option_id: i32) -> Result<u64> {
 		Ok(
 			sqlx::query!("DELETE FROM Votes WHERE option_id = $1;", option_id)
-				.execute(&self.pool)
+				.execute(self.executor())
 				.await
 				.context(DELETE_ERROR)?
 				.rows_affected(),
@@ -1158,7 +1158,7 @@ impl Db {
 
 	pub async fn delete_all_votes(&mut self) -> Result<u64> {
 		Ok(sqlx::query!("DELETE FROM Votes;")
-			.execute(&self.pool)
+			.execute(self.executor())
 			.await
 			.context(DELETE_ERROR)?
 			.rows_affected())
@@ -1187,7 +1187,7 @@ impl Db {
 			data.attributes.num_likes,
 			data.attributes.num_dislikes,
 		)
-		.fetch_one(&self.pool)
+		.fetch_one(self.executor())
 		.await
 		.context(INSERT_ERROR)
 	}
@@ -1205,7 +1205,7 @@ impl Db {
 			start,
 			end
 		)
-		.fetch_all(&self.pool)
+		.fetch_all(self.executor())
 		.await
 		.context(SELECT_ERROR)
 	}
@@ -1218,14 +1218,14 @@ impl Db {
 				words, chapters, comments, rating, likes, dislikes, date_cached
 			FROM Story_updates;",
 		)
-		.fetch_all(&self.pool)
+		.fetch_all(self.executor())
 		.await
 		.context(SELECT_ERROR)
 	}
 
 	pub async fn get_story_updates_count(&mut self) -> Result<i64> {
 		sqlx::query!("SELECT count(*) FROM Story_updates;")
-			.fetch_one(&self.pool)
+			.fetch_one(self.executor())
 			.await?
 			.count
 			.context(SELECT_ERROR)
@@ -1236,7 +1236,7 @@ impl Db {
 			"DELETE FROM Story_updates WHERE date_cached = $1;",
 			date_cached
 		)
-		.execute(&self.pool)
+		.execute(self.executor())
 		.await
 		.context(DELETE_ERROR)?
 		.rows_affected())
@@ -1251,7 +1251,7 @@ impl Db {
 			start,
 			end
 		)
-		.execute(&self.pool)
+		.execute(self.executor())
 		.await
 		.context(DELETE_ERROR)?
 		.rows_affected())
@@ -1259,7 +1259,7 @@ impl Db {
 
 	pub async fn delete_all_story_updates(&mut self) -> Result<u64> {
 		Ok(sqlx::query!("DELETE FROM Story_updates;")
-			.execute(&self.pool)
+			.execute(self.executor())
 			.await
 			.context(DELETE_ERROR)?
 			.rows_affected())
