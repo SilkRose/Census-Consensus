@@ -558,26 +558,29 @@ pub fn chapters_test_html(chapters: Vec<Chapter>, admin: bool) -> String {
 					tr {
 						th { "ID" } // done
 						th { "Title" } // done
-						th { "Chapter Number" } // done
+						th { "Chapter" br; "Number" } // done
 						@if admin {
-							th { "Move Up/Down" } // done
-							th { "Add/Remove Number" } // done
+							th { "Move" br; "Up/Down" } // done
+							th { "Add/Remove" br; "Number" } // done
 						}
-						th { "Vote Duration" } // done
-						th { "Minutes Left" } // done
+						th { "Vote" br; "Duration" } // done
+						th { "Minutes" br; "Left" } // done
 						th { "Questions" }
-						th { "Fimfic Ch ID" } // done
-						th { "Intro Words" } // done
-						th { "Outro Words" } // done
+						th { "Fimfic" br; "Ch ID" } // done
+						th { "Intro" br; "Words" } // done
+						th { "Outro" br; "Words" } // done
 						th { "Revisions" }
 						th { "Edit" } // done
-						th { "Last Edit" } // done
+						th { "Last" br; "Edit" } // done
 						th { "Created" } // done
 					}
 					@let mut prev_published = false;
 					@let mut chapter_iter = ordered_chapters.into_iter().peekable();
 					@while let Some(chapter) = chapter_iter.next() {
 						(chapter_table_test_row(chapter, chapter_iter.peek(), &mut prev_published, admin))
+					}
+					@for chapter in  unordered_chapters.iter() {
+						(chapter_table_test_row(chapter.clone(), None, &mut prev_published, admin))
 					}
 				}
 			};
@@ -651,8 +654,8 @@ fn chapter_table_test_row(
 			td { (chapter.outro_text.clone().map(|text| count_words(&text)).unwrap_or_default()) }
 			td {} // need to do revisions
 			td { button onclick = (format!("window.location.href='/chapters/{}';", chapter.id)) { "Edit" } }
-			td { (chapter.last_edit.format("%d/%m/%Y %H:%M")) }
-			td { (chapter.date_created.format("%d/%m/%Y %H:%M")) }
+			td { (chapter.last_edit.format("%d/%m/%Y")) br; (chapter.last_edit.format("%H:%M")) }
+			td { (chapter.date_created.format("%d/%m/%Y")) br; (chapter.date_created.format("%H:%M")) }
 		}
 	)
 }
