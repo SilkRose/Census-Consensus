@@ -1,5 +1,9 @@
-use crate::structs::{Chapter, Session};
+use crate::{
+	structs::{Chapter, ChapterTableData, Session},
+	utility::count_words,
+};
 use maud::{DOCTYPE, PreEscaped, html};
+use pony::word_stats::word_count;
 
 pub fn update_user_info_html() -> String {
 	html! {
@@ -126,13 +130,13 @@ pub fn chapters_html(chapters: Vec<Chapter>, admin: bool) -> String {
 						tr {
 							th { "ID" }
 							th { "Title" }
-							th { "Vote Duration" }
-							th { "Minutes Left" }
-							th { "Fimfic Chapter ID" }
-							th { "Intro Length" }
-							th { "Outro Length" }
-							th { "Chapter Order" }
-							th { "Last Edit" }
+							th { "Vote" br; "Duration" }
+							th { "Minutes" br; "Left" }
+							th { "Fimfic" br; "Chapter ID" }
+							th { "Intro" br; "Length" }
+							th { "Outro" br; "Length" }
+							th { "Chapter" br; "Order" }
+							th { "Last" br; "Edit" }
 							th { "Created" }
 							@if admin {
 								th { "Edit" }
@@ -454,6 +458,18 @@ fn textarea_value_required(
 	)
 }
 
+fn button_link(text: &str, endpoint: &str) -> PreEscaped<String> {
+	html! (
+		button onclick = (format!("window.location.href='{endpoint}';")) { (text) }
+	)
+}
+
+fn button_disabled(text: &str) -> PreEscaped<String> {
+	html! (
+		button disabled { (text) }
+	)
+}
+
 fn session_table_row(session: &Session, num: usize) -> PreEscaped<String> {
 	html! (
 		tr {
@@ -478,18 +494,18 @@ fn chapter_table_row(chapter: &Chapter, admin: bool) -> PreEscaped<String> {
 				td { (chapter.vote_duration) }
 				td {
 					@let endpoint = format!("/chapters/{}/minutes-left/1", chapter.id);
-					(button_form("↑", &endpoint))
+					(button_link("↑", &endpoint))
 					(minutes_left)
 					@let endpoint = format!("/chapters/{}/minutes-left/-1", chapter.id);
-					(button_form("↓", &endpoint))
+					(button_link("↓", &endpoint))
 				}
 			} @else {
 				td {
 					@let endpoint = format!("/chapters/{}/vote-duration/1", chapter.id);
-					(button_form("↑", &endpoint))
+					(button_link("↑", &endpoint))
 					(chapter.vote_duration)
 					@let endpoint = format!("/chapters/{}/vote-duration/-1", chapter.id);
-					(button_form("↓", &endpoint))
+					(button_link("↓", &endpoint))
 				}
 				td {}
 			}
@@ -501,21 +517,21 @@ fn chapter_table_row(chapter: &Chapter, admin: bool) -> PreEscaped<String> {
 					@if let Some(order) = chapter.chapter_order {
 						@if order != 1 {
 							@let endpoint = format!("/chapters/{}/ordered/-1", chapter.id);
-							(button_form("↑", &endpoint))
+							(button_link("↑", &endpoint))
 						}
 						(order)
 						@let endpoint = format!("/chapters/{}/ordered/1", chapter.id);
-						(button_form("↓", &endpoint))
+						(button_link("↓", &endpoint))
 					} @else {
 						@let endpoint = format!("/chapters/{}/ordered", chapter.id);
-						(button_form("Add", &endpoint))
+						(button_link("Add", &endpoint))
 					}
 				 }
 			} @else {
 				td { (chapter.chapter_order.map_or(String::default(), |m| m.to_string())) }
 			}
-			td { (chapter.last_edit.format("%d/%m/%Y %H:%M")) }
-			td { (chapter.date_created.format("%d/%m/%Y %H:%M")) }
+			td { (chapter.last_edit.format("%d/%m/%Y")) br; (chapter.last_edit.format("%H:%M")) }
+			td { (chapter.date_created.format("%d/%m/%Y")) br; (chapter.date_created.format("%H:%M")) }
 			@if admin {
 				td { button onclick = (format!("window.location.href='/chapters/{}';", chapter.id)) { "Edit" } }
 			}
@@ -523,8 +539,120 @@ fn chapter_table_row(chapter: &Chapter, admin: bool) -> PreEscaped<String> {
 	)
 }
 
-fn button_form(text: &str, endpoint: &str) -> PreEscaped<String> {
+pub fn chapters_test_html(chapters: Vec<Chapter>, admin: bool) -> String {
+	let mut ordered_chapters = Vec::new();
+	let mut unordered_chapters = Vec::new();
+	for chapter in chapters.into_iter() {
+		if chapter.chapter_order.is_some() {
+			ordered_chapters.push(chapter);
+		} else {
+			unordered_chapters.push(chapter);
+		}
+	}
+	html! {
+		(DOCTYPE) html lang = "en" {
+			body {
+				h1 { "Chapters" }
+				br;
+				table {
+					tr {
+						th { "ID" } // done
+						th { "Title" } // done
+						th { "Chapter Number" } // done
+						@if admin {
+							th { "Move Up/Down" } // done
+							th { "Add/Remove Number" } // done
+						}
+						th { "Vote Duration" } // done
+						th { "Minutes Left" } // done
+						th { "Questions" }
+						th { "Fimfic Ch ID" } // done
+						th { "Intro Words" } // done
+						th { "Outro Words" } // done
+						th { "Revisions" }
+						th { "Edit" } // done
+						th { "Last Edit" } // done
+						th { "Created" } // done
+					}
+					@let mut prev_published = false;
+					@let mut chapter_iter = ordered_chapters.into_iter().peekable();
+					@while let Some(chapter) = chapter_iter.next() {
+						(chapter_table_test_row(chapter, chapter_iter.peek(), &mut prev_published, admin))
+					}
+				}
+			};
+		};
+	}
+	.into()
+}
+
+fn chapter_table_test_row(
+	chapter: Chapter, next: Option<&Chapter>, prev_published: &mut bool, admin: bool,
+) -> PreEscaped<String> {
+	let first_number =
+		chapter.fimfic_ch_id.is_none() && chapter.chapter_order.is_some() && !*prev_published;
+	let last_number = next.is_some() && next.unwrap().chapter_order.is_none();
+	*prev_published = chapter.fimfic_ch_id.is_some();
 	html! (
-		button type = "submit" onclick = (format!("window.location.href='{endpoint}';")) { (text) }
+		tr {
+			td { (chapter.id) }
+			td { (chapter.title) }
+			td { (chapter.chapter_order.map_or(String::default(), |n| n.to_string())) }
+			@if admin {
+				td {
+					@if !first_number {
+						@let endpoint = format!("/chapters/{}/ordered/-1", chapter.id);
+						(button_link("▲", &endpoint))
+					}
+					@if !last_number {
+						@let endpoint = format!("/chapters/{}/ordered/1", chapter.id);
+						(button_link("▼", &endpoint))
+					}
+				}
+				td {
+					@if chapter.fimfic_ch_id.is_none() {
+						@if chapter.chapter_order.is_none() {
+							@let endpoint = format!("/chapters/{}/ordered", chapter.id);
+							(button_link("Add", &endpoint))
+					} @else {
+							@let endpoint = format!("/chapters/{}/unordered", chapter.id);
+							(button_link("Remove", &endpoint))
+						}
+					}
+				}
+			}
+			td {
+				@if chapter.fimfic_ch_id.is_none() && admin {
+					@let endpoint = format!("/chapters/{}/vote-duration/1", chapter.id);
+					(button_link("▲", &endpoint))
+				}
+				(chapter.vote_duration)
+				@if chapter.fimfic_ch_id.is_none() && admin {
+					@let endpoint = format!("/chapters/{}/vote-duration/-1", chapter.id);
+					(button_link("▼", &endpoint))
+				}
+			}
+			td {
+				@if let Some(minutes_left) = chapter.minutes_left {
+					@if chapter.fimfic_ch_id.is_none() && admin {
+						@let endpoint = format!("/chapters/{}/minutes-left/1", chapter.id);
+						(button_link("▲", &endpoint))
+					}
+					(minutes_left)
+					@if chapter.fimfic_ch_id.is_none() && admin {
+						@let endpoint = format!("/chapters/{}/minutes-left/-1", chapter.id);
+						(button_link("▼", &endpoint))
+					}
+				}
+			}
+			td {} // need to do questions
+			td { (chapter.fimfic_ch_id.map_or(String::default(), |m| m.to_string())) }
+			td { (chapter.intro_text.clone().map(|text| count_words(&text)).unwrap_or_default()) }
+			td { (chapter.outro_text.clone().map(|text| count_words(&text)).unwrap_or_default()) }
+			td {} // need to do revisions
+			td { button onclick = (format!("window.location.href='/chapters/{}';", chapter.id)) { "Edit" } }
+			td { (chapter.last_edit.format("%d/%m/%Y %H:%M")) }
+			td { (chapter.date_created.format("%d/%m/%Y %H:%M")) }
+		}
 	)
 }
