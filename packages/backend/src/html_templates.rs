@@ -471,7 +471,7 @@ pub fn chapters_html(chapters: Vec<Chapter>, admin: bool) -> String {
 						th { "Last" br; "Edit" } // done
 						th { "Created" } // done
 					}
-					@let mut prev_published = false;
+					@let mut prev_published: Option<bool> = None;
 					@for chapter in chapters.into_iter() {
 						(chapter_table_row(chapter, &mut prev_published, admin))
 					}
@@ -483,18 +483,21 @@ pub fn chapters_html(chapters: Vec<Chapter>, admin: bool) -> String {
 }
 
 fn chapter_table_row(
-	chapter: Chapter, prev_published: &mut bool, admin: bool,
+	chapter: Chapter, prev_published: &mut Option<bool>, admin: bool,
 ) -> PreEscaped<String> {
-	let first_number =
-		chapter.fimfic_ch_id.is_none() && chapter.chapter_order.is_some() && !*prev_published;
-	*prev_published = first_number && chapter.fimfic_ch_id.is_some();
+	let active = chapter.fimfic_ch_id.is_some() || chapter.minutes_left.is_some();
+	let first_number = !active && chapter.chapter_order.is_some() && prev_published.is_none();
+	*prev_published = match first_number {
+		true => Some(chapter.fimfic_ch_id.is_some()),
+		false => None,
+	};
 	html! (
 		tr {
 			td { (chapter.id) }
 			td { (chapter.title) }
 			td {
 				@if let Some(order) = chapter.chapter_order {
-					@if chapter.fimfic_ch_id.is_none() && admin {
+					@if !active && admin {
 						@if !first_number {
 						@let endpoint = format!("/chapters/{}/ordered/-1", chapter.id);
 						(button_link("▲", &endpoint))
@@ -503,7 +506,7 @@ fn chapter_table_row(
 						}
 					}
 					(order)
-					@if chapter.fimfic_ch_id.is_none() && admin {
+					@if !active && admin {
 						@let endpoint = format!("/chapters/{}/ordered/1", chapter.id);
 						(button_link("▼", &endpoint))
 					}
