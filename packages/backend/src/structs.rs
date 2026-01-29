@@ -3,6 +3,8 @@ use pony::structs::option_string;
 use serde::{Deserialize, Serialize};
 use sqlx::Type;
 
+use crate::utility::count_words;
+
 #[derive(Clone, Debug, Deserialize, Serialize, Type, PartialEq, Eq)]
 #[sqlx(type_name = "user_type", rename_all = "snake_case")]
 pub enum UserType {
@@ -86,6 +88,47 @@ pub struct Chapter {
 	pub chapter_order: Option<i32>,
 	pub last_edit: DateTime<Utc>,
 	pub date_created: DateTime<Utc>,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct ChapterTableData {
+	pub id: i32,
+	pub title: String,
+	pub vote_duration: i32,
+	pub minutes_left: Option<i32>,
+	pub fimfic_id: Option<i32>,
+	pub intro_words: usize,
+	pub outro_words: usize,
+	pub chapter_number: Option<i32>,
+	pub questions: i32,
+	pub last_edit: String,
+	pub date_created: String,
+}
+
+impl ChapterTableData {
+	fn from_chapter(chapter: Chapter, questions: i32) -> Self {
+		let intro_words = chapter
+			.intro_text
+			.map(|text| count_words(&text))
+			.unwrap_or_default();
+		let outro_words = chapter
+			.outro_text
+			.map(|text| count_words(&text))
+			.unwrap_or_default();
+		ChapterTableData {
+			id: chapter.id,
+			title: chapter.title,
+			vote_duration: chapter.vote_duration,
+			minutes_left: chapter.minutes_left,
+			fimfic_id: chapter.fimfic_ch_id,
+			intro_words,
+			outro_words,
+			chapter_number: chapter.chapter_order,
+			questions,
+			last_edit: chapter.last_edit.format("%d/%m/%Y %H:%M").to_string(),
+			date_created: chapter.date_created.format("%d/%m/%Y %H:%M").to_string(),
+		}
+	}
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
