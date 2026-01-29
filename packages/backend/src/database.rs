@@ -776,7 +776,7 @@ pub trait DbExecutor {
 		.context(SELECT_ERROR)?)
 	}
 
-	async fn get_questions_by_crator(&mut self, creator_id: i32) -> Result<Vec<Question>> {
+	async fn get_questions_by_creator(&mut self, creator_id: i32) -> Result<Vec<Question>> {
 		Ok(sqlx::query_as!(
 			Question,
 			r#"SELECT
@@ -816,6 +816,17 @@ pub trait DbExecutor {
 		)
 		.fetch_all(self.executor())
 		.await
+		.context(SELECT_ERROR)?)
+	}
+
+	async fn get_question_count_by_chapter(&mut self, chapter_id: i32) -> Result<i64> {
+		Ok(sqlx::query!(
+			r#"SELECT count(*) FROM Questions WHERE chapter_id = $1;"#,
+			chapter_id
+		)
+		.fetch_one(self.executor())
+		.await?
+		.count
 		.context(SELECT_ERROR)?)
 	}
 
