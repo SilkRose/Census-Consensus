@@ -120,42 +120,6 @@ pub fn sessions_html(sessions: Vec<Session>) -> String {
 	.into()
 }
 
-pub fn chapters_html(chapters: Vec<Chapter>, admin: bool) -> String {
-	html! {
-		(DOCTYPE) html lang = "en" {
-			body {
-				h1 { "Chapters" }
-					br;
-					table {
-						tr {
-							th { "ID" }
-							th { "Title" }
-							th { "Vote" br; "Duration" }
-							th { "Minutes" br; "Left" }
-							th { "Fimfic" br; "Chapter ID" }
-							th { "Intro" br; "Length" }
-							th { "Outro" br; "Length" }
-							th { "Chapter" br; "Order" }
-							th { "Last" br; "Edit" }
-							th { "Created" }
-							@if admin {
-								th { "Edit" }
-							}
-						}
-						@for chapter in chapters.iter() {
-							(chapter_table_row(chapter, admin))
-						}
-					}
-					@if admin {
-						br;
-						button onclick = "window.location.href='/chapters/new';" { "New Chapter" }
-					}
-			};
-		};
-	}
-	.into()
-}
-
 pub fn new_chapter_html() -> String {
 	html! {
 		(DOCTYPE) html lang = "en" {
@@ -485,70 +449,7 @@ fn session_table_row(session: &Session, num: usize) -> PreEscaped<String> {
 	)
 }
 
-fn chapter_table_row(chapter: &Chapter, admin: bool) -> PreEscaped<String> {
-	html! (
-		tr {
-			td { (chapter.id) }
-			td { (chapter.title) }
-			@if let Some(minutes_left) = chapter.minutes_left {
-				td { (chapter.vote_duration) }
-				td {
-					@let endpoint = format!("/chapters/{}/minutes-left/1", chapter.id);
-					(button_link("↑", &endpoint))
-					(minutes_left)
-					@let endpoint = format!("/chapters/{}/minutes-left/-1", chapter.id);
-					(button_link("↓", &endpoint))
-				}
-			} @else {
-				td {
-					@let endpoint = format!("/chapters/{}/vote-duration/1", chapter.id);
-					(button_link("↑", &endpoint))
-					(chapter.vote_duration)
-					@let endpoint = format!("/chapters/{}/vote-duration/-1", chapter.id);
-					(button_link("↓", &endpoint))
-				}
-				td {}
-			}
-			td { (chapter.fimfic_ch_id.map_or(String::default(), |m| m.to_string())) }
-			td { (chapter.intro_text.clone().map(|text| text.len()).unwrap_or_default()) }
-			td { (chapter.outro_text.clone().map(|text| text.len()).unwrap_or_default()) }
-			@if admin && chapter.fimfic_ch_id.is_none() {
-				td {
-					@if let Some(order) = chapter.chapter_order {
-						@if order != 1 {
-							@let endpoint = format!("/chapters/{}/ordered/-1", chapter.id);
-							(button_link("↑", &endpoint))
-						}
-						(order)
-						@let endpoint = format!("/chapters/{}/ordered/1", chapter.id);
-						(button_link("↓", &endpoint))
-					} @else {
-						@let endpoint = format!("/chapters/{}/ordered", chapter.id);
-						(button_link("Add", &endpoint))
-					}
-				 }
-			} @else {
-				td { (chapter.chapter_order.map_or(String::default(), |m| m.to_string())) }
-			}
-			td { (chapter.last_edit.format("%d/%m/%Y")) br; (chapter.last_edit.format("%H:%M")) }
-			td { (chapter.date_created.format("%d/%m/%Y")) br; (chapter.date_created.format("%H:%M")) }
-			@if admin {
-				td { button onclick = (format!("window.location.href='/chapters/{}';", chapter.id)) { "Edit" } }
-			}
-		}
-	)
-}
-
-pub fn chapters_test_html(chapters: Vec<Chapter>, admin: bool) -> String {
-	let mut ordered_chapters = Vec::new();
-	let mut unordered_chapters = Vec::new();
-	for chapter in chapters.into_iter() {
-		if chapter.chapter_order.is_some() {
-			ordered_chapters.push(chapter);
-		} else {
-			unordered_chapters.push(chapter);
-		}
-	}
+pub fn chapters_html(chapters: Vec<Chapter>, admin: bool) -> String {
 	html! {
 		(DOCTYPE) html lang = "en" {
 			body {
@@ -559,10 +460,6 @@ pub fn chapters_test_html(chapters: Vec<Chapter>, admin: bool) -> String {
 						th { "ID" } // done
 						th { "Title" } // done
 						th { "Chapter" br; "Number" } // done
-						@if admin {
-							th { "Move" br; "Up/Down" } // done
-							th { "Add/Remove" br; "Number" } // done
-						}
 						th { "Vote" br; "Duration" } // done
 						th { "Minutes" br; "Left" } // done
 						th { "Questions" }
@@ -575,12 +472,8 @@ pub fn chapters_test_html(chapters: Vec<Chapter>, admin: bool) -> String {
 						th { "Created" } // done
 					}
 					@let mut prev_published = false;
-					@let mut chapter_iter = ordered_chapters.into_iter().peekable();
-					@while let Some(chapter) = chapter_iter.next() {
-						(chapter_table_test_row(chapter, chapter_iter.peek(), &mut prev_published, admin))
-					}
-					@for chapter in  unordered_chapters.iter() {
-						(chapter_table_test_row(chapter.clone(), None, &mut prev_published, admin))
+					@for chapter in chapters.into_iter() {
+						(chapter_table_row(chapter, &mut prev_published, admin))
 					}
 				}
 			};
@@ -589,39 +482,34 @@ pub fn chapters_test_html(chapters: Vec<Chapter>, admin: bool) -> String {
 	.into()
 }
 
-fn chapter_table_test_row(
-	chapter: Chapter, next: Option<&Chapter>, prev_published: &mut bool, admin: bool,
+fn chapter_table_row(
+	chapter: Chapter, prev_published: &mut bool, admin: bool,
 ) -> PreEscaped<String> {
 	let first_number =
 		chapter.fimfic_ch_id.is_none() && chapter.chapter_order.is_some() && !*prev_published;
-	let last_number = next.is_some() && next.unwrap().chapter_order.is_none();
-	*prev_published = chapter.fimfic_ch_id.is_some();
+	*prev_published = first_number && chapter.fimfic_ch_id.is_some();
 	html! (
 		tr {
 			td { (chapter.id) }
 			td { (chapter.title) }
-			td { (chapter.chapter_order.map_or(String::default(), |n| n.to_string())) }
-			@if admin {
-				td {
-					@if !first_number {
+			td {
+				@if let Some(order) = chapter.chapter_order {
+					@if chapter.fimfic_ch_id.is_none() && admin {
+						@if !first_number {
 						@let endpoint = format!("/chapters/{}/ordered/-1", chapter.id);
 						(button_link("▲", &endpoint))
+						} @else {
+							(button_disabled("▲"))
+						}
 					}
-					@if !last_number {
+					(order)
+					@if chapter.fimfic_ch_id.is_none() && admin {
 						@let endpoint = format!("/chapters/{}/ordered/1", chapter.id);
 						(button_link("▼", &endpoint))
 					}
-				}
-				td {
-					@if chapter.fimfic_ch_id.is_none() {
-						@if chapter.chapter_order.is_none() {
-							@let endpoint = format!("/chapters/{}/ordered", chapter.id);
-							(button_link("Add", &endpoint))
-					} @else {
-							@let endpoint = format!("/chapters/{}/unordered", chapter.id);
-							(button_link("Remove", &endpoint))
-						}
-					}
+				} @else {
+					@let endpoint = format!("/chapters/{}/ordered", chapter.id);
+					(button_link("Add", &endpoint))
 				}
 			}
 			td {
