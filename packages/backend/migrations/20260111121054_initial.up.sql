@@ -38,22 +38,47 @@ CREATE TABLE IF NOT EXISTS Banned_users (
 	date_banned timestamptz NOT NULL DEFAULT now()
 );
 
+CREATE TABLE IF NOT EXISTS Chapter_revisions (
+	id                serial      NOT NULL PRIMARY KEY,
+	title             text        NOT NULL,
+	intro_text        text        NULL,
+	outro_text        text        NULL,
+	previous_revision integer     NULL,
+	created_by        integer     NOT NULL,
+	date_created      timestamptz NOT NULL DEFAULT now(),
+
+	CONSTRAINT Chapter_revisions_created_by_Users_fk FOREIGN KEY (created_by)
+		REFERENCES Users (id) ON DELETE CASCADE,
+
+	CONSTRAINT Chapter_revisions_no_self_reference
+		CHECK (previous_revision IS NULL OR previous_revision <> id)
+);
+
 CREATE TABLE IF NOT EXISTS Chapters (
 	id            serial      NOT NULL PRIMARY KEY,
-	title         text        NOT NULL,
 	vote_duration integer     NOT NULL,
 	minutes_left  integer     NULL,
 	fimfic_ch_id  integer     NULL,
-	intro_text    text        NULL,
-	outro_text    text        NULL,
-	chapter_order integer     NULL     UNIQUE,
+	chapter_order integer     NULL,
+	latest_rev    integer     NOT NULL,
 	last_edit     timestamptz NOT NULL DEFAULT now(),
-	date_created  timestamptz NOT NULL DEFAULT now()
+	date_created  timestamptz NOT NULL DEFAULT now(),
+
+	CONSTRAINT Order_unique UNIQUE (chapter_order),
+
+	CONSTRAINT Order_minimum
+		CHECK (chapter_order > 0),
+
+	CONSTRAINT Chapters_latest_rev_fk FOREIGN KEY (latest_rev)
+		REFERENCES Chapter_revisions (id) ON DELETE CASCADE
 );
 
-CREATE TABLE IF NOT EXISTS Writings (
+CREATE TABLE IF NOT EXISTS Question_writings (
 	id                serial      NOT NULL PRIMARY KEY,
-	writing           text        NOT NULL,
+	question_text     text        NOT NULL,
+	option_writing    text        NULL,
+	result_writing    text        NULL,
+	asked_by          text        NOT NULL,
 	created_by        integer     NOT NULL,
 	previous_revision integer     NULL,
 	date_created      timestamptz NOT NULL DEFAULT now(),
@@ -62,7 +87,7 @@ CREATE TABLE IF NOT EXISTS Writings (
 		REFERENCES Users (id) ON DELETE CASCADE,
 
 	CONSTRAINT Writings_previous_revision_fk FOREIGN KEY (previous_revision)
-		REFERENCES Writings (id) ON DELETE SET NULL,
+		REFERENCES Question_writings (id) ON DELETE SET NULL,
 
 	CONSTRAINT Writings_no_self_reference
 		CHECK (previous_revision IS NULL OR previous_revision <> id)
@@ -70,15 +95,13 @@ CREATE TABLE IF NOT EXISTS Writings (
 
 CREATE TABLE IF NOT EXISTS Questions (
 	id               serial           NOT NULL PRIMARY KEY,
-	text             text             NOT NULL,
 	type             question_type    NOT NULL,
 	response_percent double precision NOT NULL,
-	asked_by         text             NOT NULL,
 	created_by       integer          NOT NULL,
 	claimed_by       integer          NULL,
 	chapter_id       integer          NULL,
 	chapter_order    integer          NULL,
-	latest_writing   integer          NULL,
+	latest_writing   integer          NOT NULL,
 	date_created     timestamptz      NOT NULL DEFAULT now(),
 
 	CONSTRAINT Percent_range
@@ -94,29 +117,10 @@ CREATE TABLE IF NOT EXISTS Questions (
 		REFERENCES Chapters (id) ON DELETE CASCADE,
 
 	CONSTRAINT Questions_latest_writing_fk FOREIGN KEY (latest_writing)
-		REFERENCES Writings (id) ON DELETE CASCADE,
+		REFERENCES Question_writings (id) ON DELETE CASCADE,
 
 	CONSTRAINT Questions_chapter_order_unique
 		UNIQUE (chapter_id, chapter_order)
-);
-
-CREATE TABLE IF NOT EXISTS Options (
-	id            serial      NOT NULL PRIMARY KEY,
-	question_id   integer     NOT NULL,
-	option_number integer     NOT NULL,
-	text          text        NOT NULL,
-	writing_id    integer     NULL,
-	order_rank    integer     NOT NULL,
-	date_created  timestamptz NOT NULL DEFAULT now(),
-
-	CONSTRAINT Answer_options_questions_fk FOREIGN KEY (question_id)
-		REFERENCES Questions (id) ON DELETE CASCADE,
-
-	CONSTRAINT Options_writing_id_fk FOREIGN KEY (writing_id)
-		REFERENCES Writings (id) ON DELETE CASCADE,
-
-	CONSTRAINT Questions_options_unique
-		UNIQUE (question_id, option_number)
 );
 
 CREATE TABLE IF NOT EXISTS Votes (
@@ -130,9 +134,6 @@ CREATE TABLE IF NOT EXISTS Votes (
 
 	CONSTRAINT Votes_Questions_fk FOREIGN KEY (question_id)
 		REFERENCES Questions (id) ON DELETE CASCADE,
-
-	CONSTRAINT Votes_Options_fk FOREIGN KEY (option_id)
-		REFERENCES Options (id) ON DELETE CASCADE,
 
 	CONSTRAINT Votes_pk PRIMARY KEY (voter_id, question_id, option_id)
 );

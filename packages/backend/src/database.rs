@@ -1,7 +1,7 @@
 use crate::error::Result;
 use crate::structs::{
-	BannedUser, Chapter, ChapterEdit, Question, QuestionOption, QuestionType, Session, StoryUpdate,
-	User, UserType, Vote, Writing,
+	BannedUser, Chapter, ChapterEdit, ChapterRevision, Question, QuestionType, QuestionWriting,
+	Session, StoryUpdate, User, UserType, Vote, WritingEdit,
 };
 use anyhow::Context as _;
 use chrono::{DateTime, Utc};
@@ -411,18 +411,95 @@ pub trait DbExecutor {
 			.rows_affected())
 	}
 
-	async fn insert_chapter(&mut self, title: &str, vote_duration: i32) -> Result<Chapter> {
+	async fn insert_chapter_revision(
+		&mut self, revision: ChapterEdit, created_by: i32, previous_id: Option<i32>,
+	) -> Result<ChapterRevision> {
+		Ok(sqlx::query_as!(
+			ChapterRevision,
+			"INSERT INTO Chapter_revisions
+				(title, intro_text, outro_text, created_by, previous_revision)
+			VALUES
+				($1, $2, $3, $4, $5)
+			RETURNING
+				id, title, intro_text, outro_text,
+				created_by, previous_revision, date_created;",
+			revision.title,
+			revision.intro_text,
+			revision.outro_text,
+			created_by,
+			previous_id
+		)
+		.fetch_one(self.executor())
+		.await
+		.context(INSERT_ERROR)?)
+	}
+
+	async fn get_chapter_revision(&mut self, id: i32) -> Result<Option<ChapterRevision>> {
+		Ok(sqlx::query_as!(
+			ChapterRevision,
+			"SELECT
+				id, title, intro_text, outro_text,
+				created_by, previous_revision, date_created
+			FROM Chapter_revisions
+			WHERE id = $1
+			LIMIT 1;",
+			id
+		)
+		.fetch_optional(self.executor())
+		.await
+		.context(SELECT_ERROR)?)
+	}
+
+	async fn get_all_chapter_revisions(&mut self) -> Result<Vec<ChapterRevision>> {
+		Ok(sqlx::query_as!(
+			ChapterRevision,
+			"SELECT
+				id, title, intro_text, outro_text,
+				created_by, previous_revision, date_created
+			FROM Chapter_revisions;",
+		)
+		.fetch_all(self.executor())
+		.await
+		.context(SELECT_ERROR)?)
+	}
+
+	async fn get_chapter_revisions_count(&mut self) -> Result<i64> {
+		Ok(sqlx::query!("SELECT count(*) FROM Chapter_revisions;")
+			.fetch_one(self.executor())
+			.await?
+			.count
+			.context(SELECT_ERROR)?)
+	}
+
+	async fn delete_chapter_revision(&mut self, id: i32) -> Result<u64> {
+		Ok(
+			sqlx::query!("DELETE FROM Chapter_revisions WHERE id = $1;", id)
+				.execute(self.executor())
+				.await
+				.context(DELETE_ERROR)?
+				.rows_affected(),
+		)
+	}
+
+	async fn delete_all_chapter_revisions(&mut self) -> Result<u64> {
+		Ok(sqlx::query!("DELETE FROM Chapter_revisions;")
+			.execute(self.executor())
+			.await
+			.context(DELETE_ERROR)?
+			.rows_affected())
+	}
+
+	async fn insert_chapter(&mut self, latest_rev: i32) -> Result<Chapter> {
 		Ok(sqlx::query_as!(
 			Chapter,
 			"INSERT INTO Chapters
-				(title, vote_duration)
+				(latest_rev)
 			VALUES
-				($1, $2)
+				($1)
 			RETURNING
-				id, title, vote_duration, minutes_left, fimfic_ch_id, intro_text,
-				outro_text, chapter_order, last_edit, date_created;",
-			title,
-			vote_duration
+				id, vote_duration, minutes_left, fimfic_ch_id,
+				chapter_order, latest_rev, last_edit, date_created;",
+			latest_rev
 		)
 		.fetch_one(self.executor())
 		.await
@@ -433,8 +510,8 @@ pub trait DbExecutor {
 		Ok(sqlx::query_as!(
 			Chapter,
 			"SELECT
-				id, title, vote_duration, minutes_left, fimfic_ch_id, intro_text,
-				outro_text, chapter_order, last_edit, date_created
+				id, vote_duration, minutes_left, fimfic_ch_id,
+				chapter_order, latest_rev, last_edit, date_created
 			FROM Chapters WHERE id = $1 LIMIT 1;",
 			id,
 		)
@@ -447,8 +524,8 @@ pub trait DbExecutor {
 		Ok(sqlx::query_as!(
 			Chapter,
 			"SELECT
-				id, title, vote_duration, minutes_left, fimfic_ch_id, intro_text,
-				outro_text, chapter_order, last_edit, date_created
+				id, vote_duration, minutes_left, fimfic_ch_id,
+				chapter_order, latest_rev, last_edit, date_created
 			FROM Chapters WHERE chapter_order = $1 LIMIT 1;",
 			order,
 		)
@@ -461,8 +538,8 @@ pub trait DbExecutor {
 		Ok(sqlx::query_as!(
 			Chapter,
 			"SELECT
-				id, title, vote_duration, minutes_left, fimfic_ch_id, intro_text,
-				outro_text, chapter_order, last_edit, date_created
+				id, vote_duration, minutes_left, fimfic_ch_id,
+				chapter_order, latest_rev, last_edit, date_created
 			FROM Chapters
 			WHERE chapter_order > $1
 			ORDER BY chapter_order;",
@@ -477,8 +554,8 @@ pub trait DbExecutor {
 		Ok(sqlx::query_as!(
 			Chapter,
 			"SELECT
-				id, title, vote_duration, minutes_left, fimfic_ch_id, intro_text,
-				outro_text, chapter_order, last_edit, date_created
+				id, vote_duration, minutes_left, fimfic_ch_id,
+				chapter_order, latest_rev, last_edit, date_created
 			FROM Chapters
 			ORDER BY chapter_order NULLS LAST, id;",
 		)
@@ -493,21 +570,6 @@ pub trait DbExecutor {
 			.await?
 			.count
 			.context(SELECT_ERROR)?)
-	}
-
-	async fn update_chapter_title(&mut self, id: i32, title: &str) -> Result<u64> {
-		Ok(sqlx::query!(
-			"UPDATE Chapters
-			SET
-				title = $2
-			WHERE id = $1;",
-			id,
-			title
-		)
-		.execute(self.executor())
-		.await
-		.context(UPDATE_ERROR)?
-		.rows_affected())
 	}
 
 	async fn update_chapter_vote_duration(&mut self, id: i32, duration: i32) -> Result<u64> {
@@ -555,36 +617,6 @@ pub trait DbExecutor {
 		.rows_affected())
 	}
 
-	async fn update_chapter_intro(&mut self, id: i32, text: &str) -> Result<u64> {
-		Ok(sqlx::query!(
-			"UPDATE Chapters
-			SET
-				intro_text = $2
-			WHERE id = $1;",
-			id,
-			text
-		)
-		.execute(self.executor())
-		.await
-		.context(UPDATE_ERROR)?
-		.rows_affected())
-	}
-
-	async fn update_chapter_outro(&mut self, id: i32, text: &str) -> Result<u64> {
-		Ok(sqlx::query!(
-			"UPDATE Chapters
-			SET
-				outro_text = $2
-			WHERE id = $1;",
-			id,
-			text
-		)
-		.execute(self.executor())
-		.await
-		.context(UPDATE_ERROR)?
-		.rows_affected())
-	}
-
 	async fn update_chapter_order(&mut self, id: i32, order: i32) -> Result<u64> {
 		Ok(sqlx::query!(
 			"UPDATE Chapters
@@ -616,21 +648,15 @@ pub trait DbExecutor {
 		.rows_affected())
 	}
 
-	async fn update_chapter(&mut self, id: i32, chapter: ChapterEdit) -> Result<u64> {
+	async fn update_chapter_latest_rev(&mut self, id: i32, latest_rev: i32) -> Result<u64> {
 		Ok(sqlx::query!(
 			"UPDATE Chapters
 			SET
-				title = $2,
-				vote_duration = $3,
-				intro_text = $4,
-				outro_text = $5,
+				latest_rev = $2,
 				last_edit = now()
 			WHERE id = $1;",
 			id,
-			chapter.title,
-			chapter.vote_duration,
-			chapter.intro_text,
-			chapter.outro_text
+			latest_rev
 		)
 		.execute(self.executor())
 		.await
@@ -654,18 +680,23 @@ pub trait DbExecutor {
 			.rows_affected())
 	}
 
-	async fn insert_writing(
-		&mut self, text: &str, creator_id: i32, previous_id: Option<i32>,
-	) -> Result<Writing> {
+	async fn insert_question_writing(
+		&mut self, edit: WritingEdit, creator_id: i32, previous_id: Option<i32>,
+	) -> Result<QuestionWriting> {
 		Ok(sqlx::query_as!(
-			Writing,
-			"INSERT INTO Writings
-				(writing, created_by, previous_revision)
+			QuestionWriting,
+			"INSERT INTO Question_writings
+				(question_text, option_writing, result_writing,
+				asked_by, created_by, previous_revision)
 			VALUES
-				($1, $2, $3)
+				($1, $2, $3, $4, $5, $6)
 			RETURNING
-				id, writing, created_by, previous_revision, date_created;",
-			text,
+				id, question_text, option_writing, result_writing,
+				asked_by, created_by, previous_revision, date_created;",
+			edit.question_text,
+			edit.option_writing,
+			edit.result_writing,
+			edit.asked_by,
 			creator_id,
 			previous_id
 		)
@@ -674,12 +705,13 @@ pub trait DbExecutor {
 		.context(INSERT_ERROR)?)
 	}
 
-	async fn get_writing(&mut self, id: i32) -> Result<Option<Writing>> {
+	async fn get_question_writing(&mut self, id: i32) -> Result<Option<QuestionWriting>> {
 		Ok(sqlx::query_as!(
-			Writing,
+			QuestionWriting,
 			"SELECT
-				id, writing, created_by, previous_revision, date_created
-			FROM Writings WHERE id = $1 LIMIT 1;",
+				id, question_text, option_writing, result_writing,
+				asked_by, created_by, previous_revision, date_created
+			FROM Question_writings WHERE id = $1 LIMIT 1;",
 			id,
 		)
 		.fetch_optional(self.executor())
@@ -687,36 +719,39 @@ pub trait DbExecutor {
 		.context(SELECT_ERROR)?)
 	}
 
-	async fn get_all_writings(&mut self) -> Result<Vec<Writing>> {
+	async fn get_all_question_writings(&mut self) -> Result<Vec<QuestionWriting>> {
 		Ok(sqlx::query_as!(
-			Writing,
+			QuestionWriting,
 			"SELECT
-				id, writing, created_by, previous_revision, date_created
-			FROM Writings;",
+				id, question_text, option_writing, result_writing,
+				asked_by, created_by, previous_revision, date_created
+			FROM Question_writings;",
 		)
 		.fetch_all(self.executor())
 		.await
 		.context(SELECT_ERROR)?)
 	}
 
-	async fn get_writings_count(&mut self) -> Result<i64> {
-		Ok(sqlx::query!("SELECT count(*) FROM Writings;")
+	async fn get_question_writings_count(&mut self) -> Result<i64> {
+		Ok(sqlx::query!("SELECT count(*) FROM Question_writings;")
 			.fetch_one(self.executor())
 			.await?
 			.count
 			.context(SELECT_ERROR)?)
 	}
 
-	async fn delete_writing(&mut self, id: i32) -> Result<u64> {
-		Ok(sqlx::query!("DELETE FROM Writings WHERE id = $1;", id)
-			.execute(self.executor())
-			.await
-			.context(DELETE_ERROR)?
-			.rows_affected())
+	async fn delete_question_writing(&mut self, id: i32) -> Result<u64> {
+		Ok(
+			sqlx::query!("DELETE FROM Question_writings WHERE id = $1;", id)
+				.execute(self.executor())
+				.await
+				.context(DELETE_ERROR)?
+				.rows_affected(),
+		)
 	}
 
-	async fn delete_all_writings(&mut self) -> Result<u64> {
-		Ok(sqlx::query!("DELETE FROM Writings;")
+	async fn delete_all_question_writings(&mut self) -> Result<u64> {
+		Ok(sqlx::query!("DELETE FROM Question_writings;")
 			.execute(self.executor())
 			.await
 			.context(DELETE_ERROR)?
@@ -730,7 +765,7 @@ pub trait DbExecutor {
 		Ok(sqlx::query_as!(
 			Question,
 			r#"INSERT INTO Questions
-				(text, type, response_percent, asked_by, created_by, claimed_by)
+				(type, response_percent, created_by, claimed_by)
 			VALUES
 				($1, $2, $3, $4, $5, $6)
 			RETURNING
@@ -961,163 +996,6 @@ pub trait DbExecutor {
 
 	async fn delete_all_questions(&mut self) -> Result<u64> {
 		Ok(sqlx::query!("DELETE FROM Questions;")
-			.execute(self.executor())
-			.await
-			.context(DELETE_ERROR)?
-			.rows_affected())
-	}
-
-	async fn insert_option(
-		&mut self, question_id: i32, option_number: i32, text: &str, order_rank: i32,
-	) -> Result<QuestionOption> {
-		Ok(sqlx::query_as!(
-			QuestionOption,
-			"INSERT INTO Options
-				(question_id, option_number, text, order_rank)
-			VALUES
-				($1, $2, $3, $4)
-			RETURNING
-				id, question_id, option_number, text,
-				writing_id, order_rank, date_created;",
-			question_id,
-			option_number,
-			text,
-			order_rank
-		)
-		.fetch_one(self.executor())
-		.await
-		.context(INSERT_ERROR)?)
-	}
-
-	async fn get_option(&mut self, id: i32) -> Result<Option<QuestionOption>> {
-		Ok(sqlx::query_as!(
-			QuestionOption,
-			"SELECT
-				id, question_id, option_number, text,
-				writing_id, order_rank, date_created
-			FROM Options WHERE id = $1 LIMIT 1;",
-			id,
-		)
-		.fetch_optional(self.executor())
-		.await
-		.context(SELECT_ERROR)?)
-	}
-
-	async fn get_options_by_question(&mut self, question_id: i32) -> Result<Vec<QuestionOption>> {
-		Ok(sqlx::query_as!(
-			QuestionOption,
-			"SELECT
-				id, question_id, option_number, text,
-				writing_id, order_rank, date_created
-			FROM Options WHERE question_id = $1 LIMIT 1;",
-			question_id,
-		)
-		.fetch_all(self.executor())
-		.await
-		.context(SELECT_ERROR)?)
-	}
-
-	async fn get_all_options(&mut self) -> Result<Vec<QuestionOption>> {
-		Ok(sqlx::query_as!(
-			QuestionOption,
-			"SELECT
-				id, question_id, option_number, text,
-				writing_id, order_rank, date_created
-			FROM Options;",
-		)
-		.fetch_all(self.executor())
-		.await
-		.context(SELECT_ERROR)?)
-	}
-
-	async fn get_options_count(&mut self) -> Result<i64> {
-		Ok(sqlx::query!("SELECT count(*) FROM Options;")
-			.fetch_one(self.executor())
-			.await?
-			.count
-			.context(SELECT_ERROR)?)
-	}
-
-	async fn update_option_number(&mut self, id: i32, number: i32) -> Result<u64> {
-		Ok(sqlx::query!(
-			"UPDATE Options
-			SET
-				option_number = $2
-			WHERE id = $1;",
-			id,
-			number
-		)
-		.execute(self.executor())
-		.await
-		.context(UPDATE_ERROR)?
-		.rows_affected())
-	}
-
-	async fn update_option_text(&mut self, id: i32, text: &str) -> Result<u64> {
-		Ok(sqlx::query!(
-			"UPDATE Options
-			SET
-				text = $2
-			WHERE id = $1;",
-			id,
-			text
-		)
-		.execute(self.executor())
-		.await
-		.context(UPDATE_ERROR)?
-		.rows_affected())
-	}
-
-	async fn update_option_writing_id(&mut self, id: i32, writing_id: Option<i32>) -> Result<u64> {
-		Ok(sqlx::query!(
-			"UPDATE Options
-			SET
-				writing_id = $2
-			WHERE id = $1;",
-			id,
-			writing_id
-		)
-		.execute(self.executor())
-		.await
-		.context(UPDATE_ERROR)?
-		.rows_affected())
-	}
-
-	async fn update_option_order_rank(&mut self, id: i32, order_rank: i32) -> Result<u64> {
-		Ok(sqlx::query!(
-			"UPDATE Options
-			SET
-				order_rank = $2
-			WHERE id = $1;",
-			id,
-			order_rank
-		)
-		.execute(self.executor())
-		.await
-		.context(UPDATE_ERROR)?
-		.rows_affected())
-	}
-
-	async fn delete_option(&mut self, id: i32) -> Result<u64> {
-		Ok(sqlx::query!("DELETE FROM Options WHERE id = $1;", id)
-			.execute(self.executor())
-			.await
-			.context(DELETE_ERROR)?
-			.rows_affected())
-	}
-
-	async fn delete_options_by_question_id(&mut self, question_id: i32) -> Result<u64> {
-		Ok(
-			sqlx::query!("DELETE FROM Options WHERE question_id = $1;", question_id)
-				.execute(self.executor())
-				.await
-				.context(DELETE_ERROR)?
-				.rows_affected(),
-		)
-	}
-
-	async fn delete_all_options(&mut self) -> Result<u64> {
-		Ok(sqlx::query!("DELETE FROM options;")
 			.execute(self.executor())
 			.await
 			.context(DELETE_ERROR)?
