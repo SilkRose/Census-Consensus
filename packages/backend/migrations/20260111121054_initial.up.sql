@@ -56,7 +56,7 @@ CREATE TABLE IF NOT EXISTS Chapter_revisions (
 
 CREATE TABLE IF NOT EXISTS Chapters (
 	id            serial      NOT NULL PRIMARY KEY,
-	vote_duration integer     NOT NULL,
+	vote_duration integer     NOT NULL DEFAULT 60,
 	minutes_left  integer     NULL,
 	fimfic_ch_id  integer     NULL,
 	chapter_order integer     NULL,
