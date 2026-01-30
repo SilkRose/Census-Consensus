@@ -320,8 +320,10 @@ pub async fn set_chapter_edit(
 	let chapter_rev = serde_urlencoded::from_str::<ChapterEdit>(&body)?;
 	let chapter = db.get_chapter(id).await?;
 	if let Some(chapter) = chapter {
-		db.insert_chapter_revision(chapter_rev, user.id, Some(chapter.latest_rev))
+		let rev = db
+			.insert_chapter_revision(chapter_rev, user.id, Some(chapter.latest_rev))
 			.await?;
+		db.update_chapter_latest_rev(id, rev.id).await?;
 		Ok(HttpResponse::SeeOther()
 			.append_header(("Location", format!("/chapters/{id}")))
 			.finish())
