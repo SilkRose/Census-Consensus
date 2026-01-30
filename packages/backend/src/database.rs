@@ -412,22 +412,22 @@ pub trait DbExecutor {
 	}
 
 	async fn insert_chapter_revision(
-		&mut self, revision: ChapterEdit, created_by: i32, previous_id: Option<i32>,
+		&mut self, revision: ChapterEdit, created_by: i32, chapter_id: i32,
 	) -> Result<ChapterRevision> {
 		Ok(sqlx::query_as!(
 			ChapterRevision,
 			"INSERT INTO Chapter_revisions
-				(title, intro_text, outro_text, created_by, previous_revision)
+				(title, intro_text, outro_text, created_by, chapter_id)
 			VALUES
 				($1, $2, $3, $4, $5)
 			RETURNING
 				id, title, intro_text, outro_text,
-				created_by, previous_revision, date_created;",
+				created_by, chapter_id, date_created;",
 			revision.title,
 			revision.intro_text,
 			revision.outro_text,
 			created_by,
-			previous_id
+			chapter_id
 		)
 		.fetch_one(self.executor())
 		.await
@@ -439,11 +439,30 @@ pub trait DbExecutor {
 			ChapterRevision,
 			"SELECT
 				id, title, intro_text, outro_text,
-				created_by, previous_revision, date_created
+				created_by, chapter_id, date_created
 			FROM Chapter_revisions
 			WHERE id = $1
 			LIMIT 1;",
 			id
+		)
+		.fetch_optional(self.executor())
+		.await
+		.context(SELECT_ERROR)?)
+	}
+
+	async fn get_latest_chapter_revision(
+		&mut self, chapter_id: i32,
+	) -> Result<Option<ChapterRevision>> {
+		Ok(sqlx::query_as!(
+			ChapterRevision,
+			"SELECT
+				id, title, intro_text, outro_text,
+				created_by, chapter_id, date_created
+			FROM Chapter_revisions
+			WHERE chapter_id = $1
+			ORDER BY date_created DESC
+			LIMIT 1;",
+			chapter_id
 		)
 		.fetch_optional(self.executor())
 		.await
@@ -455,7 +474,7 @@ pub trait DbExecutor {
 			ChapterRevision,
 			"SELECT
 				id, title, intro_text, outro_text,
-				created_by, previous_revision, date_created
+				created_by, chapter_id, date_created
 			FROM Chapter_revisions;",
 		)
 		.fetch_all(self.executor())
@@ -489,17 +508,13 @@ pub trait DbExecutor {
 			.rows_affected())
 	}
 
-	async fn insert_chapter(&mut self, latest_rev: i32) -> Result<Chapter> {
+	async fn insert_chapter(&mut self) -> Result<Chapter> {
 		Ok(sqlx::query_as!(
 			Chapter,
-			"INSERT INTO Chapters
-				(latest_rev)
-			VALUES
-				($1)
+			"INSERT INTO Chapters DEFAULT VALUES
 			RETURNING
 				id, vote_duration, minutes_left, fimfic_ch_id,
-				chapter_order, latest_rev, last_edit, date_created;",
-			latest_rev
+				chapter_order, last_edit, date_created;",
 		)
 		.fetch_one(self.executor())
 		.await
@@ -511,7 +526,7 @@ pub trait DbExecutor {
 			Chapter,
 			"SELECT
 				id, vote_duration, minutes_left, fimfic_ch_id,
-				chapter_order, latest_rev, last_edit, date_created
+				chapter_order, last_edit, date_created
 			FROM Chapters WHERE id = $1 LIMIT 1;",
 			id,
 		)
@@ -525,7 +540,7 @@ pub trait DbExecutor {
 			Chapter,
 			"SELECT
 				id, vote_duration, minutes_left, fimfic_ch_id,
-				chapter_order, latest_rev, last_edit, date_created
+				chapter_order, last_edit, date_created
 			FROM Chapters WHERE chapter_order = $1 LIMIT 1;",
 			order,
 		)
@@ -539,7 +554,7 @@ pub trait DbExecutor {
 			Chapter,
 			"SELECT
 				id, vote_duration, minutes_left, fimfic_ch_id,
-				chapter_order, latest_rev, last_edit, date_created
+				chapter_order, last_edit, date_created
 			FROM Chapters
 			WHERE chapter_order > $1
 			ORDER BY chapter_order;",
@@ -555,7 +570,7 @@ pub trait DbExecutor {
 			Chapter,
 			"SELECT
 				id, vote_duration, minutes_left, fimfic_ch_id,
-				chapter_order, latest_rev, last_edit, date_created
+				chapter_order, last_edit, date_created
 			FROM Chapters
 			ORDER BY chapter_order NULLS LAST, id;",
 		)
@@ -648,22 +663,6 @@ pub trait DbExecutor {
 		.rows_affected())
 	}
 
-	async fn update_chapter_latest_rev(&mut self, id: i32, latest_rev: i32) -> Result<u64> {
-		Ok(sqlx::query!(
-			"UPDATE Chapters
-			SET
-				latest_rev = $2,
-				last_edit = now()
-			WHERE id = $1;",
-			id,
-			latest_rev
-		)
-		.execute(self.executor())
-		.await
-		.context(UPDATE_ERROR)?
-		.rows_affected())
-	}
-
 	async fn delete_chapter(&mut self, id: i32) -> Result<u64> {
 		Ok(sqlx::query!("DELETE FROM Chapters WHERE id = $1;", id)
 			.execute(self.executor())
@@ -681,24 +680,24 @@ pub trait DbExecutor {
 	}
 
 	async fn insert_question_writing(
-		&mut self, edit: WritingEdit, creator_id: i32, previous_id: Option<i32>,
+		&mut self, edit: WritingEdit, creator_id: i32, question_id: i32,
 	) -> Result<QuestionWriting> {
 		Ok(sqlx::query_as!(
 			QuestionWriting,
 			"INSERT INTO Question_writings
 				(question_text, option_writing, result_writing,
-				asked_by, created_by, previous_revision)
+				asked_by, created_by, question_id)
 			VALUES
 				($1, $2, $3, $4, $5, $6)
 			RETURNING
 				id, question_text, option_writing, result_writing,
-				asked_by, created_by, previous_revision, date_created;",
+				asked_by, created_by, question_id, date_created;",
 			edit.question_text,
 			edit.option_writing,
 			edit.result_writing,
 			edit.asked_by,
 			creator_id,
-			previous_id
+			question_id
 		)
 		.fetch_one(self.executor())
 		.await
@@ -710,7 +709,7 @@ pub trait DbExecutor {
 			QuestionWriting,
 			"SELECT
 				id, question_text, option_writing, result_writing,
-				asked_by, created_by, previous_revision, date_created
+				asked_by, created_by, question_id, date_created
 			FROM Question_writings WHERE id = $1 LIMIT 1;",
 			id,
 		)
@@ -724,7 +723,7 @@ pub trait DbExecutor {
 			QuestionWriting,
 			"SELECT
 				id, question_text, option_writing, result_writing,
-				asked_by, created_by, previous_revision, date_created
+				asked_by, created_by, question_id, date_created
 			FROM Question_writings;",
 		)
 		.fetch_all(self.executor())
@@ -770,7 +769,7 @@ pub trait DbExecutor {
 				($1, $2, $3, $4)
 			RETURNING
 				id, type AS "type: QuestionType", response_percent, created_by,
-				claimed_by, chapter_id, chapter_order, latest_writing, date_created;"#,
+				claimed_by, chapter_id, chapter_order, date_created;"#,
 			question_type as _,
 			percent,
 			creator_id,
@@ -786,7 +785,7 @@ pub trait DbExecutor {
 			Question,
 			r#"SELECT
 				id, type AS "type: QuestionType", response_percent, created_by,
-				claimed_by, chapter_id, chapter_order, latest_writing, date_created
+				claimed_by, chapter_id, chapter_order, date_created
 			FROM Questions WHERE id = $1 LIMIT 1;"#,
 			id,
 		)
@@ -800,7 +799,7 @@ pub trait DbExecutor {
 			Question,
 			r#"SELECT
 				id, type AS "type: QuestionType", response_percent, created_by,
-				claimed_by, chapter_id, chapter_order, latest_writing, date_created
+				claimed_by, chapter_id, chapter_order, date_created
 			FROM Questions WHERE chapter_id = $1;"#,
 			chapter_id
 		)
@@ -814,7 +813,7 @@ pub trait DbExecutor {
 			Question,
 			r#"SELECT
 				id, type AS "type: QuestionType", response_percent, created_by,
-				claimed_by, chapter_id, chapter_order, latest_writing, date_created
+				claimed_by, chapter_id, chapter_order, date_created
 			FROM Questions WHERE created_by = $1;"#,
 			creator_id
 		)
@@ -830,7 +829,7 @@ pub trait DbExecutor {
 			Question,
 			r#"SELECT
 				id, type AS "type: QuestionType", response_percent, created_by,
-				claimed_by, chapter_id, chapter_order, latest_writing, date_created
+				claimed_by, chapter_id, chapter_order, date_created
 			FROM Questions WHERE claimed_by = $1;"#,
 			claiment_id
 		)
@@ -844,7 +843,7 @@ pub trait DbExecutor {
 			Question,
 			r#"SELECT
 				id, type AS "type: QuestionType", response_percent, created_by,
-				claimed_by, chapter_id, chapter_order, latest_writing, date_created
+				claimed_by, chapter_id, chapter_order, date_created
 			FROM Questions;"#,
 		)
 		.fetch_all(self.executor())
@@ -930,23 +929,6 @@ pub trait DbExecutor {
 			WHERE id = $1;",
 			id,
 			chapter_order
-		)
-		.execute(self.executor())
-		.await
-		.context(UPDATE_ERROR)?
-		.rows_affected())
-	}
-
-	async fn update_question_latest_writing(
-		&mut self, id: i32, writing_id: Option<i32>,
-	) -> Result<u64> {
-		Ok(sqlx::query!(
-			"UPDATE Questions
-			SET
-				latest_writing = $2
-			WHERE id = $1;",
-			id,
-			writing_id
 		)
 		.execute(self.executor())
 		.await

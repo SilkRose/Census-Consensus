@@ -270,9 +270,11 @@ pub async fn set_chapter_new(
 	if user.user_type != UserType::Admin {
 		return Ok(HttpResponse::Unauthorized().finish());
 	}
-	let chapter = serde_urlencoded::from_str::<ChapterEdit>(&body)?;
-	let chapter = db.insert_chapter_revision(chapter, user.id, None).await?;
-	let chapter = db.insert_chapter(chapter.id).await?;
+	let chapter_data = serde_urlencoded::from_str::<ChapterEdit>(&body)?;
+	let chapter = db.insert_chapter().await?;
+	let chapter = db
+		.insert_chapter_revision(chapter_data, user.id, chapter.id)
+		.await?;
 	Ok(HttpResponse::SeeOther()
 		.append_header(("Location", format!("/chapters/{}", chapter.id)))
 		.finish())
@@ -293,7 +295,7 @@ pub async fn get_chapter_edit(
 	let chapter = db.get_chapter(id).await?;
 	if let Some(chapter) = chapter {
 		let data = db
-			.get_chapter_revision(chapter.latest_rev)
+			.get_latest_chapter_revision(chapter.id)
 			.await?
 			.expect(DATABASE_CONSTRAINT_EXPECT);
 		let page = edit_chapter_html(chapter, data);
@@ -320,10 +322,8 @@ pub async fn set_chapter_edit(
 	let chapter_rev = serde_urlencoded::from_str::<ChapterEdit>(&body)?;
 	let chapter = db.get_chapter(id).await?;
 	if let Some(chapter) = chapter {
-		let rev = db
-			.insert_chapter_revision(chapter_rev, user.id, Some(chapter.latest_rev))
+		db.insert_chapter_revision(chapter_rev, user.id, chapter.id)
 			.await?;
-		db.update_chapter_latest_rev(id, rev.id).await?;
 		Ok(HttpResponse::SeeOther()
 			.append_header(("Location", format!("/chapters/{id}")))
 			.finish())

@@ -38,59 +38,35 @@ CREATE TABLE IF NOT EXISTS Banned_users (
 	date_banned timestamptz NOT NULL DEFAULT now()
 );
 
-CREATE TABLE IF NOT EXISTS Chapter_revisions (
-	id                serial      NOT NULL PRIMARY KEY,
-	title             text        NOT NULL,
-	intro_text        text        NULL,
-	outro_text        text        NULL,
-	previous_revision integer     NULL,
-	created_by        integer     NOT NULL,
-	date_created      timestamptz NOT NULL DEFAULT now(),
-
-	CONSTRAINT Chapter_revisions_created_by_Users_fk FOREIGN KEY (created_by)
-		REFERENCES Users (id) ON DELETE CASCADE,
-
-	CONSTRAINT Chapter_revisions_no_self_reference
-		CHECK (previous_revision IS NULL OR previous_revision <> id)
-);
-
 CREATE TABLE IF NOT EXISTS Chapters (
 	id            serial      NOT NULL PRIMARY KEY,
 	vote_duration integer     NOT NULL DEFAULT 60,
 	minutes_left  integer     NULL,
 	fimfic_ch_id  integer     NULL,
 	chapter_order integer     NULL,
-	latest_rev    integer     NOT NULL,
 	last_edit     timestamptz NOT NULL DEFAULT now(),
 	date_created  timestamptz NOT NULL DEFAULT now(),
 
 	CONSTRAINT Order_unique UNIQUE (chapter_order),
 
 	CONSTRAINT Order_minimum
-		CHECK (chapter_order > 0),
-
-	CONSTRAINT Chapters_latest_rev_fk FOREIGN KEY (latest_rev)
-		REFERENCES Chapter_revisions (id) ON DELETE CASCADE
+		CHECK (chapter_order > 0)
 );
 
-CREATE TABLE IF NOT EXISTS Question_writings (
-	id                serial      NOT NULL PRIMARY KEY,
-	question_text     text        NOT NULL,
-	option_writing    text        NULL,
-	result_writing    text        NULL,
-	asked_by          text        NOT NULL,
-	created_by        integer     NOT NULL,
-	previous_revision integer     NULL,
-	date_created      timestamptz NOT NULL DEFAULT now(),
+CREATE TABLE IF NOT EXISTS Chapter_revisions (
+	id           serial      NOT NULL PRIMARY KEY,
+	title        text        NOT NULL,
+	intro_text   text        NULL,
+	outro_text   text        NULL,
+	chapter_id   integer     NOT NULL,
+	created_by   integer     NOT NULL,
+	date_created timestamptz NOT NULL DEFAULT now(),
 
-	CONSTRAINT Writings_created_by_Users_fk FOREIGN KEY (created_by)
-		REFERENCES Users (id) ON DELETE CASCADE,
+	CONSTRAINT Chapter_revisions_chapter_id_fk FOREIGN KEY (chapter_id)
+		REFERENCES Chapters (id) ON DELETE CASCADE,
 
-	CONSTRAINT Writings_previous_revision_fk FOREIGN KEY (previous_revision)
-		REFERENCES Question_writings (id) ON DELETE SET NULL,
-
-	CONSTRAINT Writings_no_self_reference
-		CHECK (previous_revision IS NULL OR previous_revision <> id)
+	CONSTRAINT Chapter_revisions_created_by_Users_fk FOREIGN KEY (created_by)
+		REFERENCES Users (id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS Questions (
@@ -101,7 +77,6 @@ CREATE TABLE IF NOT EXISTS Questions (
 	claimed_by       integer          NULL,
 	chapter_id       integer          NULL,
 	chapter_order    integer          NULL,
-	latest_writing   integer          NOT NULL,
 	date_created     timestamptz      NOT NULL DEFAULT now(),
 
 	CONSTRAINT Percent_range
@@ -116,11 +91,25 @@ CREATE TABLE IF NOT EXISTS Questions (
 	CONSTRAINT Questions_Chapters_fk FOREIGN KEY (chapter_id)
 		REFERENCES Chapters (id) ON DELETE CASCADE,
 
-	CONSTRAINT Questions_latest_writing_fk FOREIGN KEY (latest_writing)
-		REFERENCES Question_writings (id) ON DELETE CASCADE,
-
 	CONSTRAINT Questions_chapter_order_unique
 		UNIQUE (chapter_id, chapter_order)
+);
+
+CREATE TABLE IF NOT EXISTS Question_writings (
+	id             serial      NOT NULL PRIMARY KEY,
+	question_text  text        NOT NULL,
+	option_writing text        NULL,
+	result_writing text        NULL,
+	asked_by       text        NOT NULL,
+	created_by     integer     NOT NULL,
+	question_id    integer     NOT NULL,
+	date_created   timestamptz NOT NULL DEFAULT now(),
+
+	CONSTRAINT Writings_created_by_Users_fk FOREIGN KEY (created_by)
+		REFERENCES Users (id) ON DELETE CASCADE,
+	
+	CONSTRAINT Writings_question_id_fk FOREIGN KEY (question_id)
+		REFERENCES Questions (id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS Votes (
