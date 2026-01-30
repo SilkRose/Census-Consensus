@@ -1,9 +1,6 @@
-use crate::{
-	structs::{Chapter, ChapterTableData, Session},
-	utility::count_words,
-};
+use crate::structs::{Chapter, ChapterRevision, Session};
+use crate::utility::count_words;
 use maud::{DOCTYPE, PreEscaped, html};
-use pony::word_stats::word_count;
 
 pub fn update_user_info_html() -> String {
 	html! {
@@ -132,10 +129,15 @@ pub fn new_chapter_html() -> String {
 					br;
 					(input_text_required(name, name, 8, 256))
 					br;
-					@let name = "vote_duration";
-					label for = (name) { "Vote Duration:" }
+					@let name = "intro_text";
+					label for = (name) { "Intro:" }
 					br;
-					(input_number_required(name, name, 1, 100))
+					(textarea(name, name, 1_000_000))
+					br;
+					@let name = "outro_text";
+					label for = (name) { "Outro:" }
+					br;
+					(textarea(name, name, 1_000_000))
 					br;
 					button type = "submit" { "Create Chapter" }
 				}
@@ -145,7 +147,7 @@ pub fn new_chapter_html() -> String {
 	.into()
 }
 
-pub fn edit_chapter_html(chapter: Chapter) -> String {
+pub fn edit_chapter_html(chapter: Chapter, data: ChapterRevision) -> String {
 	html! {
 		(DOCTYPE) html lang = "en" {
 			body {
@@ -155,22 +157,17 @@ pub fn edit_chapter_html(chapter: Chapter) -> String {
 					@let name = "title";
 					label for = (name) { "Title:" }
 					br;
-					(input_text_value_required(name, name, 8, 256, &chapter.title))
-					br;
-					@let name = "vote_duration";
-					label for = (name) { "Vote Duration:" }
-					br;
-					(input_number_value_required(name, name, 1, 100, chapter.vote_duration))
+					(input_text_value_required(name, name, 8, 256, &data.title))
 					br;
 					@let name = "intro_text";
 					label for = (name) { "Intro:" }
 					br;
-					(textarea_value(name, name, 1_000_000, &chapter.intro_text.unwrap_or_default()))
+					(textarea_value(name, name, 1_000_000, &data.intro_text.unwrap_or_default()))
 					br;
 					@let name = "outro_text";
 					label for = (name) { "Outro:" }
 					br;
-					(textarea_value(name, name, 1_000_000, &chapter.outro_text.unwrap_or_default()))
+					(textarea_value(name, name, 1_000_000, &data.outro_text.unwrap_or_default()))
 					br;
 					button type = "submit" { "Save Chapter" }
 				}
@@ -449,7 +446,7 @@ fn session_table_row(session: &Session, num: usize) -> PreEscaped<String> {
 	)
 }
 
-pub fn chapters_html(chapters: Vec<Chapter>, admin: bool) -> String {
+pub fn chapters_html(chapters: Vec<Chapter>, data: Vec<ChapterRevision>, admin: bool) -> String {
 	html! {
 		(DOCTYPE) html lang = "en" {
 			body {
@@ -472,8 +469,8 @@ pub fn chapters_html(chapters: Vec<Chapter>, admin: bool) -> String {
 						th { "Created" } // done
 					}
 					@let mut prev_published: Option<bool> = None;
-					@for chapter in chapters.into_iter() {
-						(chapter_table_row(chapter, &mut prev_published, admin))
+					@for (chapter, data) in chapters.iter().zip(data) {
+						(chapter_table_row(chapter, data, &mut prev_published, admin))
 					}
 				}
 			};
@@ -483,7 +480,7 @@ pub fn chapters_html(chapters: Vec<Chapter>, admin: bool) -> String {
 }
 
 fn chapter_table_row(
-	chapter: Chapter, prev_published: &mut Option<bool>, admin: bool,
+	chapter: &Chapter, data: ChapterRevision, prev_published: &mut Option<bool>, admin: bool,
 ) -> PreEscaped<String> {
 	let active = chapter.fimfic_ch_id.is_some() || chapter.minutes_left.is_some();
 	let first_number = !active && chapter.chapter_order.is_some() && prev_published.is_none();
@@ -494,7 +491,7 @@ fn chapter_table_row(
 	html! (
 		tr {
 			td { (chapter.id) }
-			td { (chapter.title) }
+			td { (data.title) }
 			td {
 				@if let Some(order) = chapter.chapter_order {
 					@if !active && admin {
@@ -541,8 +538,8 @@ fn chapter_table_row(
 			}
 			td {} // need to do questions
 			td { (chapter.fimfic_ch_id.map_or(String::default(), |m| m.to_string())) }
-			td { (chapter.intro_text.clone().map(|text| count_words(&text)).unwrap_or_default()) }
-			td { (chapter.outro_text.clone().map(|text| count_words(&text)).unwrap_or_default()) }
+			td { (data.intro_text.clone().map(|text| count_words(&text)).unwrap_or_default()) }
+			td { (data.outro_text.clone().map(|text| count_words(&text)).unwrap_or_default()) }
 			td {} // need to do revisions
 			td { button onclick = (format!("window.location.href='/chapters/{}';", chapter.id)) { "Edit" } }
 			td { (chapter.last_edit.format("%d/%m/%Y")) br; (chapter.last_edit.format("%H:%M")) }

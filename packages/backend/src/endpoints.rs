@@ -5,7 +5,7 @@ use crate::html_templates::{
 	ban_user_html, chapters_html, edit_chapter_html, new_chapter_html, sessions_html,
 	update_user_info_html, update_user_role_html,
 };
-use crate::structs::{ChapterEdit, NewChapter, UserType};
+use crate::structs::{ChapterEdit, UserType};
 use crate::utility::redirect;
 use crate::{FimficCfg, HttpClient};
 use actix_web::web::{Path, ThinData};
@@ -228,7 +228,15 @@ pub async fn get_chapters(
 		.get_all_chapters()
 		.await
 		.expect(DATABASE_CONSTRAINT_EXPECT);
-	let page = chapters_html(chapters, admin);
+	let mut data = vec![];
+	for chapter in &chapters {
+		let datum = db
+			.get_chapter_revision(chapter.id)
+			.await?
+			.expect(DATABASE_CONSTRAINT_EXPECT);
+		data.push(datum);
+	}
+	let page = chapters_html(chapters, data, admin);
 	Ok(HttpResponse::Ok()
 		.content_type("text/html; charset=utf-8")
 		.body(page))
@@ -262,10 +270,9 @@ pub async fn set_chapter_new(
 	if user.user_type != UserType::Admin {
 		return Ok(HttpResponse::Unauthorized().finish());
 	}
-	let chapter = serde_urlencoded::from_str::<NewChapter>(&body)?;
-	let chapter = db
-		.insert_chapter(&chapter.title, chapter.vote_duration)
-		.await?;
+	let chapter = serde_urlencoded::from_str::<ChapterEdit>(&body)?;
+	let chapter = db.insert_chapter_revision(chapter, user.id, None).await?;
+	let chapter = db.insert_chapter(chapter.id).await?;
 	Ok(HttpResponse::SeeOther()
 		.append_header(("Location", format!("/chapters/{}", chapter.id)))
 		.finish())
@@ -283,11 +290,19 @@ pub async fn get_chapter_edit(
 	if user.user_type != UserType::Admin {
 		return Ok(HttpResponse::Unauthorized().finish());
 	}
-	let chapter = db.get_chapter(id).await?.expect(DATABASE_CONSTRAINT_EXPECT);
-	let page = edit_chapter_html(chapter);
-	Ok(HttpResponse::Ok()
-		.content_type("text/html; charset=utf-8")
-		.body(page))
+	let chapter = db.get_chapter(id).await?;
+	if let Some(chapter) = chapter {
+		let data = db
+			.get_chapter_revision(chapter.latest_rev)
+			.await?
+			.expect(DATABASE_CONSTRAINT_EXPECT);
+		let page = edit_chapter_html(chapter, data);
+		Ok(HttpResponse::Ok()
+			.content_type("text/html; charset=utf-8")
+			.body(page))
+	} else {
+		Ok(HttpResponse::BadRequest().finish())
+	}
 }
 
 #[post("/chapters/{id}")]
@@ -302,11 +317,17 @@ pub async fn set_chapter_edit(
 	if user.user_type != UserType::Admin {
 		return Ok(HttpResponse::Unauthorized().finish());
 	}
-	let chapter = serde_urlencoded::from_str::<ChapterEdit>(&body)?;
-	db.update_chapter(id, chapter).await?;
-	Ok(HttpResponse::SeeOther()
-		.append_header(("Location", format!("/chapters/{id}")))
-		.finish())
+	let chapter_rev = serde_urlencoded::from_str::<ChapterEdit>(&body)?;
+	let chapter = db.get_chapter(id).await?;
+	if let Some(chapter) = chapter {
+		db.insert_chapter_revision(chapter_rev, user.id, Some(chapter.latest_rev))
+			.await?;
+		Ok(HttpResponse::SeeOther()
+			.append_header(("Location", format!("/chapters/{id}")))
+			.finish())
+	} else {
+		Ok(HttpResponse::BadRequest().finish())
+	}
 }
 
 #[get("/chapters/{id}/ordered")]

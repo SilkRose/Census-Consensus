@@ -759,22 +759,20 @@ pub trait DbExecutor {
 	}
 
 	async fn insert_question(
-		&mut self, text: &str, question_type: QuestionType, percent: f64, asked_by: &str,
-		creator_id: i32, claiment_id: Option<i32>,
+		&mut self, question_type: QuestionType, percent: f64, creator_id: i32,
+		claiment_id: Option<i32>,
 	) -> Result<Question> {
 		Ok(sqlx::query_as!(
 			Question,
 			r#"INSERT INTO Questions
 				(type, response_percent, created_by, claimed_by)
 			VALUES
-				($1, $2, $3, $4, $5, $6)
+				($1, $2, $3, $4)
 			RETURNING
-				id, text, type AS "type: QuestionType", response_percent, asked_by, created_by,
+				id, type AS "type: QuestionType", response_percent, created_by,
 				claimed_by, chapter_id, chapter_order, latest_writing, date_created;"#,
-			text,
 			question_type as _,
 			percent,
-			asked_by,
 			creator_id,
 			claiment_id
 		)
@@ -787,7 +785,7 @@ pub trait DbExecutor {
 		Ok(sqlx::query_as!(
 			Question,
 			r#"SELECT
-				id, text, type AS "type: QuestionType", response_percent, asked_by, created_by,
+				id, type AS "type: QuestionType", response_percent, created_by,
 				claimed_by, chapter_id, chapter_order, latest_writing, date_created
 			FROM Questions WHERE id = $1 LIMIT 1;"#,
 			id,
@@ -801,7 +799,7 @@ pub trait DbExecutor {
 		Ok(sqlx::query_as!(
 			Question,
 			r#"SELECT
-				id, text, type AS "type: QuestionType", response_percent, asked_by, created_by,
+				id, type AS "type: QuestionType", response_percent, created_by,
 				claimed_by, chapter_id, chapter_order, latest_writing, date_created
 			FROM Questions WHERE chapter_id = $1;"#,
 			chapter_id
@@ -815,7 +813,7 @@ pub trait DbExecutor {
 		Ok(sqlx::query_as!(
 			Question,
 			r#"SELECT
-				id, text, type AS "type: QuestionType", response_percent, asked_by, created_by,
+				id, type AS "type: QuestionType", response_percent, created_by,
 				claimed_by, chapter_id, chapter_order, latest_writing, date_created
 			FROM Questions WHERE created_by = $1;"#,
 			creator_id
@@ -831,7 +829,7 @@ pub trait DbExecutor {
 		Ok(sqlx::query_as!(
 			Question,
 			r#"SELECT
-				id, text, type AS "type: QuestionType", response_percent, asked_by, created_by,
+				id, type AS "type: QuestionType", response_percent, created_by,
 				claimed_by, chapter_id, chapter_order, latest_writing, date_created
 			FROM Questions WHERE claimed_by = $1;"#,
 			claiment_id
@@ -845,7 +843,7 @@ pub trait DbExecutor {
 		Ok(sqlx::query_as!(
 			Question,
 			r#"SELECT
-				id, text, type AS "type: QuestionType", response_percent, asked_by, created_by,
+				id, type AS "type: QuestionType", response_percent, created_by,
 				claimed_by, chapter_id, chapter_order, latest_writing, date_created
 			FROM Questions;"#,
 		)
@@ -873,21 +871,6 @@ pub trait DbExecutor {
 			.context(SELECT_ERROR)?)
 	}
 
-	async fn update_question_text(&mut self, id: i32, text: &str) -> Result<u64> {
-		Ok(sqlx::query!(
-			"UPDATE Questions
-			SET
-				text = $2
-			WHERE id = $1;",
-			id,
-			text
-		)
-		.execute(self.executor())
-		.await
-		.context(UPDATE_ERROR)?
-		.rows_affected())
-	}
-
 	async fn update_question_repsonse_percent(&mut self, id: i32, percent: f64) -> Result<u64> {
 		Ok(sqlx::query!(
 			"UPDATE Questions
@@ -896,21 +879,6 @@ pub trait DbExecutor {
 			WHERE id = $1;",
 			id,
 			percent
-		)
-		.execute(self.executor())
-		.await
-		.context(UPDATE_ERROR)?
-		.rows_affected())
-	}
-
-	async fn update_question_asked_by(&mut self, id: i32, asked_by: &str) -> Result<u64> {
-		Ok(sqlx::query!(
-			"UPDATE Questions
-			SET
-				asked_by = $2
-			WHERE id = $1;",
-			id,
-			asked_by
 		)
 		.execute(self.executor())
 		.await
