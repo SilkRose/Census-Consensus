@@ -547,3 +547,25 @@ fn chapter_table_row(
 		}
 	)
 }
+
+pub fn chapter_history_html(chapter: Chapter, data: Vec<ChapterRevision>) -> String {
+	html! {
+		(DOCTYPE) html lang = "en" {
+			body {
+				h1 { "Chapter Revisions" }
+				br;
+				@for data in data.into_iter() {
+						details {
+							summary { "Date: " (data.date_created.format("%d/%m/%Y %H:%M")) }
+							"title: " (data.title) br;
+							"Intro:" br;
+							(data.intro_text.unwrap_or_default()) br;
+							"Intro:" br;
+							(data.outro_text.unwrap_or_default())
+						}
+					}
+			};
+		};
+	}
+	.into()
+}
