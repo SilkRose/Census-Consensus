@@ -90,6 +90,20 @@ pub struct ChapterRevision {
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct ChapterDatum {
+	pub meta: Chapter,
+	pub data: ChapterRevision,
+	pub user: User,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct ChapterDatums {
+	pub meta: Chapter,
+	pub data: Vec<ChapterRevision>,
+	pub user: Vec<User>,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct WritingEdit {
 	pub question_text: String,
 	#[serde(deserialize_with = "option_string")]

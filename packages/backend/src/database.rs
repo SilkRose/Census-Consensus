@@ -1,7 +1,7 @@
 use crate::error::Result;
 use crate::structs::{
-	BannedUser, Chapter, ChapterEdit, ChapterRevision, Question, QuestionType, QuestionWriting,
-	Session, StoryUpdate, User, UserType, Vote, WritingEdit,
+	BannedUser, Chapter, ChapterDatum, ChapterEdit, ChapterRevision, Question, QuestionType,
+	QuestionWriting, Session, StoryUpdate, User, UserType, Vote, WritingEdit,
 };
 use anyhow::Context as _;
 use chrono::{DateTime, Utc};
@@ -39,6 +39,15 @@ impl Db {
 	pub async fn transaction(&self) -> Result<DbTransaction<'_>> {
 		let tx = self.pool.begin().await?;
 		Ok(DbTransaction { tx })
+	}
+
+	pub async fn insert_chapter(&mut self, data: ChapterEdit, user: User) -> Result<ChapterDatum> {
+		let mut tx = self.transaction().await?;
+		let meta = tx.create_chapter().await?;
+		let data = tx.insert_chapter_revision(data, user.id, meta.id).await?;
+		tx.commit().await?;
+		let res = ChapterDatum { meta, data, user };
+		Ok(res)
 	}
 
 	pub async fn swap_chapters_by_order(
@@ -469,6 +478,25 @@ pub trait DbExecutor {
 		.context(SELECT_ERROR)?)
 	}
 
+	async fn get_oldest_chapter_revision(
+		&mut self, chapter_id: i32,
+	) -> Result<Option<ChapterRevision>> {
+		Ok(sqlx::query_as!(
+			ChapterRevision,
+			"SELECT
+				id, title, intro_text, outro_text,
+				created_by, chapter_id, date_created
+			FROM Chapter_revisions
+			WHERE chapter_id = $1
+			ORDER BY date_created
+			LIMIT 1;",
+			chapter_id
+		)
+		.fetch_optional(self.executor())
+		.await
+		.context(SELECT_ERROR)?)
+	}
+
 	async fn get_all_chapter_revisions(&mut self) -> Result<Vec<ChapterRevision>> {
 		Ok(sqlx::query_as!(
 			ChapterRevision,
@@ -508,7 +536,7 @@ pub trait DbExecutor {
 			.rows_affected())
 	}
 
-	async fn insert_chapter(&mut self) -> Result<Chapter> {
+	async fn create_chapter(&mut self) -> Result<Chapter> {
 		Ok(sqlx::query_as!(
 			Chapter,
 			"INSERT INTO Chapters DEFAULT VALUES

@@ -14,7 +14,7 @@ use chrono::Utc;
 use std::collections::HashMap;
 use std::time::Duration;
 
-const DATABASE_CONSTRAINT_EXPECT: &str =
+pub const DATABASE_CONSTRAINT_EXPECT: &str =
 	"Database constraints mean a user will always be present if they have a session.";
 
 #[get("/update-user")]
@@ -250,7 +250,7 @@ pub async fn get_chapter_new(
 		.get_user(session.user_id)
 		.await?
 		.expect(DATABASE_CONSTRAINT_EXPECT);
-	if user.user_type != UserType::Admin {
+	if user.user_type == UserType::Voter {
 		return Ok(HttpResponse::Unauthorized().finish());
 	}
 	let page = new_chapter_html();
@@ -267,16 +267,13 @@ pub async fn set_chapter_new(
 		.get_user(session.user_id)
 		.await?
 		.expect(DATABASE_CONSTRAINT_EXPECT);
-	if user.user_type != UserType::Admin {
+	if user.user_type == UserType::Voter {
 		return Ok(HttpResponse::Unauthorized().finish());
 	}
 	let chapter_data = serde_urlencoded::from_str::<ChapterEdit>(&body)?;
-	let chapter = db.insert_chapter().await?;
-	let chapter = db
-		.insert_chapter_revision(chapter_data, user.id, chapter.id)
-		.await?;
+	let chapter = db.insert_chapter(chapter_data, user).await?;
 	Ok(HttpResponse::SeeOther()
-		.append_header(("Location", format!("/chapters/{}", chapter.id)))
+		.append_header(("Location", format!("/chapters/{}", chapter.meta.id)))
 		.finish())
 }
 
@@ -289,7 +286,7 @@ pub async fn get_chapter_edit(
 		.get_user(session.user_id)
 		.await?
 		.expect(DATABASE_CONSTRAINT_EXPECT);
-	if user.user_type != UserType::Admin {
+	if user.user_type == UserType::Voter {
 		return Ok(HttpResponse::Unauthorized().finish());
 	}
 	let chapter = db.get_chapter(id).await?;
@@ -316,7 +313,7 @@ pub async fn set_chapter_edit(
 		.get_user(session.user_id)
 		.await?
 		.expect(DATABASE_CONSTRAINT_EXPECT);
-	if user.user_type != UserType::Admin {
+	if user.user_type == UserType::Voter {
 		return Ok(HttpResponse::Unauthorized().finish());
 	}
 	let chapter_rev = serde_urlencoded::from_str::<ChapterEdit>(&body)?;
