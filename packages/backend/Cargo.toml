@@ -19,5 +19,5 @@ rand-chacha = { workspace = true }
 reqwest = { workspace = true }
 serde = { workspace = true }
 serde-json = { workspace = true }
-serde_urlencoded = { workspace = true }
+serde-urlencoded = { workspace = true }
 sqlx = { workspace = true }
