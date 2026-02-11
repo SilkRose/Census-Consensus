@@ -1,5 +1,5 @@
 use chrono::{DateTime, Utc};
-use pony::structs::option_string;
+use pony::{smart_map::SmartMap, structs::option_string};
 use serde::{Deserialize, Serialize};
 use sqlx::Type;
 
@@ -74,8 +74,6 @@ pub struct Chapter {
 	pub minutes_left: Option<i32>,
 	pub fimfic_ch_id: Option<i32>,
 	pub chapter_order: Option<i32>,
-	pub last_edit: DateTime<Utc>,
-	pub date_created: DateTime<Utc>,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -90,17 +88,21 @@ pub struct ChapterRevision {
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct ChapterDatum {
+pub struct ChapterTable {
 	pub meta: Chapter,
-	pub data: ChapterRevision,
-	pub user: User,
+	pub revisions: i64,
+	pub questions: i64,
+	pub first_data: ChapterRevision,
+	pub last_data: ChapterRevision,
+	pub first_user: User,
+	pub last_user: User,
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct ChapterDatums {
+#[derive(Clone, Debug)]
+pub struct ChapterData {
 	pub meta: Chapter,
 	pub data: Vec<ChapterRevision>,
-	pub user: Vec<User>,
+	pub users: SmartMap<u32, User>,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]

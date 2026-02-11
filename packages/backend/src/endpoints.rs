@@ -5,7 +5,7 @@ use crate::html_templates::{
 	ban_user_html, chapters_html, edit_chapter_html, new_chapter_html, sessions_html,
 	update_user_info_html, update_user_role_html,
 };
-use crate::structs::{ChapterEdit, UserType};
+use crate::structs::{ChapterEdit, ChapterTable, UserType};
 use crate::utility::redirect;
 use crate::{FimficCfg, HttpClient};
 use actix_web::web::{Path, ThinData};
@@ -229,14 +229,37 @@ pub async fn get_chapters(
 		.await
 		.expect(DATABASE_CONSTRAINT_EXPECT);
 	let mut data = vec![];
-	for chapter in &chapters {
-		let datum = db
-			.get_chapter_revision(chapter.id)
+	for chapter in chapters {
+		let last_data = db
+			.get_latest_chapter_revision(chapter.id)
 			.await?
 			.expect(DATABASE_CONSTRAINT_EXPECT);
-		data.push(datum);
+		let first_data = db
+			.get_latest_chapter_revision(chapter.id)
+			.await?
+			.expect(DATABASE_CONSTRAINT_EXPECT);
+		let last_user = db
+			.get_user(last_data.created_by)
+			.await?
+			.expect(DATABASE_CONSTRAINT_EXPECT);
+		let first_user = db
+			.get_user(first_data.created_by)
+			.await?
+			.expect(DATABASE_CONSTRAINT_EXPECT);
+		let revisions = db.get_chapter_revisions_count_by_id(chapter.id).await?;
+		let questions = db.get_question_count_by_chapter(chapter.id).await?;
+		let table_data = ChapterTable {
+			meta: chapter,
+			revisions,
+			questions,
+			first_data,
+			last_data,
+			first_user,
+			last_user,
+		};
+		data.push(table_data);
 	}
-	let page = chapters_html(chapters, data, admin);
+	let page = chapters_html(data, admin);
 	Ok(HttpResponse::Ok()
 		.content_type("text/html; charset=utf-8")
 		.body(page))
@@ -273,7 +296,7 @@ pub async fn set_chapter_new(
 	let chapter_data = serde_urlencoded::from_str::<ChapterEdit>(&body)?;
 	let chapter = db.insert_chapter(chapter_data, user).await?;
 	Ok(HttpResponse::SeeOther()
-		.append_header(("Location", format!("/chapters/{}", chapter.meta.id)))
+		.append_header(("Location", format!("/chapters/{}", chapter.id)))
 		.finish())
 }
 

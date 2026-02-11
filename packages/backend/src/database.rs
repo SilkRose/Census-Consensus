@@ -1,7 +1,7 @@
 use crate::error::Result;
 use crate::structs::{
-	BannedUser, Chapter, ChapterDatum, ChapterEdit, ChapterRevision, Question, QuestionType,
-	QuestionWriting, Session, StoryUpdate, User, UserType, Vote, WritingEdit,
+	BannedUser, Chapter, ChapterEdit, ChapterRevision, Question, QuestionType, QuestionWriting,
+	Session, StoryUpdate, User, UserType, Vote, WritingEdit,
 };
 use anyhow::Context as _;
 use chrono::{DateTime, Utc};
@@ -41,13 +41,12 @@ impl Db {
 		Ok(DbTransaction { tx })
 	}
 
-	pub async fn insert_chapter(&mut self, data: ChapterEdit, user: User) -> Result<ChapterDatum> {
+	pub async fn insert_chapter(&mut self, data: ChapterEdit, user: User) -> Result<Chapter> {
 		let mut tx = self.transaction().await?;
 		let meta = tx.create_chapter().await?;
-		let data = tx.insert_chapter_revision(data, user.id, meta.id).await?;
+		tx.insert_chapter_revision(data, user.id, meta.id).await?;
 		tx.commit().await?;
-		let res = ChapterDatum { meta, data, user };
-		Ok(res)
+		Ok(meta)
 	}
 
 	pub async fn swap_chapters_by_order(
@@ -510,6 +509,17 @@ pub trait DbExecutor {
 		.context(SELECT_ERROR)?)
 	}
 
+	async fn get_chapter_revisions_count_by_id(&mut self, id: i32) -> Result<i64> {
+		Ok(sqlx::query!(
+			"SELECT count(*) FROM Chapter_revisions WHERE chapter_id = $1;",
+			id
+		)
+		.fetch_one(self.executor())
+		.await?
+		.count
+		.context(SELECT_ERROR)?)
+	}
+
 	async fn get_chapter_revisions_count(&mut self) -> Result<i64> {
 		Ok(sqlx::query!("SELECT count(*) FROM Chapter_revisions;")
 			.fetch_one(self.executor())
@@ -541,8 +551,7 @@ pub trait DbExecutor {
 			Chapter,
 			"INSERT INTO Chapters DEFAULT VALUES
 			RETURNING
-				id, vote_duration, minutes_left, fimfic_ch_id,
-				chapter_order, last_edit, date_created;",
+				id, vote_duration, minutes_left, fimfic_ch_id, chapter_order;",
 		)
 		.fetch_one(self.executor())
 		.await
@@ -553,8 +562,7 @@ pub trait DbExecutor {
 		Ok(sqlx::query_as!(
 			Chapter,
 			"SELECT
-				id, vote_duration, minutes_left, fimfic_ch_id,
-				chapter_order, last_edit, date_created
+				id, vote_duration, minutes_left, fimfic_ch_id, chapter_order
 			FROM Chapters WHERE id = $1 LIMIT 1;",
 			id,
 		)
@@ -567,8 +575,7 @@ pub trait DbExecutor {
 		Ok(sqlx::query_as!(
 			Chapter,
 			"SELECT
-				id, vote_duration, minutes_left, fimfic_ch_id,
-				chapter_order, last_edit, date_created
+				id, vote_duration, minutes_left, fimfic_ch_id, chapter_order
 			FROM Chapters WHERE chapter_order = $1 LIMIT 1;",
 			order,
 		)
@@ -581,8 +588,7 @@ pub trait DbExecutor {
 		Ok(sqlx::query_as!(
 			Chapter,
 			"SELECT
-				id, vote_duration, minutes_left, fimfic_ch_id,
-				chapter_order, last_edit, date_created
+				id, vote_duration, minutes_left, fimfic_ch_id, chapter_order
 			FROM Chapters
 			WHERE chapter_order > $1
 			ORDER BY chapter_order;",
@@ -597,8 +603,7 @@ pub trait DbExecutor {
 		Ok(sqlx::query_as!(
 			Chapter,
 			"SELECT
-				id, vote_duration, minutes_left, fimfic_ch_id,
-				chapter_order, last_edit, date_created
+				id, vote_duration, minutes_left, fimfic_ch_id, chapter_order
 			FROM Chapters
 			ORDER BY chapter_order NULLS LAST, id;",
 		)
