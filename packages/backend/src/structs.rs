@@ -22,7 +22,7 @@ impl UserType {
 	}
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize, Type)]
+#[derive(Clone, Debug, Deserialize, Serialize, Type, Eq, Hash, PartialEq)]
 #[sqlx(type_name = "question_type", rename_all = "snake_case")]
 pub enum QuestionType {
 	MultipleChoice,
@@ -74,6 +74,7 @@ pub struct Chapter {
 	pub minutes_left: Option<i32>,
 	pub fimfic_ch_id: Option<i32>,
 	pub chapter_order: Option<i32>,
+	pub last_edit: DateTime<Utc>,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -106,44 +107,57 @@ pub struct ChapterData {
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct WritingEdit {
+pub struct QuestionEdit {
 	pub question_text: String,
+	pub question_type: QuestionType,
+	pub asked_by: String,
+	pub response_percent: f64,
 	#[serde(deserialize_with = "option_string")]
 	pub option_writing: Option<String>,
 	#[serde(deserialize_with = "option_string")]
 	pub result_writing: Option<String>,
-	pub asked_by: String,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct QuestionEdit {
-	pub r#type: QuestionType,
+pub struct QuestionRevision {
+	pub id: i32,
+	pub question_text: String,
+	pub question_type: QuestionType,
+	pub asked_by: String,
 	pub response_percent: f64,
-	pub latest_writing: i32,
+	pub option_writing: Option<String>,
+	pub result_writing: Option<String>,
+	pub question_id: i32,
+	pub created_by: i32,
+	pub date_created: DateTime<Utc>,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Question {
 	pub id: i32,
-	pub r#type: QuestionType,
-	pub response_percent: f64,
-	pub created_by: i32,
 	pub claimed_by: Option<i32>,
 	pub chapter_id: Option<i32>,
 	pub chapter_order: Option<i32>,
-	pub date_created: DateTime<Utc>,
+	pub last_edit: DateTime<Utc>,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct QuestionWriting {
-	pub id: i32,
-	pub question_text: String,
-	pub option_writing: Option<String>,
-	pub result_writing: Option<String>,
-	pub asked_by: String,
-	pub created_by: i32,
-	pub question_id: i32,
-	pub date_created: DateTime<Utc>,
+pub struct QuestionTable {
+	pub meta: Question,
+	pub revisions: i64,
+	pub options: i64,
+	pub outcomes: i64,
+	pub first_data: QuestionRevision,
+	pub last_data: QuestionRevision,
+	pub first_user: User,
+	pub last_user: User,
+}
+
+#[derive(Clone, Debug)]
+pub struct QuestionData {
+	pub meta: Question,
+	pub data: Vec<QuestionRevision>,
+	pub users: SmartMap<i32, User>,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]

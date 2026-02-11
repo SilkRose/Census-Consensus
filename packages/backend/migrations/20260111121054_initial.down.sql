@@ -1,6 +1,6 @@
 DROP TABLE IF EXISTS Story_updates;
 DROP TABLE IF EXISTS Votes;
-DROP TABLE IF EXISTS Question_writings;
+DROP TABLE IF EXISTS Question_revisions;
 DROP TABLE IF EXISTS Questions;
 DROP TABLE IF EXISTS Chapter_revisions;
 DROP TABLE IF EXISTS Chapters;

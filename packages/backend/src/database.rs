@@ -1,7 +1,7 @@
 use crate::error::Result;
 use crate::structs::{
-	BannedUser, Chapter, ChapterEdit, ChapterRevision, Question, QuestionType, QuestionWriting,
-	Session, StoryUpdate, User, UserType, Vote, WritingEdit,
+	BannedUser, Chapter, ChapterEdit, ChapterRevision, Question, QuestionEdit, QuestionRevision,
+	QuestionType, Session, StoryUpdate, User, UserType, Vote,
 };
 use anyhow::Context as _;
 use chrono::{DateTime, Utc};
@@ -569,7 +569,7 @@ pub trait DbExecutor {
 			Chapter,
 			"INSERT INTO Chapters DEFAULT VALUES
 			RETURNING
-				id, vote_duration, minutes_left, fimfic_ch_id, chapter_order;",
+				id, vote_duration, minutes_left, fimfic_ch_id, chapter_order, last_edit;",
 		)
 		.fetch_one(self.executor())
 		.await
@@ -580,7 +580,7 @@ pub trait DbExecutor {
 		Ok(sqlx::query_as!(
 			Chapter,
 			"SELECT
-				id, vote_duration, minutes_left, fimfic_ch_id, chapter_order
+				id, vote_duration, minutes_left, fimfic_ch_id, chapter_order, last_edit
 			FROM Chapters WHERE id = $1 LIMIT 1;",
 			id,
 		)
@@ -593,7 +593,7 @@ pub trait DbExecutor {
 		Ok(sqlx::query_as!(
 			Chapter,
 			"SELECT
-				id, vote_duration, minutes_left, fimfic_ch_id, chapter_order
+				id, vote_duration, minutes_left, fimfic_ch_id, chapter_order, last_edit
 			FROM Chapters WHERE chapter_order = $1 LIMIT 1;",
 			order,
 		)
@@ -606,7 +606,7 @@ pub trait DbExecutor {
 		Ok(sqlx::query_as!(
 			Chapter,
 			"SELECT
-				id, vote_duration, minutes_left, fimfic_ch_id, chapter_order
+				id, vote_duration, minutes_left, fimfic_ch_id, chapter_order, last_edit
 			FROM Chapters
 			WHERE chapter_order > $1
 			ORDER BY chapter_order;",
@@ -621,7 +621,7 @@ pub trait DbExecutor {
 		Ok(sqlx::query_as!(
 			Chapter,
 			"SELECT
-				id, vote_duration, minutes_left, fimfic_ch_id, chapter_order
+				id, vote_duration, minutes_left, fimfic_ch_id, chapter_order, last_edit
 			FROM Chapters
 			ORDER BY chapter_order NULLS LAST, id;",
 		)
@@ -730,38 +730,40 @@ pub trait DbExecutor {
 			.rows_affected())
 	}
 
-	async fn insert_question_writing(
-		&mut self, edit: WritingEdit, creator_id: i32, question_id: i32,
-	) -> Result<QuestionWriting> {
+	async fn insert_question_revision(
+		&mut self, edit: QuestionEdit, question_id: i32, creator_id: i32,
+	) -> Result<QuestionRevision> {
 		Ok(sqlx::query_as!(
-			QuestionWriting,
-			"INSERT INTO Question_writings
-				(question_text, option_writing, result_writing,
-				asked_by, created_by, question_id)
+			QuestionRevision,
+			r#"INSERT INTO Question_revisions
+				(question_text, type, asked_by, response_percent,
+				option_writing, result_writing, question_id, created_by)
 			VALUES
-				($1, $2, $3, $4, $5, $6)
+				($1, $2, $3, $4, $5, $6, $7, $8)
 			RETURNING
-				id, question_text, option_writing, result_writing,
-				asked_by, created_by, question_id, date_created;",
+				id, question_text, type AS "question_type: QuestionType", asked_by, response_percent,
+				option_writing, result_writing, question_id, created_by, date_created;"#,
 			edit.question_text,
+			edit.question_type as _,
+			edit.asked_by,
+			edit.response_percent,
 			edit.option_writing,
 			edit.result_writing,
-			edit.asked_by,
+			question_id,
 			creator_id,
-			question_id
 		)
 		.fetch_one(self.executor())
 		.await
 		.context(INSERT_ERROR)?)
 	}
 
-	async fn get_question_writing(&mut self, id: i32) -> Result<Option<QuestionWriting>> {
+	async fn get_question_revision(&mut self, id: i32) -> Result<Option<QuestionRevision>> {
 		Ok(sqlx::query_as!(
-			QuestionWriting,
-			"SELECT
-				id, question_text, option_writing, result_writing,
-				asked_by, created_by, question_id, date_created
-			FROM Question_writings WHERE id = $1 LIMIT 1;",
+			QuestionRevision,
+			r#"SELECT
+				id, question_text, type AS "question_type: QuestionType", asked_by, response_percent,
+				option_writing, result_writing, question_id, created_by, date_created
+			FROM Question_revisions WHERE id = $1 LIMIT 1;"#,
 			id,
 		)
 		.fetch_optional(self.executor())
@@ -769,21 +771,21 @@ pub trait DbExecutor {
 		.context(SELECT_ERROR)?)
 	}
 
-	async fn get_all_question_writings(&mut self) -> Result<Vec<QuestionWriting>> {
+	async fn get_all_question_revisions(&mut self) -> Result<Vec<QuestionRevision>> {
 		Ok(sqlx::query_as!(
-			QuestionWriting,
-			"SELECT
-				id, question_text, option_writing, result_writing,
-				asked_by, created_by, question_id, date_created
-			FROM Question_writings;",
+			QuestionRevision,
+			r#"SELECT
+				id, question_text, type AS "question_type: QuestionType", asked_by, response_percent,
+				option_writing, result_writing, question_id, created_by, date_created
+			FROM Question_revisions;"#,
 		)
 		.fetch_all(self.executor())
 		.await
 		.context(SELECT_ERROR)?)
 	}
 
-	async fn get_question_writings_count(&mut self) -> Result<i64> {
-		Ok(sqlx::query!("SELECT count(*) FROM Question_writings;")
+	async fn get_question_revisions_count(&mut self) -> Result<i64> {
+		Ok(sqlx::query!("SELECT count(*) FROM Question_revisions;")
 			.fetch_one(self.executor())
 			.await?
 			.count
@@ -792,7 +794,7 @@ pub trait DbExecutor {
 
 	async fn delete_question_writing(&mut self, id: i32) -> Result<u64> {
 		Ok(
-			sqlx::query!("DELETE FROM Question_writings WHERE id = $1;", id)
+			sqlx::query!("DELETE FROM Question_revisions WHERE id = $1;", id)
 				.execute(self.executor())
 				.await
 				.context(DELETE_ERROR)?
@@ -800,30 +802,23 @@ pub trait DbExecutor {
 		)
 	}
 
-	async fn delete_all_question_writings(&mut self) -> Result<u64> {
-		Ok(sqlx::query!("DELETE FROM Question_writings;")
+	async fn delete_all_question_revisions(&mut self) -> Result<u64> {
+		Ok(sqlx::query!("DELETE FROM Question_revisions;")
 			.execute(self.executor())
 			.await
 			.context(DELETE_ERROR)?
 			.rows_affected())
 	}
 
-	async fn insert_question(
-		&mut self, question_type: QuestionType, percent: f64, creator_id: i32,
-		claiment_id: Option<i32>,
-	) -> Result<Question> {
+	async fn insert_question(&mut self, claiment_id: Option<i32>) -> Result<Question> {
 		Ok(sqlx::query_as!(
 			Question,
-			r#"INSERT INTO Questions
-				(type, response_percent, created_by, claimed_by)
+			"INSERT INTO Questions
+				(claimed_by)
 			VALUES
-				($1, $2, $3, $4)
+				($1)
 			RETURNING
-				id, type AS "type: QuestionType", response_percent, created_by,
-				claimed_by, chapter_id, chapter_order, date_created;"#,
-			question_type as _,
-			percent,
-			creator_id,
+				id, claimed_by, chapter_id, chapter_order, last_edit;",
 			claiment_id
 		)
 		.fetch_one(self.executor())
@@ -834,10 +829,9 @@ pub trait DbExecutor {
 	async fn get_question(&mut self, id: i32) -> Result<Option<Question>> {
 		Ok(sqlx::query_as!(
 			Question,
-			r#"SELECT
-				id, type AS "type: QuestionType", response_percent, created_by,
-				claimed_by, chapter_id, chapter_order, date_created
-			FROM Questions WHERE id = $1 LIMIT 1;"#,
+			"SELECT
+				id, claimed_by, chapter_id, chapter_order, last_edit
+			FROM Questions WHERE id = $1 LIMIT 1;",
 			id,
 		)
 		.fetch_optional(self.executor())
@@ -848,25 +842,10 @@ pub trait DbExecutor {
 	async fn get_questions_by_chapter(&mut self, chapter_id: Option<i32>) -> Result<Vec<Question>> {
 		Ok(sqlx::query_as!(
 			Question,
-			r#"SELECT
-				id, type AS "type: QuestionType", response_percent, created_by,
-				claimed_by, chapter_id, chapter_order, date_created
-			FROM Questions WHERE chapter_id = $1;"#,
+			"SELECT
+				id, claimed_by, chapter_id, chapter_order, last_edit
+			FROM Questions WHERE chapter_id = $1;",
 			chapter_id
-		)
-		.fetch_all(self.executor())
-		.await
-		.context(SELECT_ERROR)?)
-	}
-
-	async fn get_questions_by_creator(&mut self, creator_id: i32) -> Result<Vec<Question>> {
-		Ok(sqlx::query_as!(
-			Question,
-			r#"SELECT
-				id, type AS "type: QuestionType", response_percent, created_by,
-				claimed_by, chapter_id, chapter_order, date_created
-			FROM Questions WHERE created_by = $1;"#,
-			creator_id
 		)
 		.fetch_all(self.executor())
 		.await
@@ -878,10 +857,9 @@ pub trait DbExecutor {
 	) -> Result<Vec<Question>> {
 		Ok(sqlx::query_as!(
 			Question,
-			r#"SELECT
-				id, type AS "type: QuestionType", response_percent, created_by,
-				claimed_by, chapter_id, chapter_order, date_created
-			FROM Questions WHERE claimed_by = $1;"#,
+			"SELECT
+				id, claimed_by, chapter_id, chapter_order, last_edit
+			FROM Questions WHERE claimed_by = $1;",
 			claiment_id
 		)
 		.fetch_all(self.executor())
@@ -892,10 +870,9 @@ pub trait DbExecutor {
 	async fn get_all_questions(&mut self) -> Result<Vec<Question>> {
 		Ok(sqlx::query_as!(
 			Question,
-			r#"SELECT
-				id, type AS "type: QuestionType", response_percent, created_by,
-				claimed_by, chapter_id, chapter_order, date_created
-			FROM Questions;"#,
+			"SELECT
+				id, claimed_by, chapter_id, chapter_order, last_edit
+			FROM Questions;",
 		)
 		.fetch_all(self.executor())
 		.await
@@ -904,7 +881,7 @@ pub trait DbExecutor {
 
 	async fn get_question_count_by_chapter(&mut self, chapter_id: i32) -> Result<i64> {
 		Ok(sqlx::query!(
-			r#"SELECT count(*) FROM Questions WHERE chapter_id = $1;"#,
+			"SELECT count(*) FROM Questions WHERE chapter_id = $1;",
 			chapter_id
 		)
 		.fetch_one(self.executor())
@@ -919,21 +896,6 @@ pub trait DbExecutor {
 			.await?
 			.count
 			.context(SELECT_ERROR)?)
-	}
-
-	async fn update_question_repsonse_percent(&mut self, id: i32, percent: f64) -> Result<u64> {
-		Ok(sqlx::query!(
-			"UPDATE Questions
-			SET
-				response_percent = $2
-			WHERE id = $1;",
-			id,
-			percent
-		)
-		.execute(self.executor())
-		.await
-		.context(UPDATE_ERROR)?
-		.rows_affected())
 	}
 
 	async fn update_question_claimed_by(

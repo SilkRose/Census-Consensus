@@ -69,19 +69,10 @@ CREATE TABLE IF NOT EXISTS Chapter_revisions (
 
 CREATE TABLE IF NOT EXISTS Questions (
 	id               serial           NOT NULL PRIMARY KEY,
-	type             question_type    NOT NULL,
-	response_percent double precision NOT NULL,
-	created_by       integer          NOT NULL,
 	claimed_by       integer          NULL,
 	chapter_id       integer          NULL,
 	chapter_order    integer          NULL,
-	date_created     timestamptz      NOT NULL DEFAULT now(),
-
-	CONSTRAINT Percent_range
-		CHECK (response_percent >= 0 AND response_percent <= 100),
-
-	CONSTRAINT Questions_created_by_Users_fk FOREIGN KEY (created_by)
-		REFERENCES Users (id) ON DELETE CASCADE,
+	last_edit     timestamptz NOT NULL DEFAULT now(),
 
 	CONSTRAINT Questions_claimed_by_Users_fk FOREIGN KEY (claimed_by)
 		REFERENCES Users (id) ON DELETE CASCADE,
@@ -93,20 +84,28 @@ CREATE TABLE IF NOT EXISTS Questions (
 		UNIQUE (chapter_id, chapter_order)
 );
 
-CREATE TABLE IF NOT EXISTS Question_writings (
-	id             serial      NOT NULL PRIMARY KEY,
-	question_text  text        NOT NULL,
-	option_writing text        NULL,
-	result_writing text        NULL,
-	asked_by       text        NOT NULL,
-	created_by     integer     NOT NULL,
-	question_id    integer     NOT NULL,
-	date_created   timestamptz NOT NULL DEFAULT now(),
+CREATE TABLE IF NOT EXISTS Question_revisions (
+	id               serial           NOT NULL PRIMARY KEY,
+	question_text    text             NOT NULL,
+	type             question_type    NOT NULL,
+	asked_by         text             NOT NULL,
+	response_percent double precision NOT NULL,
+	option_writing   text             NULL,
+	result_writing   text             NULL,
+	question_id      integer          NOT NULL,
+	created_by       integer          NOT NULL,
+	date_created     timestamptz      NOT NULL DEFAULT now(),
 
-	CONSTRAINT Writings_created_by_Users_fk FOREIGN KEY (created_by)
+	CONSTRAINT Percent_range
+		CHECK (response_percent >= 0 AND response_percent <= 100),
+
+	CONSTRAINT Questions_created_by_Users_fk FOREIGN KEY (created_by)
+		REFERENCES Users (id) ON DELETE CASCADE,
+
+	CONSTRAINT Question_revisions_created_by_Users_fk FOREIGN KEY (created_by)
 		REFERENCES Users (id) ON DELETE CASCADE,
 	
-	CONSTRAINT Writings_question_id_fk FOREIGN KEY (question_id)
+	CONSTRAINT Question_revisions_question_id_fk FOREIGN KEY (question_id)
 		REFERENCES Questions (id) ON DELETE CASCADE
 );
 
