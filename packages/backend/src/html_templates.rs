@@ -460,20 +460,22 @@ pub fn chapters_html(chapters: Vec<ChapterTable>, admin: bool) -> String {
 						th { "Chapter" br; "Number" } // done
 						th { "Vote" br; "Duration" } // done
 						th { "Minutes" br; "Left" } // done
-						th { "Questions" }
+						th { "Questions" } // done
 						th { "Fimfic" br; "Ch ID" } // done
 						th { "Intro" br; "Words" } // done
 						th { "Outro" br; "Words" } // done
-						th { "Revisions" }
-						th { "Edit" } // done
+						th { "Revisions" } // done
 						th { "Last" br; "Edit" } // done
+						th { "Last" br; "Revision" } // done
 						th { "Created" } // done
+						th { "Edit" } // done
 					}
 					@let mut prev_published: Option<bool> = None;
 					@for chapter in chapters.iter() {
 						(chapter_table_row(chapter, &mut prev_published, admin))
 					}
 				}
+				(button_link("New Chapter", "/chapters/new"))
 			};
 		};
 	}
@@ -545,6 +547,7 @@ fn chapter_table_row(
 				(chapter.revisions)
 				button onclick = (format!("window.location.href='/chapters/{}/revisions';", chapter.meta.id)) { "View" }
 			}
+			td { (chapter.meta.last_edit.format("%d/%m/%Y %H:%M")) }
 			td {
 				(chapter.last_data.date_created.format("%d/%m/%Y %H:%M")) br;
 				@if let Some(pfp_url) = &chapter.last_user.pfp_url {

@@ -642,7 +642,8 @@ pub trait DbExecutor {
 		Ok(sqlx::query!(
 			"UPDATE Chapters
 			SET
-				vote_duration = $2
+				vote_duration = $2,
+				last_edit = now()
 			WHERE id = $1;",
 			id,
 			duration
@@ -657,7 +658,8 @@ pub trait DbExecutor {
 		Ok(sqlx::query!(
 			"UPDATE Chapters
 			SET
-				minutes_left = $2
+				minutes_left = $2,
+				last_edit = now()
 			WHERE id = $1;",
 			id,
 			minutes
@@ -672,7 +674,8 @@ pub trait DbExecutor {
 		Ok(sqlx::query!(
 			"UPDATE Chapters
 			SET
-				fimfic_ch_id = $2
+				fimfic_ch_id = $2,
+				last_edit = now()
 			WHERE id = $1;",
 			id,
 			fimfic_id
