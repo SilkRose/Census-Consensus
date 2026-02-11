@@ -1,16 +1,17 @@
 use crate::auth::SessionInfo;
 use crate::database::*;
-use crate::html_templates::user_feedback_html;
 use crate::html_templates::{
 	ban_user_html, chapters_html, edit_chapter_html, new_chapter_html, sessions_html,
 	update_user_info_html, update_user_role_html,
 };
-use crate::structs::{ChapterEdit, ChapterTable, UserType};
+use crate::html_templates::{chapter_history_html, user_feedback_html};
+use crate::structs::{ChapterData, ChapterEdit, ChapterTable, UserType};
 use crate::utility::redirect;
 use crate::{FimficCfg, HttpClient};
 use actix_web::web::{Path, ThinData};
 use actix_web::{HttpRequest, HttpResponse, Responder, get, post};
 use chrono::Utc;
+use pony::smart_map::SmartMap;
 use std::collections::HashMap;
 use std::time::Duration;
 
@@ -464,4 +465,40 @@ pub async fn set_chapter_minutes_left_move(
 	Ok(HttpResponse::SeeOther()
 		.append_header(("Location", "/chapters"))
 		.finish())
+}
+
+#[get("/chapters/{id}/revisions")]
+pub async fn get_chapter_revisions(
+	path: Path<i32>, mut db: ThinData<Db>, session: SessionInfo,
+) -> actix_web::Result<impl Responder> {
+	let id = path.into_inner();
+	let user = db
+		.get_user(session.user_id)
+		.await?
+		.expect(DATABASE_CONSTRAINT_EXPECT);
+	if user.user_type == UserType::Voter {
+		return Ok(HttpResponse::Unauthorized().finish());
+	}
+	let chapter = db.get_chapter(id).await?;
+	if chapter.is_none() {
+		return Ok(HttpResponse::BadRequest().finish());
+	}
+	let revisions = db.get_all_chapter_revisions_by_chapter(id).await?;
+	let mut users = SmartMap::default();
+	for revison in &revisions {
+		let user = db
+			.get_user(revison.created_by)
+			.await?
+			.expect(DATABASE_CONSTRAINT_EXPECT);
+		users.insert(revison.id, user);
+	}
+	let chapter_data = ChapterData {
+		meta: chapter.expect("Earlier check means this is always present."),
+		data: revisions,
+		users,
+	};
+	let page = chapter_history_html(chapter_data);
+	Ok(HttpResponse::Ok()
+		.content_type("text/html; charset=utf-8")
+		.body(page))
 }

@@ -496,6 +496,24 @@ pub trait DbExecutor {
 		.context(SELECT_ERROR)?)
 	}
 
+	async fn get_all_chapter_revisions_by_chapter(
+		&mut self, chapter_id: i32,
+	) -> Result<Vec<ChapterRevision>> {
+		Ok(sqlx::query_as!(
+			ChapterRevision,
+			"SELECT
+				id, title, intro_text, outro_text,
+				created_by, chapter_id, date_created
+			FROM Chapter_revisions
+			WHERE chapter_id = $1
+			ORDER BY date_created DESC;",
+			chapter_id
+		)
+		.fetch_all(self.executor())
+		.await
+		.context(SELECT_ERROR)?)
+	}
+
 	async fn get_all_chapter_revisions(&mut self) -> Result<Vec<ChapterRevision>> {
 		Ok(sqlx::query_as!(
 			ChapterRevision,

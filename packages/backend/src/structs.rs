@@ -3,7 +3,7 @@ use pony::{smart_map::SmartMap, structs::option_string};
 use serde::{Deserialize, Serialize};
 use sqlx::Type;
 
-#[derive(Clone, Debug, Deserialize, Serialize, Type, PartialEq, Eq)]
+#[derive(Clone, Debug, Deserialize, Serialize, Type, Eq, Hash, PartialEq)]
 #[sqlx(type_name = "user_type", rename_all = "snake_case")]
 pub enum UserType {
 	Admin,
@@ -30,7 +30,7 @@ pub enum QuestionType {
 	Scale,
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize, Eq, Hash, PartialEq)]
 pub struct User {
 	pub id: i32,
 	pub name: String,
@@ -102,7 +102,7 @@ pub struct ChapterTable {
 pub struct ChapterData {
 	pub meta: Chapter,
 	pub data: Vec<ChapterRevision>,
-	pub users: SmartMap<u32, User>,
+	pub users: SmartMap<i32, User>,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]

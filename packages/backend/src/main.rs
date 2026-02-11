@@ -1,11 +1,11 @@
 #![feature(impl_trait_in_assoc_type)]
 
 use crate::endpoints::{
-	get_ban_user, get_chapter_edit, get_chapter_new, get_chapters, get_sessions, get_update_user,
-	get_update_user_role, get_user_feedback, set_ban_user, set_chapter_edit,
-	set_chapter_minutes_left_move, set_chapter_new, set_chapter_order, set_chapter_order_move,
-	set_chapter_vote_duration_move, set_revoke_sessions, set_update_user, set_update_user_role,
-	set_user_feedback,
+	get_ban_user, get_chapter_edit, get_chapter_new, get_chapter_revisions, get_chapters,
+	get_sessions, get_update_user, get_update_user_role, get_user_feedback, set_ban_user,
+	set_chapter_edit, set_chapter_minutes_left_move, set_chapter_new, set_chapter_order,
+	set_chapter_order_move, set_chapter_vote_duration_move, set_revoke_sessions, set_update_user,
+	set_update_user_role, set_user_feedback,
 };
 use crate::structs::UserType;
 
@@ -119,6 +119,7 @@ async fn main() -> Result<()> {
 			.service(set_chapter_order_move)
 			.service(set_chapter_vote_duration_move)
 			.service(set_chapter_minutes_left_move)
+			.service(get_chapter_revisions)
 			.service(auth::dev_session)
 			.service(Files::new("/", "./target/site").index_file("index.html"))
 			.app_data(db.clone())

@@ -1,4 +1,5 @@
-use crate::structs::{Chapter, ChapterRevision, ChapterTable, Session};
+use crate::endpoints::DATABASE_CONSTRAINT_EXPECT;
+use crate::structs::{Chapter, ChapterData, ChapterRevision, ChapterTable, Session};
 use crate::utility::count_words;
 use maud::{DOCTYPE, PreEscaped, html};
 
@@ -540,7 +541,10 @@ fn chapter_table_row(
 			td { (chapter.meta.fimfic_ch_id.map_or(String::default(), |m| m.to_string())) }
 			td { (chapter.last_data.intro_text.clone().map(|text| count_words(&text)).unwrap_or_default()) }
 			td { (chapter.last_data.outro_text.clone().map(|text| count_words(&text)).unwrap_or_default()) }
-			td { (chapter.revisions) }
+			td {
+				(chapter.revisions)
+				button onclick = (format!("window.location.href='/chapters/{}/revisions';", chapter.meta.id)) { "View" }
+			}
 			td {
 				(chapter.last_data.date_created.format("%d/%m/%Y %H:%M")) br;
 				@if let Some(pfp_url) = &chapter.last_user.pfp_url {
@@ -562,20 +566,29 @@ fn chapter_table_row(
 	)
 }
 
-pub fn chapter_history_html(chapter: Chapter, data: Vec<ChapterRevision>) -> String {
+pub fn chapter_history_html(chapter: ChapterData) -> String {
 	html! {
 		(DOCTYPE) html lang = "en" {
 			body {
 				h1 { "Chapter Revisions" }
 				br;
-				@for data in data.into_iter() {
+				@for revision in chapter.data.into_iter() {
 						details {
-							summary { "Date: " (data.date_created.format("%d/%m/%Y %H:%M")) }
-							"title: " (data.title) br;
+							summary {
+								"Date: " (revision.date_created.format("%d/%m/%Y %H:%M"))
+								" By: "
+								@let user = chapter.users.get(&revision.id).expect(DATABASE_CONSTRAINT_EXPECT);
+								@if let Some(pfp_url) = &user.pfp_url {
+									img src = (format!("{pfp_url}-32")) alt = (user.name) {}
+									" - "
+								}
+								(user.name)
+							}
+							"title: " (revision.title) br;
 							"Intro:" br;
-							(data.intro_text.unwrap_or_default()) br;
-							"Intro:" br;
-							(data.outro_text.unwrap_or_default())
+							(revision.intro_text.unwrap_or_default()) br;
+							"outro:" br;
+							(revision.outro_text.unwrap_or_default())
 						}
 					}
 			};
