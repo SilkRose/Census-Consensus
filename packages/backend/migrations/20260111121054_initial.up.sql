@@ -44,6 +44,7 @@ CREATE TABLE IF NOT EXISTS Chapters (
 	minutes_left  integer     NULL,
 	fimfic_ch_id  integer     NULL,
 	chapter_order integer     NULL,
+	last_edit     timestamptz NOT NULL DEFAULT now(),
 
 	CONSTRAINT Order_unique UNIQUE (chapter_order),
 
