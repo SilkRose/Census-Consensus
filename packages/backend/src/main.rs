@@ -1,5 +1,7 @@
 #![feature(impl_trait_in_assoc_type)]
 
+use std::sync::{Arc, RwLock};
+
 use crate::endpoints::{
 	get_ban_user, get_chapter_edit, get_chapter_new, get_chapter_revisions, get_chapters,
 	get_question_new, get_sessions, get_update_user, get_update_user_role, get_user_feedback,
@@ -7,7 +9,7 @@ use crate::endpoints::{
 	set_chapter_order, set_chapter_order_move, set_chapter_vote_duration_move, set_revoke_sessions,
 	set_update_user, set_update_user_role, set_user_feedback,
 };
-use crate::structs::UserType;
+use crate::structs::{Population, UserType};
 
 pub use self::database::*;
 pub use self::error::Result;
@@ -96,6 +98,12 @@ async fn main() -> Result<()> {
 		);
 	}
 
+	let population = env_vars::population()
+		.and_then(|pop| pop.parse().ok())
+		.unwrap_or(50_240_000);
+	let population = Population { inner: population };
+	let population = Arc::new(RwLock::new(population));
+
 	let server = HttpServer::new(move || {
 		ActixApp::new()
 			.service(auth::fimfic_auth)
@@ -127,6 +135,7 @@ async fn main() -> Result<()> {
 			.app_data(fimfic.clone())
 			.app_data(http_client.clone())
 			.app_data(dev_session.clone())
+			.app_data(population.clone())
 			.wrap(Compress::default())
 	});
 

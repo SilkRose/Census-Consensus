@@ -183,3 +183,8 @@ pub struct StoryUpdate {
 	pub dislikes: i32,
 	pub date_cached: DateTime<Utc>,
 }
+
+#[repr(transparent)]
+pub struct Population {
+	pub inner: u32,
+}
