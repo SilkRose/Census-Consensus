@@ -292,6 +292,20 @@ fn input_number_required(id: &str, name: &str, min: u32, max: u32) -> PreEscaped
 	)
 }
 
+fn input_float_required(id: &str, name: &str, min: f64, max: f64, step: f64) -> PreEscaped<String> {
+	html!	(
+		input
+			id = (id)
+			type = "number"
+			name = (name)
+			inputmode = "decimal"
+			min = (min)
+			max = (max)
+			step = (step)
+			required {}
+	)
+}
+
 fn input_number_value_required(
 	id: &str, name: &str, min: u32, max: u32, value: i32,
 ) -> PreEscaped<String> {
@@ -594,6 +608,54 @@ pub fn chapter_history_html(chapter: ChapterData) -> String {
 							(revision.outro_text.unwrap_or_default())
 						}
 					}
+			};
+		};
+	}
+	.into()
+}
+
+pub fn new_question_html() -> String {
+	html! {
+		(DOCTYPE) html lang = "en" {
+			body {
+				form method = "post" action = "/questions/new" {
+					h1 { "New Question" }
+					br;
+					@let name = "question_text";
+					label for = (name) { "Question:" }
+					br;
+					(input_text_required(name, name, 8, 256))
+					br;
+					@let name = "question_type";
+					label for = (name) { "Question Type: " }
+					select name = (name) id = (name) {
+						option value = "multiple_choice" { "Multiple Choice" }
+						option value = "multi_select" { "Multi-Select" }
+						option value = "scale" { "Scale" }
+					}
+					br;
+					@let name = "response_percent";
+					label for = (name) { "Response Percentage:" }
+					br;
+					(input_float_required(name, name, 0.0, 100.0, 0.1))
+					br;
+					@let name = "asked_by";
+					label for = (name) { "Asked by:" }
+					br;
+					(input_text_required(name, name, 8, 256))
+					br;
+					@let name = "option_writing";
+					label for = (name) { "Options:" }
+					br;
+					(textarea(name, name, 1_000_000))
+					br;
+					@let name = "result_writing";
+					label for = (name) { "Result Writings:" }
+					br;
+					(textarea(name, name, 1_000_000))
+					br;
+					button type = "submit" { "Create Question" }
+				}
 			};
 		};
 	}
