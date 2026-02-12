@@ -185,6 +185,7 @@ pub struct StoryUpdate {
 }
 
 #[repr(transparent)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Population {
 	pub inner: u32,
 }

@@ -5,7 +5,7 @@ use crate::html_templates::{
 	sessions_html, update_user_info_html, update_user_role_html,
 };
 use crate::html_templates::{chapter_history_html, user_feedback_html};
-use crate::structs::{ChapterData, ChapterEdit, ChapterTable, UserType};
+use crate::structs::{ChapterData, ChapterEdit, ChapterTable, Population, UserType};
 use crate::utility::redirect;
 use crate::{FimficCfg, HttpClient};
 use actix_web::web::{Path, ThinData};
@@ -13,6 +13,7 @@ use actix_web::{HttpRequest, HttpResponse, Responder, get, post};
 use chrono::Utc;
 use pony::smart_map::SmartMap;
 use std::collections::HashMap;
+use std::sync::{Arc, RwLock};
 use std::time::Duration;
 
 pub const DATABASE_CONSTRAINT_EXPECT: &str =
@@ -501,6 +502,49 @@ pub async fn get_chapter_revisions(
 	Ok(HttpResponse::Ok()
 		.content_type("text/html; charset=utf-8")
 		.body(page))
+}
+
+#[get("/population")]
+pub async fn get_population(
+	mut db: ThinData<Db>, session: SessionInfo, population: ThinData<Arc<RwLock<Population>>>,
+) -> actix_web::Result<impl Responder> {
+	let user = db
+		.get_user(session.user_id)
+		.await?
+		.expect(DATABASE_CONSTRAINT_EXPECT);
+	if user.user_type == UserType::Voter {
+		return Ok(HttpResponse::Unauthorized().finish());
+	}
+	if let Ok(pop) = population.read() {
+		Ok(HttpResponse::Ok()
+			.content_type("text/html; charset=utf-8")
+			.body(pop.inner.to_string()))
+	} else {
+		Ok(HttpResponse::InternalServerError().finish())
+	}
+}
+
+#[get("/population/{pop}")]
+pub async fn set_population(
+	path: Path<u32>, mut db: ThinData<Db>, session: SessionInfo,
+	population: ThinData<Arc<RwLock<Population>>>,
+) -> actix_web::Result<impl Responder> {
+	let new_pop = path.into_inner();
+	let user = db
+		.get_user(session.user_id)
+		.await?
+		.expect(DATABASE_CONSTRAINT_EXPECT);
+	if user.user_type == UserType::Voter {
+		return Ok(HttpResponse::Unauthorized().finish());
+	}
+	if let Ok(mut pop) = population.write() {
+		pop.inner = new_pop;
+	} else {
+		return Ok(HttpResponse::InternalServerError().finish());
+	}
+	Ok(HttpResponse::SeeOther()
+		.append_header(("Location", "/population"))
+		.finish())
 }
 
 #[get("/questions/new")]
