@@ -178,289 +178,6 @@ pub fn edit_chapter_html(chapter: Chapter, data: ChapterRevision) -> String {
 	.into()
 }
 
-// HTML components go below this comment:
-
-fn input_text(id: &str, name: &str, min: u32, max: u32) -> PreEscaped<String> {
-	html!	(
-		input
-			id = (id)
-			type = "text"
-			name = (name)
-			minlength = (min)
-			maxlength = (max)
-			{}
-	)
-}
-
-fn input_text_value(id: &str, name: &str, min: u32, max: u32, value: &str) -> PreEscaped<String> {
-	html!	(
-		input
-			id = (id)
-			type = "text"
-			name = (name)
-			minlength = (min)
-			maxlength = (max)
-			value = (value)
-			{}
-	)
-}
-
-fn input_text_required(id: &str, name: &str, min: u32, max: u32) -> PreEscaped<String> {
-	html!	(
-		input
-			id = (id)
-			type = "text"
-			name = (name)
-			minlength = (min)
-			maxlength = (max)
-			required {}
-	)
-}
-
-fn input_text_value_required(
-	id: &str, name: &str, min: u32, max: u32, value: &str,
-) -> PreEscaped<String> {
-	html!	(
-		input
-			id = (id)
-			type = "text"
-			name = (name)
-			minlength = (min)
-			maxlength = (max)
-			value = (value)
-			required {}
-	)
-}
-
-fn input_number(id: &str, name: &str, min: u32, max: u32) -> PreEscaped<String> {
-	html!	(
-		input
-			id = (id)
-			type = "number"
-			name = (name)
-			inputmode = "numeric"
-			pattern = r"\d*"
-			min = (min)
-			max = (max)
-			{}
-	)
-}
-
-fn input_number_value(id: &str, name: &str, min: u32, max: u32, value: i32) -> PreEscaped<String> {
-	html!	(
-		input
-			id = (id)
-			type = "number"
-			name = (name)
-			inputmode = "numeric"
-			pattern = r"\d*"
-			min = (min)
-			max = (max)
-			value = (value)
-			{}
-	)
-}
-
-fn input_number_value_option(
-	id: &str, name: &str, min: u32, max: u32, value: Option<i32>,
-) -> PreEscaped<String> {
-	html!	(
-		input
-			id = (id)
-			type = "number"
-			name = (name)
-			inputmode = "numeric"
-			pattern = r"\d*"
-			min = (min)
-			max = (max)
-			value = (value.map_or(String::default(), |v| v.to_string()))
-			{}
-	)
-}
-
-fn input_number_required(id: &str, name: &str, min: u32, max: u32) -> PreEscaped<String> {
-	html!	(
-		input
-			id = (id)
-			type = "number"
-			name = (name)
-			inputmode = "numeric"
-			pattern = r"\d*"
-			min = (min)
-			max = (max)
-			required {}
-	)
-}
-
-fn input_float_required(id: &str, name: &str, min: f64, max: f64, step: f64) -> PreEscaped<String> {
-	html!	(
-		input
-			id = (id)
-			type = "number"
-			name = (name)
-			inputmode = "decimal"
-			min = (min)
-			max = (max)
-			step = (step)
-			required {}
-	)
-}
-
-fn input_number_value_required(
-	id: &str, name: &str, min: u32, max: u32, value: i32,
-) -> PreEscaped<String> {
-	html!	(
-		input
-			id = (id)
-			type = "number"
-			name = (name)
-			inputmode = "numeric"
-			pattern = r"\d*"
-			min = (min)
-			max = (max)
-			value = (value)
-			required {}
-	)
-}
-
-fn input_text_numeric(id: &str, name: &str, min: u32, max: u32) -> PreEscaped<String> {
-	html!	(
-		input
-			id = (id)
-			type = "text"
-			name = (name)
-			inputmode = "numeric"
-			pattern = r"\d*"
-			minlength = (min)
-			maxlength = (max)
-			{}
-	)
-}
-
-fn input_text_numeric_value(
-	id: &str, name: &str, min: u32, max: u32, value: &str,
-) -> PreEscaped<String> {
-	html!	(
-		input
-			id = (id)
-			type = "text"
-			name = (name)
-			inputmode = "numeric"
-			pattern = r"\d*"
-			minlength = (min)
-			maxlength = (max)
-			value = (value)
-			{}
-	)
-}
-
-fn input_text_numeric_required(id: &str, name: &str, min: u32, max: u32) -> PreEscaped<String> {
-	html!	(
-		input
-			id = (id)
-			type = "text"
-			name = (name)
-			inputmode = "numeric"
-			pattern = r"\d*"
-			minlength = (min)
-			maxlength = (max)
-			required {}
-	)
-}
-
-fn input_text_numeric_value_required(
-	id: &str, name: &str, min: u32, max: u32, value: &str,
-) -> PreEscaped<String> {
-	html!	(
-		input
-			id = (id)
-			type = "text"
-			name = (name)
-			inputmode = "numeric"
-			pattern = r"\d*"
-			minlength = (min)
-			maxlength = (max)
-			value = (value)
-			required {}
-	)
-}
-
-fn textarea(id: &str, name: &str, max: u32) -> PreEscaped<String> {
-	html!	(
-		textarea
-			id = (id)
-			type = "text"
-			name = (name)
-			maxlength = (max)
-			{}
-	)
-}
-
-fn textarea_value(id: &str, name: &str, max: u32, value: &str) -> PreEscaped<String> {
-	html!	(
-		textarea
-			id = (id)
-			type = "text"
-			name = (name)
-			maxlength = (max)
-			{ (value) }
-	)
-}
-
-fn textarea_required(id: &str, name: &str, min: u32, max: u32) -> PreEscaped<String> {
-	html!	(
-		textarea
-			id = (id)
-			type = "text"
-			name = (name)
-			minlength = (min)
-			maxlength = (max)
-			required {}
-	)
-}
-
-fn textarea_value_required(
-	id: &str, name: &str, min: u32, max: u32, value: &str,
-) -> PreEscaped<String> {
-	html!	(
-		textarea
-			id = (id)
-			type = "text"
-			name = (name)
-			minlength = (min)
-			maxlength = (max)
-			required
-			{ (value) }
-	)
-}
-
-fn button_link(text: &str, endpoint: &str) -> PreEscaped<String> {
-	html! (
-		button onclick = (format!("window.location.href='{endpoint}';")) { (text) }
-	)
-}
-
-fn button_disabled(text: &str) -> PreEscaped<String> {
-	html! (
-		button disabled { (text) }
-	)
-}
-
-fn session_table_row(session: &Session, num: usize) -> PreEscaped<String> {
-	html! (
-		tr {
-			td { input type = "checkbox" id = (num) name = (num) value = (session.token) {} }
-			@if num == 0 {
-				td { b { "(Active) " } (session.user_agent) }
-			} @else {
-				td { (session.user_agent) }
-			}
-			td { (session.date_created.format("%d/%m/%Y %H:%M")) }
-			td { (session.last_seen.format("%d/%m/%Y %H:%M")) }
-		}
-	)
-}
-
 pub fn chapters_html(chapters: Vec<ChapterTable>, admin: bool) -> String {
 	html! {
 		(DOCTYPE) html lang = "en" {
@@ -660,4 +377,122 @@ pub fn new_question_html() -> String {
 		};
 	}
 	.into()
+}
+
+// HTML components go below this comment:
+
+fn input_text_required(id: &str, name: &str, min: u32, max: u32) -> PreEscaped<String> {
+	html!	(
+		input
+			id = (id)
+			type = "text"
+			name = (name)
+			minlength = (min)
+			maxlength = (max)
+			required {}
+	)
+}
+
+fn input_text_value_required(
+	id: &str, name: &str, min: u32, max: u32, value: &str,
+) -> PreEscaped<String> {
+	html!	(
+		input
+			id = (id)
+			type = "text"
+			name = (name)
+			minlength = (min)
+			maxlength = (max)
+			value = (value)
+			required {}
+	)
+}
+
+fn input_float_required(id: &str, name: &str, min: f64, max: f64, step: f64) -> PreEscaped<String> {
+	html!	(
+		input
+			id = (id)
+			type = "number"
+			name = (name)
+			inputmode = "decimal"
+			min = (min)
+			max = (max)
+			step = (step)
+			required {}
+	)
+}
+
+fn input_text_numeric_required(id: &str, name: &str, min: u32, max: u32) -> PreEscaped<String> {
+	html!	(
+		input
+			id = (id)
+			type = "text"
+			name = (name)
+			inputmode = "numeric"
+			pattern = r"\d*"
+			minlength = (min)
+			maxlength = (max)
+			required {}
+	)
+}
+
+fn textarea(id: &str, name: &str, max: u32) -> PreEscaped<String> {
+	html!	(
+		textarea
+			id = (id)
+			type = "text"
+			name = (name)
+			maxlength = (max)
+			{}
+	)
+}
+
+fn textarea_value(id: &str, name: &str, max: u32, value: &str) -> PreEscaped<String> {
+	html!	(
+		textarea
+			id = (id)
+			type = "text"
+			name = (name)
+			maxlength = (max)
+			{ (value) }
+	)
+}
+
+fn textarea_required(id: &str, name: &str, min: u32, max: u32) -> PreEscaped<String> {
+	html!	(
+		textarea
+			id = (id)
+			type = "text"
+			name = (name)
+			minlength = (min)
+			maxlength = (max)
+			required {}
+	)
+}
+
+fn button_link(text: &str, endpoint: &str) -> PreEscaped<String> {
+	html! (
+		button onclick = (format!("window.location.href='{endpoint}';")) { (text) }
+	)
+}
+
+fn button_disabled(text: &str) -> PreEscaped<String> {
+	html! (
+		button disabled { (text) }
+	)
+}
+
+fn session_table_row(session: &Session, num: usize) -> PreEscaped<String> {
+	html! (
+		tr {
+			td { input type = "checkbox" id = (num) name = (num) value = (session.token) {} }
+			@if num == 0 {
+				td { b { "(Active) " } (session.user_agent) }
+			} @else {
+				td { (session.user_agent) }
+			}
+			td { (session.date_created.format("%d/%m/%Y %H:%M")) }
+			td { (session.last_seen.format("%d/%m/%Y %H:%M")) }
+		}
+	)
 }
