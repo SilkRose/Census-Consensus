@@ -3,17 +3,18 @@ use crate::structs::{
 	BannedUser, Chapter, ChapterEdit, ChapterRevision, Question, QuestionEdit, QuestionRevision,
 	QuestionType, Session, StoryUpdate, User, UserType, Vote,
 };
-use anyhow::Context as _;
 use chrono::{DateTime, Utc};
 use pony::fimfiction_api::story::StoryData;
 use pony::fimfiction_api::user::UserData;
 use sqlx::postgres::PgPoolOptions;
 use sqlx::{Pool, Postgres};
 
-const INSERT_ERROR: &str = "database insertion error";
-const SELECT_ERROR: &str = "database selection error";
-const UPDATE_ERROR: &str = "database updating error";
-const DELETE_ERROR: &str = "database deletion error";
+type DbErr = fn(sqlx::Error) -> String;
+const INSERT_ERR: DbErr = |err| format!("database insertion error:\n{err}");
+const SELECT_ERR: DbErr = |err| format!("database selection error:\n{err}");
+const UPDATE_ERR: DbErr = |err| format!("database updating error:\n{err}");
+const DELETE_ERR: DbErr = |err| format!("database deletion error:\n{err}");
+const COUNT_ERR: fn() -> &'static str = || "database counting error";
 
 // Going to order the database functions as followed:
 // Tables: users, tokens, banned users, chapters, questions, writings, options, votes, story updates
@@ -142,7 +143,7 @@ pub trait DbExecutor {
 		)
 		.fetch_one(self.executor())
 		.await
-		.context(INSERT_ERROR)?)
+		.map_err(INSERT_ERR)?)
 	}
 
 	async fn get_user(&mut self, id: i32) -> Result<Option<User>> {
@@ -156,7 +157,7 @@ pub trait DbExecutor {
 		)
 		.fetch_optional(self.executor())
 		.await
-		.context(SELECT_ERROR)?)
+		.map_err(SELECT_ERR)?)
 	}
 
 	async fn get_all_users(&mut self) -> Result<Vec<User>> {
@@ -169,15 +170,16 @@ pub trait DbExecutor {
 		)
 		.fetch_all(self.executor())
 		.await
-		.context(SELECT_ERROR)?)
+		.map_err(SELECT_ERR)?)
 	}
 
 	async fn get_users_count(&mut self) -> Result<i64> {
 		Ok(sqlx::query!("SELECT count(*) FROM Users;")
 			.fetch_one(self.executor())
-			.await?
+			.await
+			.map_err(SELECT_ERR)?
 			.count
-			.context(SELECT_ERROR)?)
+			.ok_or_else(COUNT_ERR)?)
 	}
 
 	async fn update_user_role(&mut self, id: i32, role: UserType) -> Result<u64> {
@@ -191,7 +193,7 @@ pub trait DbExecutor {
 		)
 		.execute(self.executor())
 		.await
-		.context(UPDATE_ERROR)?
+		.map_err(UPDATE_ERR)?
 		.rows_affected())
 	}
 
@@ -210,7 +212,7 @@ pub trait DbExecutor {
 		)
 		.execute(self.executor())
 		.await
-		.context(UPDATE_ERROR)?
+		.map_err(UPDATE_ERR)?
 		.rows_affected())
 	}
 
@@ -218,7 +220,7 @@ pub trait DbExecutor {
 		Ok(sqlx::query!("DELETE FROM Users WHERE id = $1;", id)
 			.execute(self.executor())
 			.await
-			.context(DELETE_ERROR)?
+			.map_err(DELETE_ERR)?
 			.rows_affected())
 	}
 
@@ -226,7 +228,7 @@ pub trait DbExecutor {
 		Ok(sqlx::query!("DELETE FROM Users;")
 			.execute(self.executor())
 			.await
-			.context(DELETE_ERROR)?
+			.map_err(DELETE_ERR)?
 			.rows_affected())
 	}
 
@@ -247,7 +249,7 @@ pub trait DbExecutor {
 		)
 		.fetch_one(self.executor())
 		.await
-		.context(INSERT_ERROR)?)
+		.map_err(INSERT_ERR)?)
 	}
 
 	/// Use when you need to get the session without updating the last seen time.
@@ -260,7 +262,7 @@ pub trait DbExecutor {
 		)
 		.fetch_optional(self.executor())
 		.await
-		.context(SELECT_ERROR)?)
+		.map_err(SELECT_ERR)?)
 	}
 
 	/// Use when you need to get the session and update the last seen time.
@@ -274,7 +276,7 @@ pub trait DbExecutor {
 		)
 		.fetch_optional(self.executor())
 		.await
-		.context(SELECT_ERROR)?)
+		.map_err(SELECT_ERR)?)
 	}
 
 	async fn get_all_user_sessions(&mut self, user_id: i32) -> Result<Vec<Session>> {
@@ -288,7 +290,7 @@ pub trait DbExecutor {
 		)
 		.fetch_all(self.executor())
 		.await
-		.context(SELECT_ERROR)?)
+		.map_err(SELECT_ERR)?)
 	}
 
 	async fn get_all_sessions(&mut self) -> Result<Vec<Session>> {
@@ -298,22 +300,23 @@ pub trait DbExecutor {
 		)
 		.fetch_all(self.executor())
 		.await
-		.context(SELECT_ERROR)?)
+		.map_err(SELECT_ERR)?)
 	}
 
 	async fn get_sessions_count(&mut self) -> Result<i64> {
 		Ok(sqlx::query!("SELECT count(*) FROM Tokens;")
 			.fetch_one(self.executor())
-			.await?
+			.await
+			.map_err(SELECT_ERR)?
 			.count
-			.context(SELECT_ERROR)?)
+			.ok_or_else(COUNT_ERR)?)
 	}
 
 	async fn delete_session(&mut self, token: &str) -> Result<u64> {
 		Ok(sqlx::query!("DELETE FROM Tokens WHERE token = $1;", token)
 			.execute(self.executor())
 			.await
-			.context(DELETE_ERROR)?
+			.map_err(DELETE_ERR)?
 			.rows_affected())
 	}
 
@@ -322,7 +325,7 @@ pub trait DbExecutor {
 			sqlx::query!("DELETE FROM Tokens WHERE user_id = $1;", user_id)
 				.execute(self.executor())
 				.await
-				.context(DELETE_ERROR)?
+				.map_err(DELETE_ERR)?
 				.rows_affected(),
 		)
 	}
@@ -331,7 +334,7 @@ pub trait DbExecutor {
 		Ok(sqlx::query!("DELETE FROM Tokens;")
 			.execute(self.executor())
 			.await
-			.context(DELETE_ERROR)?
+			.map_err(DELETE_ERR)?
 			.rows_affected())
 	}
 
@@ -351,7 +354,7 @@ pub trait DbExecutor {
 		)
 		.fetch_one(self.executor())
 		.await
-		.context(INSERT_ERROR)?)
+		.map_err(INSERT_ERR)?)
 	}
 
 	async fn get_banned_user(&mut self, id: i32) -> Result<Option<BannedUser>> {
@@ -367,7 +370,7 @@ pub trait DbExecutor {
 		)
 		.fetch_optional(self.executor())
 		.await
-		.context(SELECT_ERROR)?)
+		.map_err(SELECT_ERR)?)
 	}
 
 	async fn get_all_banned_users(&mut self) -> Result<Vec<BannedUser>> {
@@ -377,15 +380,16 @@ pub trait DbExecutor {
 		)
 		.fetch_all(self.executor())
 		.await
-		.context(SELECT_ERROR)?)
+		.map_err(SELECT_ERR)?)
 	}
 
 	async fn get_banned_users_count(&mut self) -> Result<i64> {
 		Ok(sqlx::query!("SELECT count(*) FROM Banned_users;")
 			.fetch_one(self.executor())
-			.await?
+			.await
+			.map_err(SELECT_ERR)?
 			.count
-			.context(SELECT_ERROR)?)
+			.ok_or_else(COUNT_ERR)?)
 	}
 
 	async fn update_banned_user_reason(&mut self, id: i32, reason: &str) -> Result<u64> {
@@ -399,7 +403,7 @@ pub trait DbExecutor {
 		)
 		.execute(self.executor())
 		.await
-		.context(UPDATE_ERROR)?
+		.map_err(UPDATE_ERR)?
 		.rows_affected())
 	}
 
@@ -407,7 +411,7 @@ pub trait DbExecutor {
 		Ok(sqlx::query!("DELETE FROM Banned_users WHERE id = $1;", id)
 			.execute(self.executor())
 			.await
-			.context(DELETE_ERROR)?
+			.map_err(DELETE_ERR)?
 			.rows_affected())
 	}
 
@@ -415,7 +419,7 @@ pub trait DbExecutor {
 		Ok(sqlx::query!("DELETE FROM Banned_users;")
 			.execute(self.executor())
 			.await
-			.context(DELETE_ERROR)?
+			.map_err(DELETE_ERR)?
 			.rows_affected())
 	}
 
@@ -439,7 +443,7 @@ pub trait DbExecutor {
 		)
 		.fetch_one(self.executor())
 		.await
-		.context(INSERT_ERROR)?)
+		.map_err(INSERT_ERR)?)
 	}
 
 	async fn get_chapter_revision(&mut self, id: i32) -> Result<Option<ChapterRevision>> {
@@ -455,7 +459,7 @@ pub trait DbExecutor {
 		)
 		.fetch_optional(self.executor())
 		.await
-		.context(SELECT_ERROR)?)
+		.map_err(SELECT_ERR)?)
 	}
 
 	async fn get_latest_chapter_revision(
@@ -474,7 +478,7 @@ pub trait DbExecutor {
 		)
 		.fetch_optional(self.executor())
 		.await
-		.context(SELECT_ERROR)?)
+		.map_err(SELECT_ERR)?)
 	}
 
 	async fn get_oldest_chapter_revision(
@@ -493,7 +497,7 @@ pub trait DbExecutor {
 		)
 		.fetch_optional(self.executor())
 		.await
-		.context(SELECT_ERROR)?)
+		.map_err(SELECT_ERR)?)
 	}
 
 	async fn get_all_chapter_revisions_by_chapter(
@@ -511,7 +515,7 @@ pub trait DbExecutor {
 		)
 		.fetch_all(self.executor())
 		.await
-		.context(SELECT_ERROR)?)
+		.map_err(SELECT_ERR)?)
 	}
 
 	async fn get_all_chapter_revisions(&mut self) -> Result<Vec<ChapterRevision>> {
@@ -524,7 +528,7 @@ pub trait DbExecutor {
 		)
 		.fetch_all(self.executor())
 		.await
-		.context(SELECT_ERROR)?)
+		.map_err(SELECT_ERR)?)
 	}
 
 	async fn get_chapter_revisions_count_by_id(&mut self, id: i32) -> Result<i64> {
@@ -533,17 +537,19 @@ pub trait DbExecutor {
 			id
 		)
 		.fetch_one(self.executor())
-		.await?
+		.await
+		.map_err(SELECT_ERR)?
 		.count
-		.context(SELECT_ERROR)?)
+		.ok_or_else(COUNT_ERR)?)
 	}
 
 	async fn get_chapter_revisions_count(&mut self) -> Result<i64> {
 		Ok(sqlx::query!("SELECT count(*) FROM Chapter_revisions;")
 			.fetch_one(self.executor())
-			.await?
+			.await
+			.map_err(SELECT_ERR)?
 			.count
-			.context(SELECT_ERROR)?)
+			.ok_or_else(COUNT_ERR)?)
 	}
 
 	async fn delete_chapter_revision(&mut self, id: i32) -> Result<u64> {
@@ -551,7 +557,7 @@ pub trait DbExecutor {
 			sqlx::query!("DELETE FROM Chapter_revisions WHERE id = $1;", id)
 				.execute(self.executor())
 				.await
-				.context(DELETE_ERROR)?
+				.map_err(DELETE_ERR)?
 				.rows_affected(),
 		)
 	}
@@ -560,7 +566,7 @@ pub trait DbExecutor {
 		Ok(sqlx::query!("DELETE FROM Chapter_revisions;")
 			.execute(self.executor())
 			.await
-			.context(DELETE_ERROR)?
+			.map_err(DELETE_ERR)?
 			.rows_affected())
 	}
 
@@ -573,7 +579,7 @@ pub trait DbExecutor {
 		)
 		.fetch_one(self.executor())
 		.await
-		.context(INSERT_ERROR)?)
+		.map_err(INSERT_ERR)?)
 	}
 
 	async fn get_chapter(&mut self, id: i32) -> Result<Option<Chapter>> {
@@ -586,7 +592,7 @@ pub trait DbExecutor {
 		)
 		.fetch_optional(self.executor())
 		.await
-		.context(SELECT_ERROR)?)
+		.map_err(SELECT_ERR)?)
 	}
 
 	async fn get_chapter_by_order(&mut self, order: i32) -> Result<Option<Chapter>> {
@@ -599,7 +605,7 @@ pub trait DbExecutor {
 		)
 		.fetch_optional(self.executor())
 		.await
-		.context(SELECT_ERROR)?)
+		.map_err(SELECT_ERR)?)
 	}
 
 	async fn get_chapters_after_order(&mut self, order: i32) -> Result<Vec<Chapter>> {
@@ -614,7 +620,7 @@ pub trait DbExecutor {
 		)
 		.fetch_all(self.executor())
 		.await
-		.context(SELECT_ERROR)?)
+		.map_err(SELECT_ERR)?)
 	}
 
 	async fn get_all_chapters(&mut self) -> Result<Vec<Chapter>> {
@@ -627,15 +633,16 @@ pub trait DbExecutor {
 		)
 		.fetch_all(self.executor())
 		.await
-		.context(SELECT_ERROR)?)
+		.map_err(SELECT_ERR)?)
 	}
 
 	async fn get_chapters_count(&mut self) -> Result<i64> {
 		Ok(sqlx::query!("SELECT count(*) FROM Chapters;")
 			.fetch_one(self.executor())
-			.await?
+			.await
+			.map_err(SELECT_ERR)?
 			.count
-			.context(SELECT_ERROR)?)
+			.ok_or_else(COUNT_ERR)?)
 	}
 
 	async fn update_chapter_vote_duration(&mut self, id: i32, duration: i32) -> Result<u64> {
@@ -650,7 +657,7 @@ pub trait DbExecutor {
 		)
 		.execute(self.executor())
 		.await
-		.context(UPDATE_ERROR)?
+		.map_err(UPDATE_ERR)?
 		.rows_affected())
 	}
 
@@ -666,7 +673,7 @@ pub trait DbExecutor {
 		)
 		.execute(self.executor())
 		.await
-		.context(UPDATE_ERROR)?
+		.map_err(UPDATE_ERR)?
 		.rows_affected())
 	}
 
@@ -682,7 +689,7 @@ pub trait DbExecutor {
 		)
 		.execute(self.executor())
 		.await
-		.context(UPDATE_ERROR)?
+		.map_err(UPDATE_ERR)?
 		.rows_affected())
 	}
 
@@ -698,7 +705,7 @@ pub trait DbExecutor {
 		)
 		.execute(self.executor())
 		.await
-		.context(UPDATE_ERROR)?
+		.map_err(UPDATE_ERR)?
 		.rows_affected())
 	}
 
@@ -713,7 +720,7 @@ pub trait DbExecutor {
 		)
 		.execute(self.executor())
 		.await
-		.context(UPDATE_ERROR)?
+		.map_err(UPDATE_ERR)?
 		.rows_affected())
 	}
 
@@ -721,7 +728,7 @@ pub trait DbExecutor {
 		Ok(sqlx::query!("DELETE FROM Chapters WHERE id = $1;", id)
 			.execute(self.executor())
 			.await
-			.context(DELETE_ERROR)?
+			.map_err(DELETE_ERR)?
 			.rows_affected())
 	}
 
@@ -729,7 +736,7 @@ pub trait DbExecutor {
 		Ok(sqlx::query!("DELETE FROM Chapters;")
 			.execute(self.executor())
 			.await
-			.context(DELETE_ERROR)?
+			.map_err(DELETE_ERR)?
 			.rows_affected())
 	}
 
@@ -757,7 +764,7 @@ pub trait DbExecutor {
 		)
 		.fetch_one(self.executor())
 		.await
-		.context(INSERT_ERROR)?)
+		.map_err(INSERT_ERR)?)
 	}
 
 	async fn get_question_revision(&mut self, id: i32) -> Result<Option<QuestionRevision>> {
@@ -771,7 +778,7 @@ pub trait DbExecutor {
 		)
 		.fetch_optional(self.executor())
 		.await
-		.context(SELECT_ERROR)?)
+		.map_err(SELECT_ERR)?)
 	}
 
 	async fn get_latest_question_revision(
@@ -790,7 +797,7 @@ pub trait DbExecutor {
 		)
 		.fetch_optional(self.executor())
 		.await
-		.context(SELECT_ERROR)?)
+		.map_err(SELECT_ERR)?)
 	}
 
 	async fn get_oldest_question_revision(
@@ -809,7 +816,7 @@ pub trait DbExecutor {
 		)
 		.fetch_optional(self.executor())
 		.await
-		.context(SELECT_ERROR)?)
+		.map_err(SELECT_ERR)?)
 	}
 
 	async fn get_all_question_revisions(&mut self) -> Result<Vec<QuestionRevision>> {
@@ -822,15 +829,16 @@ pub trait DbExecutor {
 		)
 		.fetch_all(self.executor())
 		.await
-		.context(SELECT_ERROR)?)
+		.map_err(SELECT_ERR)?)
 	}
 
 	async fn get_question_revisions_count(&mut self) -> Result<i64> {
 		Ok(sqlx::query!("SELECT count(*) FROM Question_revisions;")
 			.fetch_one(self.executor())
-			.await?
+			.await
+			.map_err(SELECT_ERR)?
 			.count
-			.context(SELECT_ERROR)?)
+			.ok_or_else(COUNT_ERR)?)
 	}
 
 	async fn delete_question_writing(&mut self, id: i32) -> Result<u64> {
@@ -838,7 +846,7 @@ pub trait DbExecutor {
 			sqlx::query!("DELETE FROM Question_revisions WHERE id = $1;", id)
 				.execute(self.executor())
 				.await
-				.context(DELETE_ERROR)?
+				.map_err(DELETE_ERR)?
 				.rows_affected(),
 		)
 	}
@@ -847,7 +855,7 @@ pub trait DbExecutor {
 		Ok(sqlx::query!("DELETE FROM Question_revisions;")
 			.execute(self.executor())
 			.await
-			.context(DELETE_ERROR)?
+			.map_err(DELETE_ERR)?
 			.rows_affected())
 	}
 
@@ -864,7 +872,7 @@ pub trait DbExecutor {
 		)
 		.fetch_one(self.executor())
 		.await
-		.context(INSERT_ERROR)?)
+		.map_err(INSERT_ERR)?)
 	}
 
 	async fn get_question(&mut self, id: i32) -> Result<Option<Question>> {
@@ -877,7 +885,7 @@ pub trait DbExecutor {
 		)
 		.fetch_optional(self.executor())
 		.await
-		.context(SELECT_ERROR)?)
+		.map_err(SELECT_ERR)?)
 	}
 
 	async fn get_questions_by_chapter(&mut self, chapter_id: Option<i32>) -> Result<Vec<Question>> {
@@ -890,7 +898,7 @@ pub trait DbExecutor {
 		)
 		.fetch_all(self.executor())
 		.await
-		.context(SELECT_ERROR)?)
+		.map_err(SELECT_ERR)?)
 	}
 
 	async fn get_questions_by_claiment(
@@ -905,7 +913,7 @@ pub trait DbExecutor {
 		)
 		.fetch_all(self.executor())
 		.await
-		.context(SELECT_ERROR)?)
+		.map_err(SELECT_ERR)?)
 	}
 
 	async fn get_all_questions(&mut self) -> Result<Vec<Question>> {
@@ -917,7 +925,7 @@ pub trait DbExecutor {
 		)
 		.fetch_all(self.executor())
 		.await
-		.context(SELECT_ERROR)?)
+		.map_err(SELECT_ERR)?)
 	}
 
 	async fn get_question_count_by_chapter(&mut self, chapter_id: i32) -> Result<i64> {
@@ -926,17 +934,19 @@ pub trait DbExecutor {
 			chapter_id
 		)
 		.fetch_one(self.executor())
-		.await?
+		.await
+		.map_err(SELECT_ERR)?
 		.count
-		.context(SELECT_ERROR)?)
+		.ok_or_else(COUNT_ERR)?)
 	}
 
 	async fn get_questions_count(&mut self) -> Result<i64> {
 		Ok(sqlx::query!("SELECT count(*) FROM Questions;")
 			.fetch_one(self.executor())
-			.await?
+			.await
+			.map_err(SELECT_ERR)?
 			.count
-			.context(SELECT_ERROR)?)
+			.ok_or_else(COUNT_ERR)?)
 	}
 
 	async fn update_question_claimed_by(
@@ -952,7 +962,7 @@ pub trait DbExecutor {
 		)
 		.execute(self.executor())
 		.await
-		.context(UPDATE_ERROR)?
+		.map_err(UPDATE_ERR)?
 		.rows_affected())
 	}
 
@@ -969,7 +979,7 @@ pub trait DbExecutor {
 		)
 		.execute(self.executor())
 		.await
-		.context(UPDATE_ERROR)?
+		.map_err(UPDATE_ERR)?
 		.rows_affected())
 	}
 
@@ -986,7 +996,7 @@ pub trait DbExecutor {
 		)
 		.execute(self.executor())
 		.await
-		.context(UPDATE_ERROR)?
+		.map_err(UPDATE_ERR)?
 		.rows_affected())
 	}
 
@@ -994,7 +1004,7 @@ pub trait DbExecutor {
 		Ok(sqlx::query!("DELETE FROM Questions WHERE id = $1;", id)
 			.execute(self.executor())
 			.await
-			.context(DELETE_ERROR)?
+			.map_err(DELETE_ERR)?
 			.rows_affected())
 	}
 
@@ -1002,7 +1012,7 @@ pub trait DbExecutor {
 		Ok(sqlx::query!("DELETE FROM Questions;")
 			.execute(self.executor())
 			.await
-			.context(DELETE_ERROR)?
+			.map_err(DELETE_ERR)?
 			.rows_affected())
 	}
 
@@ -1023,7 +1033,7 @@ pub trait DbExecutor {
 		)
 		.fetch_one(self.executor())
 		.await
-		.context(INSERT_ERROR)?)
+		.map_err(INSERT_ERR)?)
 	}
 
 	async fn get_all_votes_by_user(&mut self, user_id: i32) -> Result<Vec<Vote>> {
@@ -1037,7 +1047,7 @@ pub trait DbExecutor {
 		)
 		.fetch_all(self.executor())
 		.await
-		.context(SELECT_ERROR)?)
+		.map_err(SELECT_ERR)?)
 	}
 
 	async fn get_all_votes_by_question(&mut self, question_id: i32) -> Result<Vec<Vote>> {
@@ -1051,7 +1061,7 @@ pub trait DbExecutor {
 		)
 		.fetch_all(self.executor())
 		.await
-		.context(SELECT_ERROR)?)
+		.map_err(SELECT_ERR)?)
 	}
 
 	async fn get_all_votes_by_option(&mut self, option_id: i32) -> Result<Vec<Vote>> {
@@ -1065,7 +1075,7 @@ pub trait DbExecutor {
 		)
 		.fetch_all(self.executor())
 		.await
-		.context(SELECT_ERROR)?)
+		.map_err(SELECT_ERR)?)
 	}
 
 	async fn get_all_votes(&mut self) -> Result<Vec<Vote>> {
@@ -1075,15 +1085,16 @@ pub trait DbExecutor {
 		)
 		.fetch_all(self.executor())
 		.await
-		.context(SELECT_ERROR)?)
+		.map_err(SELECT_ERR)?)
 	}
 
 	async fn get_votes_count(&mut self) -> Result<i64> {
 		Ok(sqlx::query!("SELECT count(*) FROM Votes;")
 			.fetch_one(self.executor())
-			.await?
+			.await
+			.map_err(SELECT_ERR)?
 			.count
-			.context(SELECT_ERROR)?)
+			.ok_or_else(COUNT_ERR)?)
 	}
 
 	async fn delete_votes_by_user(&mut self, user_id: i32) -> Result<u64> {
@@ -1091,7 +1102,7 @@ pub trait DbExecutor {
 			sqlx::query!("DELETE FROM Votes WHERE voter_id = $1;", user_id)
 				.execute(self.executor())
 				.await
-				.context(DELETE_ERROR)?
+				.map_err(DELETE_ERR)?
 				.rows_affected(),
 		)
 	}
@@ -1101,7 +1112,7 @@ pub trait DbExecutor {
 			sqlx::query!("DELETE FROM Votes WHERE question_id = $1;", question_id)
 				.execute(self.executor())
 				.await
-				.context(DELETE_ERROR)?
+				.map_err(DELETE_ERR)?
 				.rows_affected(),
 		)
 	}
@@ -1111,7 +1122,7 @@ pub trait DbExecutor {
 			sqlx::query!("DELETE FROM Votes WHERE option_id = $1;", option_id)
 				.execute(self.executor())
 				.await
-				.context(DELETE_ERROR)?
+				.map_err(DELETE_ERR)?
 				.rows_affected(),
 		)
 	}
@@ -1120,7 +1131,7 @@ pub trait DbExecutor {
 		Ok(sqlx::query!("DELETE FROM Votes;")
 			.execute(self.executor())
 			.await
-			.context(DELETE_ERROR)?
+			.map_err(DELETE_ERR)?
 			.rows_affected())
 	}
 
@@ -1149,7 +1160,7 @@ pub trait DbExecutor {
 		)
 		.fetch_one(self.executor())
 		.await
-		.context(INSERT_ERROR)?)
+		.map_err(INSERT_ERR)?)
 	}
 
 	async fn get_story_updates_in_range(
@@ -1167,7 +1178,7 @@ pub trait DbExecutor {
 		)
 		.fetch_all(self.executor())
 		.await
-		.context(SELECT_ERROR)?)
+		.map_err(SELECT_ERR)?)
 	}
 
 	async fn get_all_story_updates(&mut self) -> Result<Vec<StoryUpdate>> {
@@ -1180,15 +1191,16 @@ pub trait DbExecutor {
 		)
 		.fetch_all(self.executor())
 		.await
-		.context(SELECT_ERROR)?)
+		.map_err(SELECT_ERR)?)
 	}
 
 	async fn get_story_updates_count(&mut self) -> Result<i64> {
 		Ok(sqlx::query!("SELECT count(*) FROM Story_updates;")
 			.fetch_one(self.executor())
-			.await?
+			.await
+			.map_err(SELECT_ERR)?
 			.count
-			.context(SELECT_ERROR)?)
+			.ok_or_else(COUNT_ERR)?)
 	}
 
 	async fn delete_story_update(&mut self, date_cached: DateTime<Utc>) -> Result<u64> {
@@ -1198,7 +1210,7 @@ pub trait DbExecutor {
 		)
 		.execute(self.executor())
 		.await
-		.context(DELETE_ERROR)?
+		.map_err(DELETE_ERR)?
 		.rows_affected())
 	}
 
@@ -1213,7 +1225,7 @@ pub trait DbExecutor {
 		)
 		.execute(self.executor())
 		.await
-		.context(DELETE_ERROR)?
+		.map_err(DELETE_ERR)?
 		.rows_affected())
 	}
 
@@ -1221,7 +1233,7 @@ pub trait DbExecutor {
 		Ok(sqlx::query!("DELETE FROM Story_updates;")
 			.execute(self.executor())
 			.await
-			.context(DELETE_ERROR)?
+			.map_err(DELETE_ERR)?
 			.rows_affected())
 	}
 }
