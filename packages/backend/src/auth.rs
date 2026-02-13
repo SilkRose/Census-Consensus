@@ -3,7 +3,7 @@ use crate::error::{Error, Result};
 use crate::fimfic_cfg::FimficCfg;
 use crate::http::{FimficTokenExchangeResponse, HttpClient};
 use crate::rand::{gen_auth_state, gen_auth_token};
-use crate::structs::UserType;
+use crate::structs::{User, UserType};
 use actix_web::dev::Payload;
 use actix_web::http::header::{HeaderValue, USER_AGENT};
 use actix_web::web::{Path, Query, ThinData as Data};
@@ -198,11 +198,6 @@ pub struct SessionInfo {
 	pub token: String,
 }
 
-/// Optional session info extractor (user can be logged in or not)
-pub struct MaybeSessionInfo {
-	pub session_info: Option<SessionInfo>,
-}
-
 impl FromRequest for SessionInfo {
 	type Error = Error;
 	type Future = impl Future<Output = Result<SessionInfo>>;
@@ -216,6 +211,11 @@ impl FromRequest for SessionInfo {
 			Ok(session_info)
 		}
 	}
+}
+
+/// Optional session info extractor (user can be logged in or not)
+pub struct MaybeSessionInfo {
+	pub session_info: Option<SessionInfo>,
 }
 
 impl FromRequest for MaybeSessionInfo {
@@ -237,6 +237,60 @@ impl FromRequest for MaybeSessionInfo {
 	}
 }
 
+/// Session info extractor requiring user to be logged in and an admin
+pub struct AdminSessionInfo {
+	pub session_info: SessionInfo,
+	pub user: User
+}
+
+impl FromRequest for AdminSessionInfo {
+	type Error = Error;
+	type Future = impl Future<Output = Result<AdminSessionInfo>>;
+
+	fn from_request(req: &HttpRequest, payload: &mut Payload) -> Self::Future {
+		let session_info = SessionInfo::from_request(req, payload);
+		let req = req.clone();
+
+		async move {
+			let session_info = session_info.await?;
+			let user = user_from_session_info(&req, &session_info).await?;
+
+			(matches!(user.user_type, UserType::Admin))
+				.then_some(())
+				.context("User must be an admin")?;
+
+			Ok(Self { session_info, user })
+		}
+	}
+}
+
+/// Session info extractor requiring user to be logged in and an admin or writer
+pub struct WriterSessionInfo {
+	pub session_info: SessionInfo,
+	pub user: User
+}
+
+impl FromRequest for WriterSessionInfo {
+	type Error = Error;
+	type Future = impl Future<Output = Result<WriterSessionInfo>>;
+
+	fn from_request(req: &HttpRequest, payload: &mut Payload) -> Self::Future {
+		let session_info = SessionInfo::from_request(req, payload);
+		let req = req.clone();
+
+		async move {
+			let session_info = session_info.await?;
+			let user = user_from_session_info(&req, &session_info).await?;
+
+			(matches!(user.user_type, UserType::Admin | UserType::Writer))
+				.then_some(())
+				.context("User must be an admin or a writer")?;
+
+			Ok(Self { session_info, user })
+		}
+	}
+}
+
 fn get_unverified_session_info(req: &HttpRequest) -> Option<SessionInfo> {
 	let session = cookie::try_get_session_cookie(req)?;
 	let session_info = cookie::try_get_session_info_cookie_value(req)?;
@@ -249,10 +303,8 @@ fn get_unverified_session_info(req: &HttpRequest) -> Option<SessionInfo> {
 }
 
 async fn verify_session_info(req: &HttpRequest, session_info: &SessionInfo) -> Result<()> {
-	let mut db = req
-		.app_data::<Data<Db>>()
-		.context("no ThinData<Db> found")?
-		.clone();
+	let mut db = get_db(req)?;
+
 	let db_session_info = db
 		.update_session_last_seen(&session_info.token)
 		.await?
@@ -266,6 +318,18 @@ async fn verify_session_info(req: &HttpRequest, session_info: &SessionInfo) -> R
 	}
 
 	Ok(())
+}
+
+async fn user_from_session_info(req: &HttpRequest, session_info: &SessionInfo) -> Result<User> {
+	let mut db = get_db(req)?;
+	let user = db.get_user(session_info.user_id)
+		.await?
+		.context("session for an invalid user")?;
+	Ok(user)
+}
+
+fn get_db(req: &HttpRequest) -> Result<Data<Db>> {
+	Ok(req.app_data::<Data<Db>>().context("no ThinData<Db> found")?.clone())
 }
 
 #[derive(Clone, Deserialize)]
