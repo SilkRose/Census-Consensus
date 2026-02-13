@@ -1,4 +1,4 @@
-use crate::auth::SessionInfo;
+use crate::auth::{ AdminSessionInfo, SessionInfo, WriterSessionInfo };
 use crate::database::*;
 use crate::html_templates::{
 	ban_user_html, chapters_html, edit_chapter_html, edit_question_html, new_chapter_html,
@@ -52,15 +52,8 @@ pub async fn set_update_user(
 
 #[get("/user-role")]
 pub async fn get_update_user_role(
-	mut db: ThinData<Db>, session: SessionInfo,
+	mut db: ThinData<Db>, session: AdminSessionInfo,
 ) -> actix_web::Result<impl Responder> {
-	let user = db
-		.get_user(session.user_id)
-		.await?
-		.expect(DATABASE_CONSTRAINT_EXPECT);
-	if user.user_type != UserType::Admin {
-		return Ok(HttpResponse::Unauthorized().finish());
-	}
 	let page = update_user_role_html();
 	Ok(HttpResponse::Ok()
 		.content_type("text/html; charset=utf-8")
@@ -69,15 +62,8 @@ pub async fn get_update_user_role(
 
 #[post("/user-role")]
 pub async fn set_update_user_role(
-	req: HttpRequest, body: String, mut db: ThinData<Db>, session: SessionInfo,
+	req: HttpRequest, body: String, mut db: ThinData<Db>, session: AdminSessionInfo,
 ) -> actix_web::Result<impl Responder> {
-	let user = db
-		.get_user(session.user_id)
-		.await?
-		.expect(DATABASE_CONSTRAINT_EXPECT);
-	if user.user_type != UserType::Admin {
-		return Ok(HttpResponse::Unauthorized().finish());
-	}
 	let user = serde_urlencoded::from_str::<HashMap<String, String>>(&body)?;
 	let user_id = user.get("id").and_then(|id| id.parse::<i32>().ok());
 	let role = user.get("role").and_then(|role| UserType::from_str(role));
