@@ -1,11 +1,11 @@
 use crate::auth::SessionInfo;
 use crate::database::*;
 use crate::html_templates::{
-	ban_user_html, chapters_html, edit_chapter_html, new_chapter_html, new_question_html,
-	sessions_html, update_user_info_html, update_user_role_html,
+	ban_user_html, chapters_html, edit_chapter_html, edit_question_html, new_chapter_html,
+	new_question_html, sessions_html, update_user_info_html, update_user_role_html,
 };
 use crate::html_templates::{chapter_history_html, user_feedback_html};
-use crate::structs::{ChapterData, ChapterEdit, ChapterTable, Population, UserType};
+use crate::structs::{ChapterData, ChapterEdit, ChapterTable, Population, QuestionEdit, UserType};
 use crate::utility::redirect;
 use crate::{FimficCfg, HttpClient};
 use actix_web::web::{Path, ThinData};
@@ -562,4 +562,76 @@ pub async fn get_question_new(
 	Ok(HttpResponse::Ok()
 		.content_type("text/html; charset=utf-8")
 		.body(page))
+}
+
+#[post("/questions/new")]
+pub async fn set_question_new(
+	body: String, mut db: ThinData<Db>, session: SessionInfo,
+) -> actix_web::Result<impl Responder> {
+	let user = db
+		.get_user(session.user_id)
+		.await?
+		.expect(DATABASE_CONSTRAINT_EXPECT);
+	if user.user_type == UserType::Voter {
+		return Ok(HttpResponse::Unauthorized().finish());
+	}
+	let question_data = serde_urlencoded::from_str::<QuestionEdit>(&body)?;
+	let question = db.insert_question(None).await?;
+	db.insert_question_revision(question_data, question.id, user.id)
+		.await?;
+	Ok(HttpResponse::SeeOther()
+		.append_header(("Location", format!("/questions/{}", question.id)))
+		.finish())
+}
+
+#[get("/questions/{id}")]
+pub async fn get_question_edit(
+	path: Path<i32>, mut db: ThinData<Db>, session: SessionInfo,
+) -> actix_web::Result<impl Responder> {
+	let id = path.into_inner();
+	let user = db
+		.get_user(session.user_id)
+		.await?
+		.expect(DATABASE_CONSTRAINT_EXPECT);
+	if user.user_type == UserType::Voter {
+		return Ok(HttpResponse::Unauthorized().finish());
+	}
+	let question = db.get_question(id).await?;
+	if let Some(question) = question {
+		let data = db
+			.get_latest_question_revision(question.id)
+			.await?
+			.expect(DATABASE_CONSTRAINT_EXPECT);
+		let page = edit_question_html(question, data);
+		Ok(HttpResponse::Ok()
+			.content_type("text/html; charset=utf-8")
+			.body(page))
+	} else {
+		Ok(HttpResponse::BadRequest().finish())
+	}
+}
+
+#[post("/questions/{id}")]
+pub async fn set_question_edit(
+	path: Path<i32>, body: String, mut db: ThinData<Db>, session: SessionInfo,
+) -> actix_web::Result<impl Responder> {
+	let id = path.into_inner();
+	let user = db
+		.get_user(session.user_id)
+		.await?
+		.expect(DATABASE_CONSTRAINT_EXPECT);
+	if user.user_type == UserType::Voter {
+		return Ok(HttpResponse::Unauthorized().finish());
+	}
+	let question_rev = serde_urlencoded::from_str::<QuestionEdit>(&body)?;
+	let question = db.get_question(id).await?;
+	if let Some(question) = question {
+		db.insert_question_revision(question_rev, user.id, question.id)
+			.await?;
+		Ok(HttpResponse::SeeOther()
+			.append_header(("Location", format!("/questions/{id}")))
+			.finish())
+	} else {
+		Ok(HttpResponse::BadRequest().finish())
+	}
 }

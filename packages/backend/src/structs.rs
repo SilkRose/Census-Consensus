@@ -25,8 +25,11 @@ impl UserType {
 #[derive(Clone, Debug, Deserialize, Serialize, Type, Eq, Hash, PartialEq)]
 #[sqlx(type_name = "question_type", rename_all = "snake_case")]
 pub enum QuestionType {
+	#[serde(alias = "multiple_choice")]
 	MultipleChoice,
+	#[serde(alias = "multi_select")]
 	Multiselect,
+	#[serde(alias = "scale")]
 	Scale,
 }
 

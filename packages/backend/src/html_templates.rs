@@ -1,5 +1,8 @@
 use crate::endpoints::DATABASE_CONSTRAINT_EXPECT;
-use crate::structs::{Chapter, ChapterData, ChapterRevision, ChapterTable, Session};
+use crate::structs::{
+	Chapter, ChapterData, ChapterRevision, ChapterTable, Question, QuestionRevision, QuestionType,
+	Session,
+};
 use crate::utility::count_words;
 use maud::{DOCTYPE, PreEscaped, html};
 
@@ -379,6 +382,74 @@ pub fn new_question_html() -> String {
 	.into()
 }
 
+pub fn edit_question_html(question: Question, data: QuestionRevision) -> String {
+	html! {
+		(DOCTYPE) html lang = "en" {
+			body {
+				form method = "post" action = (format!("/questions/{}", question.id)) {
+					h1 { "New Question" }
+					br;
+					@let name = "question_text";
+					label for = (name) { "Question:" }
+					br;
+					(input_text_value_required(name, name, 8, 256, &data.question_text))
+					br;
+					@let name = "question_type";
+					label for = (name) { "Question Type: " }
+					select name = (name) id = (name) {
+						(question_type_match(data.question_type))
+					}
+					br;
+					@let name = "response_percent";
+					label for = (name) { "Response Percentage:" }
+					br;
+					(input_float_value_required(name, name, 0.0, 100.0, 0.1, data.response_percent))
+					br;
+					@let name = "asked_by";
+					label for = (name) { "Asked by:" }
+					br;
+					(input_text_value_required(name, name, 8, 256, &data.asked_by))
+					br;
+					@let name = "option_writing";
+					label for = (name) { "Options:" }
+					br;
+					(textarea_value(name, name, 1_000_000, &data.option_writing.unwrap_or_default()))
+					br;
+					@let name = "result_writing";
+					label for = (name) { "Result Writings:" }
+					br;
+					(textarea_value(name, name, 1_000_000, &data.result_writing.unwrap_or_default()))
+					br;
+					button type = "submit" { "Save Question" }
+				}
+			};
+		};
+	}
+	.into()
+}
+
+fn question_type_match(question_type: QuestionType) -> PreEscaped<String> {
+	html!(
+		@match question_type {
+			 QuestionType::MultipleChoice => {
+				option value = "multiple_choice" selected { "Multiple Choice" }
+				option value = "multi_select" { "Multi-Select" }
+				option value = "scale" { "Scale" }
+			 },
+			 QuestionType::Multiselect => {
+				option value = "multiple_choice" { "Multiple Choice" }
+				option value = "multi_select" selected { "Multi-Select" }
+				option value = "scale" { "Scale" }
+			 },
+			 QuestionType::Scale => {
+				option value = "multiple_choice" { "Multiple Choice" }
+				option value = "multi_select" { "Multi-Select" }
+				option value = "scale" selected { "Scale" }
+			 },
+		}
+	)
+}
+
 // HTML components go below this comment:
 
 fn input_text_required(id: &str, name: &str, min: u32, max: u32) -> PreEscaped<String> {
@@ -418,6 +489,23 @@ fn input_float_required(id: &str, name: &str, min: f64, max: f64, step: f64) -> 
 			min = (min)
 			max = (max)
 			step = (step)
+			required {}
+	)
+}
+
+fn input_float_value_required(
+	id: &str, name: &str, min: f64, max: f64, step: f64, value: f64,
+) -> PreEscaped<String> {
+	html!	(
+		input
+			id = (id)
+			type = "number"
+			name = (name)
+			inputmode = "decimal"
+			min = (min)
+			max = (max)
+			step = (step)
+			value = (value)
 			required {}
 	)
 }
