@@ -477,7 +477,7 @@ pub async fn set_question_edit(
 	let question_rev = serde_urlencoded::from_str::<QuestionEdit>(&body)?;
 	let question = db.get_question(id).await?;
 	if let Some(question) = question {
-		db.insert_question_revision(question_rev, session.user.id, question.id)
+		db.insert_question_revision(question_rev, question.id, session.user.id)
 			.await?;
 		Ok(HttpResponse::SeeOther()
 			.append_header(("Location", format!("/questions/{id}")))
