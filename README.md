@@ -25,7 +25,7 @@ You need:
 - [Trunk](https://trunkrs.dev)
   - Installation: `cargo install trunk --no-default-features`
 - [wasm-bindgen CLI](https://crates.io/crates/wasm-bindgen)
-  - Installation: `cargo install wasm-bindgen-cli --version 0.2.106` (must be exactly version 0.2.106 for this project)
+  - Installation: `cargo install wasm-bindgen-cli --version 0.2.108` (must be exactly version 0.2.108 for this project)
 - [wasm-opt](https://crates.io/crates/wasm-opt)
   - Installation: `cargo install wasm-opt`
 
