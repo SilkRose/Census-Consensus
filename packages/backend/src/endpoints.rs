@@ -1,4 +1,4 @@
-use crate::auth::{ AdminSessionInfo, SessionInfo, WriterSessionInfo };
+use crate::auth::{AdminSessionInfo, SessionInfo, WriterSessionInfo};
 use crate::database::*;
 use crate::html_templates::{
 	ban_user_html, chapters_html, edit_chapter_html, edit_question_html, new_chapter_html,
@@ -51,9 +51,7 @@ pub async fn set_update_user(
 }
 
 #[get("/user-role")]
-pub async fn get_update_user_role(
-	mut db: ThinData<Db>, session: AdminSessionInfo,
-) -> actix_web::Result<impl Responder> {
+pub async fn get_update_user_role(_: AdminSessionInfo) -> actix_web::Result<impl Responder> {
 	let page = update_user_role_html();
 	Ok(HttpResponse::Ok()
 		.content_type("text/html; charset=utf-8")
@@ -62,7 +60,7 @@ pub async fn get_update_user_role(
 
 #[post("/user-role")]
 pub async fn set_update_user_role(
-	req: HttpRequest, body: String, mut db: ThinData<Db>, session: AdminSessionInfo,
+	req: HttpRequest, body: String, mut db: ThinData<Db>, _: AdminSessionInfo,
 ) -> actix_web::Result<impl Responder> {
 	let user = serde_urlencoded::from_str::<HashMap<String, String>>(&body)?;
 	let user_id = user.get("id").and_then(|id| id.parse::<i32>().ok());
@@ -81,16 +79,7 @@ pub async fn set_update_user_role(
 }
 
 #[get("/ban-user")]
-pub async fn get_ban_user(
-	mut db: ThinData<Db>, session: SessionInfo,
-) -> actix_web::Result<impl Responder> {
-	let user = db
-		.get_user(session.user_id)
-		.await?
-		.expect(DATABASE_CONSTRAINT_EXPECT);
-	if user.user_type != UserType::Admin {
-		return Ok(HttpResponse::Unauthorized().finish());
-	}
+pub async fn get_ban_user(_: AdminSessionInfo) -> actix_web::Result<impl Responder> {
 	let page = ban_user_html();
 	Ok(HttpResponse::Ok()
 		.content_type("text/html; charset=utf-8")
@@ -99,15 +88,8 @@ pub async fn get_ban_user(
 
 #[post("/ban-user")]
 pub async fn set_ban_user(
-	req: HttpRequest, body: String, mut db: ThinData<Db>, session: SessionInfo,
+	req: HttpRequest, body: String, mut db: ThinData<Db>, _: AdminSessionInfo,
 ) -> actix_web::Result<impl Responder> {
-	let user = db
-		.get_user(session.user_id)
-		.await?
-		.expect(DATABASE_CONSTRAINT_EXPECT);
-	if user.user_type != UserType::Admin {
-		return Ok(HttpResponse::Unauthorized().finish());
-	}
 	let user = serde_urlencoded::from_str::<HashMap<String, String>>(&body)?;
 	let user_id = user.get("id").and_then(|id| id.parse::<i32>().ok());
 	let reason = user
@@ -202,16 +184,9 @@ pub async fn set_revoke_sessions(
 
 #[get("/chapters")]
 pub async fn get_chapters(
-	mut db: ThinData<Db>, session: SessionInfo,
+	mut db: ThinData<Db>, session: WriterSessionInfo,
 ) -> actix_web::Result<impl Responder> {
-	let user = db
-		.get_user(session.user_id)
-		.await?
-		.expect(DATABASE_CONSTRAINT_EXPECT);
-	if user.user_type == UserType::Voter {
-		return Ok(HttpResponse::Unauthorized().finish());
-	}
-	let admin = user.user_type == UserType::Admin;
+	let admin = session.user.user_type == UserType::Admin;
 	let chapters = db
 		.get_all_chapters()
 		.await
@@ -254,16 +229,7 @@ pub async fn get_chapters(
 }
 
 #[get("/chapters/new")]
-pub async fn get_chapter_new(
-	mut db: ThinData<Db>, session: SessionInfo,
-) -> actix_web::Result<impl Responder> {
-	let user = db
-		.get_user(session.user_id)
-		.await?
-		.expect(DATABASE_CONSTRAINT_EXPECT);
-	if user.user_type == UserType::Voter {
-		return Ok(HttpResponse::Unauthorized().finish());
-	}
+pub async fn get_chapter_new(_: WriterSessionInfo) -> actix_web::Result<impl Responder> {
 	let page = new_chapter_html();
 	Ok(HttpResponse::Ok()
 		.content_type("text/html; charset=utf-8")
@@ -272,17 +238,10 @@ pub async fn get_chapter_new(
 
 #[post("/chapters/new")]
 pub async fn set_chapter_new(
-	body: String, mut db: ThinData<Db>, session: SessionInfo,
+	body: String, mut db: ThinData<Db>, session: WriterSessionInfo,
 ) -> actix_web::Result<impl Responder> {
-	let user = db
-		.get_user(session.user_id)
-		.await?
-		.expect(DATABASE_CONSTRAINT_EXPECT);
-	if user.user_type == UserType::Voter {
-		return Ok(HttpResponse::Unauthorized().finish());
-	}
 	let chapter_data = serde_urlencoded::from_str::<ChapterEdit>(&body)?;
-	let chapter = db.insert_chapter(chapter_data, user).await?;
+	let chapter = db.insert_chapter(chapter_data, session.user).await?;
 	Ok(HttpResponse::SeeOther()
 		.append_header(("Location", format!("/chapters/{}", chapter.id)))
 		.finish())
@@ -290,16 +249,9 @@ pub async fn set_chapter_new(
 
 #[get("/chapters/{id}")]
 pub async fn get_chapter_edit(
-	path: Path<i32>, mut db: ThinData<Db>, session: SessionInfo,
+	path: Path<i32>, mut db: ThinData<Db>, _: WriterSessionInfo,
 ) -> actix_web::Result<impl Responder> {
 	let id = path.into_inner();
-	let user = db
-		.get_user(session.user_id)
-		.await?
-		.expect(DATABASE_CONSTRAINT_EXPECT);
-	if user.user_type == UserType::Voter {
-		return Ok(HttpResponse::Unauthorized().finish());
-	}
 	let chapter = db.get_chapter(id).await?;
 	if let Some(chapter) = chapter {
 		let data = db
@@ -317,20 +269,13 @@ pub async fn get_chapter_edit(
 
 #[post("/chapters/{id}")]
 pub async fn set_chapter_edit(
-	path: Path<i32>, body: String, mut db: ThinData<Db>, session: SessionInfo,
+	path: Path<i32>, body: String, mut db: ThinData<Db>, session: WriterSessionInfo,
 ) -> actix_web::Result<impl Responder> {
 	let id = path.into_inner();
-	let user = db
-		.get_user(session.user_id)
-		.await?
-		.expect(DATABASE_CONSTRAINT_EXPECT);
-	if user.user_type == UserType::Voter {
-		return Ok(HttpResponse::Unauthorized().finish());
-	}
 	let chapter_rev = serde_urlencoded::from_str::<ChapterEdit>(&body)?;
 	let chapter = db.get_chapter(id).await?;
 	if let Some(chapter) = chapter {
-		db.insert_chapter_revision(chapter_rev, user.id, chapter.id)
+		db.insert_chapter_revision(chapter_rev, session.user.id, chapter.id)
 			.await?;
 		Ok(HttpResponse::SeeOther()
 			.append_header(("Location", format!("/chapters/{id}")))
@@ -342,16 +287,9 @@ pub async fn set_chapter_edit(
 
 #[get("/chapters/{id}/ordered")]
 pub async fn set_chapter_order(
-	path: Path<i32>, mut db: ThinData<Db>, session: SessionInfo,
+	path: Path<i32>, mut db: ThinData<Db>, _: AdminSessionInfo,
 ) -> actix_web::Result<impl Responder> {
 	let id = path.into_inner();
-	let user = db
-		.get_user(session.user_id)
-		.await?
-		.expect(DATABASE_CONSTRAINT_EXPECT);
-	if user.user_type != UserType::Admin {
-		return Ok(HttpResponse::Unauthorized().finish());
-	}
 	let chapters = db.get_all_chapters().await?;
 	let max = chapters.iter().filter_map(|c| c.chapter_order).max();
 	db.update_chapter_order(id, max.map_or(1, |i| i + 1))
@@ -363,18 +301,11 @@ pub async fn set_chapter_order(
 
 #[get("/chapters/{id}/ordered/{movement}")]
 pub async fn set_chapter_order_move(
-	path: Path<(i32, i32)>, mut db: ThinData<Db>, session: SessionInfo,
+	path: Path<(i32, i32)>, mut db: ThinData<Db>, _: AdminSessionInfo,
 ) -> actix_web::Result<impl Responder> {
 	let (id, movement) = path.into_inner();
 	if movement.abs() != 1 {
 		return Ok(HttpResponse::BadRequest().finish());
-	}
-	let user = db
-		.get_user(session.user_id)
-		.await?
-		.expect(DATABASE_CONSTRAINT_EXPECT);
-	if user.user_type != UserType::Admin {
-		return Ok(HttpResponse::Unauthorized().finish());
 	}
 	let chapter = db.get_chapter(id).await?;
 	if let Some(chapter) = chapter
@@ -398,18 +329,11 @@ pub async fn set_chapter_order_move(
 
 #[get("/chapters/{id}/vote-duration/{movement}")]
 pub async fn set_chapter_vote_duration_move(
-	path: Path<(i32, i32)>, mut db: ThinData<Db>, session: SessionInfo,
+	path: Path<(i32, i32)>, mut db: ThinData<Db>, _: AdminSessionInfo,
 ) -> actix_web::Result<impl Responder> {
 	let (id, movement) = path.into_inner();
 	if movement.abs() != 1 {
 		return Ok(HttpResponse::BadRequest().finish());
-	}
-	let user = db
-		.get_user(session.user_id)
-		.await?
-		.expect(DATABASE_CONSTRAINT_EXPECT);
-	if user.user_type != UserType::Admin {
-		return Ok(HttpResponse::Unauthorized().finish());
 	}
 	let chapter = db.get_chapter(id).await?;
 	if let Some(chapter) = chapter {
@@ -426,18 +350,11 @@ pub async fn set_chapter_vote_duration_move(
 
 #[get("/chapters/{id}/minutes-left/{movement}")]
 pub async fn set_chapter_minutes_left_move(
-	path: Path<(i32, i32)>, mut db: ThinData<Db>, session: SessionInfo,
+	path: Path<(i32, i32)>, mut db: ThinData<Db>, _: AdminSessionInfo,
 ) -> actix_web::Result<impl Responder> {
 	let (id, movement) = path.into_inner();
 	if movement.abs() != 1 {
 		return Ok(HttpResponse::BadRequest().finish());
-	}
-	let user = db
-		.get_user(session.user_id)
-		.await?
-		.expect(DATABASE_CONSTRAINT_EXPECT);
-	if user.user_type != UserType::Admin {
-		return Ok(HttpResponse::Unauthorized().finish());
 	}
 	let chapter = db.get_chapter(id).await?;
 	if let Some(chapter) = chapter
@@ -456,16 +373,9 @@ pub async fn set_chapter_minutes_left_move(
 
 #[get("/chapters/{id}/revisions")]
 pub async fn get_chapter_revisions(
-	path: Path<i32>, mut db: ThinData<Db>, session: SessionInfo,
+	path: Path<i32>, mut db: ThinData<Db>, _: WriterSessionInfo,
 ) -> actix_web::Result<impl Responder> {
 	let id = path.into_inner();
-	let user = db
-		.get_user(session.user_id)
-		.await?
-		.expect(DATABASE_CONSTRAINT_EXPECT);
-	if user.user_type == UserType::Voter {
-		return Ok(HttpResponse::Unauthorized().finish());
-	}
 	let chapter = db.get_chapter(id).await?;
 	if chapter.is_none() {
 		return Ok(HttpResponse::BadRequest().finish());
@@ -492,15 +402,8 @@ pub async fn get_chapter_revisions(
 
 #[get("/population")]
 pub async fn get_population(
-	mut db: ThinData<Db>, session: SessionInfo, population: ThinData<Arc<RwLock<Population>>>,
+	_: WriterSessionInfo, population: ThinData<Arc<RwLock<Population>>>,
 ) -> actix_web::Result<impl Responder> {
-	let user = db
-		.get_user(session.user_id)
-		.await?
-		.expect(DATABASE_CONSTRAINT_EXPECT);
-	if user.user_type == UserType::Voter {
-		return Ok(HttpResponse::Unauthorized().finish());
-	}
 	if let Ok(pop) = population.read() {
 		Ok(HttpResponse::Ok()
 			.content_type("text/html; charset=utf-8")
@@ -512,17 +415,9 @@ pub async fn get_population(
 
 #[get("/population/{pop}")]
 pub async fn set_population(
-	path: Path<u32>, mut db: ThinData<Db>, session: SessionInfo,
-	population: ThinData<Arc<RwLock<Population>>>,
+	path: Path<u32>, _: AdminSessionInfo, population: ThinData<Arc<RwLock<Population>>>,
 ) -> actix_web::Result<impl Responder> {
 	let new_pop = path.into_inner();
-	let user = db
-		.get_user(session.user_id)
-		.await?
-		.expect(DATABASE_CONSTRAINT_EXPECT);
-	if user.user_type == UserType::Voter {
-		return Ok(HttpResponse::Unauthorized().finish());
-	}
 	if let Ok(mut pop) = population.write() {
 		pop.inner = new_pop;
 	} else {
@@ -534,16 +429,7 @@ pub async fn set_population(
 }
 
 #[get("/questions/new")]
-pub async fn get_question_new(
-	mut db: ThinData<Db>, session: SessionInfo,
-) -> actix_web::Result<impl Responder> {
-	let user = db
-		.get_user(session.user_id)
-		.await?
-		.expect(DATABASE_CONSTRAINT_EXPECT);
-	if user.user_type == UserType::Voter {
-		return Ok(HttpResponse::Unauthorized().finish());
-	}
+pub async fn get_question_new(_: WriterSessionInfo) -> actix_web::Result<impl Responder> {
 	let page = new_question_html();
 	Ok(HttpResponse::Ok()
 		.content_type("text/html; charset=utf-8")
@@ -552,18 +438,11 @@ pub async fn get_question_new(
 
 #[post("/questions/new")]
 pub async fn set_question_new(
-	body: String, mut db: ThinData<Db>, session: SessionInfo,
+	body: String, mut db: ThinData<Db>, session: WriterSessionInfo,
 ) -> actix_web::Result<impl Responder> {
-	let user = db
-		.get_user(session.user_id)
-		.await?
-		.expect(DATABASE_CONSTRAINT_EXPECT);
-	if user.user_type == UserType::Voter {
-		return Ok(HttpResponse::Unauthorized().finish());
-	}
 	let question_data = serde_urlencoded::from_str::<QuestionEdit>(&body)?;
 	let question = db.insert_question(None).await?;
-	db.insert_question_revision(question_data, question.id, user.id)
+	db.insert_question_revision(question_data, question.id, session.user.id)
 		.await?;
 	Ok(HttpResponse::SeeOther()
 		.append_header(("Location", format!("/questions/{}", question.id)))
@@ -572,16 +451,9 @@ pub async fn set_question_new(
 
 #[get("/questions/{id}")]
 pub async fn get_question_edit(
-	path: Path<i32>, mut db: ThinData<Db>, session: SessionInfo,
+	path: Path<i32>, mut db: ThinData<Db>, _: WriterSessionInfo,
 ) -> actix_web::Result<impl Responder> {
 	let id = path.into_inner();
-	let user = db
-		.get_user(session.user_id)
-		.await?
-		.expect(DATABASE_CONSTRAINT_EXPECT);
-	if user.user_type == UserType::Voter {
-		return Ok(HttpResponse::Unauthorized().finish());
-	}
 	let question = db.get_question(id).await?;
 	if let Some(question) = question {
 		let data = db
@@ -599,20 +471,13 @@ pub async fn get_question_edit(
 
 #[post("/questions/{id}")]
 pub async fn set_question_edit(
-	path: Path<i32>, body: String, mut db: ThinData<Db>, session: SessionInfo,
+	path: Path<i32>, body: String, mut db: ThinData<Db>, session: WriterSessionInfo,
 ) -> actix_web::Result<impl Responder> {
 	let id = path.into_inner();
-	let user = db
-		.get_user(session.user_id)
-		.await?
-		.expect(DATABASE_CONSTRAINT_EXPECT);
-	if user.user_type == UserType::Voter {
-		return Ok(HttpResponse::Unauthorized().finish());
-	}
 	let question_rev = serde_urlencoded::from_str::<QuestionEdit>(&body)?;
 	let question = db.get_question(id).await?;
 	if let Some(question) = question {
-		db.insert_question_revision(question_rev, user.id, question.id)
+		db.insert_question_revision(question_rev, session.user.id, question.id)
 			.await?;
 		Ok(HttpResponse::SeeOther()
 			.append_header(("Location", format!("/questions/{id}")))
