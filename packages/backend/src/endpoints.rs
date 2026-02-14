@@ -5,7 +5,7 @@ use crate::html_templates::{
 	new_question_html, sessions_html, update_user_info_html, update_user_role_html,
 };
 use crate::html_templates::{chapter_history_html, user_feedback_html};
-use crate::structs::{ChapterData, ChapterEdit, ChapterTable, Population, QuestionEdit, UserType};
+use crate::structs::{ChapterData, ChapterEdit, Population, QuestionEdit, UserType};
 use crate::utility::redirect;
 use crate::{FimficCfg, HttpClient};
 use actix_web::web::{Path, ThinData};
@@ -187,41 +187,7 @@ pub async fn get_chapters(
 	mut db: ThinData<Db>, session: WriterSessionInfo,
 ) -> actix_web::Result<impl Responder> {
 	let admin = session.user.user_type == UserType::Admin;
-	let chapters = db
-		.get_all_chapters()
-		.await
-		.expect(DATABASE_CONSTRAINT_EXPECT);
-	let mut data = vec![];
-	for chapter in chapters {
-		let last_data = db
-			.get_latest_chapter_revision(chapter.id)
-			.await?
-			.expect(DATABASE_CONSTRAINT_EXPECT);
-		let first_data = db
-			.get_latest_chapter_revision(chapter.id)
-			.await?
-			.expect(DATABASE_CONSTRAINT_EXPECT);
-		let last_user = db
-			.get_user(last_data.created_by)
-			.await?
-			.expect(DATABASE_CONSTRAINT_EXPECT);
-		let first_user = db
-			.get_user(first_data.created_by)
-			.await?
-			.expect(DATABASE_CONSTRAINT_EXPECT);
-		let revisions = db.get_chapter_revisions_count_by_id(chapter.id).await?;
-		let questions = db.get_question_count_by_chapter(chapter.id).await?;
-		let table_data = ChapterTable {
-			meta: chapter,
-			revisions,
-			questions,
-			first_data,
-			last_data,
-			first_user,
-			last_user,
-		};
-		data.push(table_data);
-	}
+	let data = db.get_chapters_table().await?;
 	let page = chapters_html(data, admin);
 	Ok(HttpResponse::Ok()
 		.content_type("text/html; charset=utf-8")
@@ -441,9 +407,7 @@ pub async fn set_question_new(
 	body: String, mut db: ThinData<Db>, session: WriterSessionInfo,
 ) -> actix_web::Result<impl Responder> {
 	let question_data = serde_urlencoded::from_str::<QuestionEdit>(&body)?;
-	let question = db.insert_question(None).await?;
-	db.insert_question_revision(question_data, question.id, session.user.id)
-		.await?;
+	let question = db.insert_question(question_data, session.user).await?;
 	Ok(HttpResponse::SeeOther()
 		.append_header(("Location", format!("/questions/{}", question.id)))
 		.finish())

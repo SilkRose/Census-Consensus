@@ -1,7 +1,8 @@
+use crate::endpoints::DATABASE_CONSTRAINT_EXPECT;
 use crate::error::Result;
 use crate::structs::{
-	BannedUser, Chapter, ChapterEdit, ChapterRevision, Question, QuestionEdit, QuestionRevision,
-	QuestionType, Session, StoryUpdate, User, UserType, Vote,
+	BannedUser, Chapter, ChapterEdit, ChapterRevision, ChapterTable, Question, QuestionEdit,
+	QuestionRevision, QuestionType, Session, StoryUpdate, User, UserType, Vote,
 };
 use chrono::{DateTime, Utc};
 use pony::fimfiction_api::story::StoryData;
@@ -63,6 +64,44 @@ impl Db {
 		Ok(meta)
 	}
 
+	pub async fn get_chapters_table(&mut self) -> Result<Vec<ChapterTable>> {
+		let mut tx = self.transaction().await?;
+		let chapters = tx.get_all_chapters().await?;
+		let mut data = vec![];
+		for chapter in chapters {
+			let last_data = tx
+				.get_oldest_chapter_revision(chapter.id)
+				.await?
+				.expect(DATABASE_CONSTRAINT_EXPECT);
+			let first_data = tx
+				.get_latest_chapter_revision(chapter.id)
+				.await?
+				.expect(DATABASE_CONSTRAINT_EXPECT);
+			let last_user = tx
+				.get_user(last_data.created_by)
+				.await?
+				.expect(DATABASE_CONSTRAINT_EXPECT);
+			let first_user = tx
+				.get_user(first_data.created_by)
+				.await?
+				.expect(DATABASE_CONSTRAINT_EXPECT);
+			let revisions = tx.get_chapter_revisions_count_by_id(chapter.id).await?;
+			let questions = tx.get_question_count_by_chapter(chapter.id).await?;
+			let table_data = ChapterTable {
+				meta: chapter,
+				revisions,
+				questions,
+				first_data,
+				last_data,
+				first_user,
+				last_user,
+			};
+			data.push(table_data);
+		}
+		tx.commit().await?;
+		Ok(data)
+	}
+
 	pub async fn swap_chapters_by_order(
 		&mut self, self_id: i32, other_id: i32, order: i32, movement: i32,
 	) -> Result<()> {
@@ -82,6 +121,14 @@ impl Db {
 			order += 1;
 		}
 		tx.commit().await
+	}
+
+	pub async fn insert_question(&mut self, data: QuestionEdit, user: User) -> Result<Question> {
+		let mut tx = self.transaction().await?;
+		let meta = tx.create_question().await?;
+		tx.insert_question_revision(data, user.id, meta.id).await?;
+		tx.commit().await?;
+		Ok(meta)
 	}
 }
 
@@ -872,16 +919,12 @@ pub trait DbExecutor {
 			.rows_affected())
 	}
 
-	async fn insert_question(&mut self, claiment_id: Option<i32>) -> Result<Question> {
+	async fn create_question(&mut self) -> Result<Question> {
 		Ok(sqlx::query_as!(
 			Question,
-			"INSERT INTO Questions
-				(claimed_by)
-			VALUES
-				($1)
+			"INSERT INTO Questions DEFAULT VALUES
 			RETURNING
-				id, claimed_by, chapter_id, chapter_order, last_edit;",
-			claiment_id
+				id, claimed_by, chapter_id, chapter_order, last_edit;"
 		)
 		.fetch_one(self.executor())
 		.await
