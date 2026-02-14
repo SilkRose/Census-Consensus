@@ -1,9 +1,10 @@
 use crate::structs::{
-	Chapter, ChapterData, ChapterRevision, ChapterTable, Question, QuestionRevision, QuestionType,
-	Session,
+	Chapter, ChapterData, ChapterRevision, ChapterTable, Question, QuestionData, QuestionRevision,
+	QuestionType, Session,
 };
 use crate::utility::count_words;
 use maud::{DOCTYPE, PreEscaped, html};
+use pony::number_format::format_number_u128;
 
 pub fn update_user_info_html() -> String {
 	html! {
@@ -356,7 +357,7 @@ pub fn new_question_html() -> String {
 					@let name = "response_percent";
 					label for = (name) { "Response Percentage:" }
 					br;
-					(input_float_required(name, name, 0.0, 100.0, 0.1))
+					(input_float_required(name, name, 0.0, 100.0, 0.01))
 					br;
 					@let name = "asked_by";
 					label for = (name) { "Asked by:" }
@@ -381,7 +382,7 @@ pub fn new_question_html() -> String {
 	.into()
 }
 
-pub fn edit_question_html(question: Question, data: QuestionRevision) -> String {
+pub fn edit_question_html(question: Question, data: QuestionRevision, population: u32) -> String {
 	html! {
 		(DOCTYPE) html lang = "en" {
 			body {
@@ -403,6 +404,12 @@ pub fn edit_question_html(question: Question, data: QuestionRevision) -> String 
 					label for = (name) { "Response Percentage:" }
 					br;
 					(input_float_value_required(name, name, 0.0, 100.0, 0.1, data.response_percent))
+					br;
+					"Ponies answered: "
+						(format_number_u128((population as f64 * data.response_percent / 100.0).round() as u128).unwrap())
+						" out of: "
+						(format_number_u128(population as u128).unwrap())
+					" -- Updated on refresh."
 					br;
 					@let name = "asked_by";
 					label for = (name) { "Asked by:" }
@@ -447,6 +454,45 @@ fn question_type_match(question_type: QuestionType) -> PreEscaped<String> {
 			 },
 		}
 	)
+}
+
+pub fn question_history_html(question: QuestionData, population: u32) -> String {
+	html! {
+		(DOCTYPE) html lang = "en" {
+			body {
+				h1 { "Question Revisions" }
+				br;
+				@for revision in question.data.into_iter() {
+						details {
+							summary {
+								"Date: " (revision.date_created.format("%d/%m/%Y %H:%M"))
+								" By: "
+								@let user = question.users.get(&revision.id).expect("User will always be present.");
+								@if let Some(pfp_url) = &user.pfp_url {
+									img src = (format!("{pfp_url}-32")) alt = (user.name) {}
+									" - "
+								}
+								(user.name)
+							}
+							"Question: " (revision.question_text) br;
+							"Question Type: " (revision.question_type) br;
+							"Response percent: " (revision.response_percent) br;
+							"Ponies answered: "
+								(format_number_u128((population as f64 * revision.response_percent / 100.0).round() as u128).unwrap())
+								" out of: "
+								(format_number_u128(population as u128).unwrap())
+							br;
+							"Asked By: " (revision.asked_by) br;
+							"Options:" br;
+							(revision.option_writing.unwrap_or_default()) br;
+							"Results:" br;
+							(revision.result_writing.unwrap_or_default())
+						}
+					}
+			};
+		};
+	}
+	.into()
 }
 
 // HTML components go below this comment:

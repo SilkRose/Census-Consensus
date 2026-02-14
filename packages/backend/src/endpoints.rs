@@ -2,10 +2,11 @@ use crate::auth::{AdminSessionInfo, SessionInfo, WriterSessionInfo};
 use crate::database::*;
 use crate::html_templates::{
 	ban_user_html, chapters_html, edit_chapter_html, edit_question_html, new_chapter_html,
-	new_question_html, sessions_html, update_user_info_html, update_user_role_html,
+	new_question_html, question_history_html, sessions_html, update_user_info_html,
+	update_user_role_html,
 };
 use crate::html_templates::{chapter_history_html, user_feedback_html};
-use crate::structs::{ChapterData, ChapterEdit, Population, QuestionEdit, UserType};
+use crate::structs::{ChapterData, ChapterEdit, Population, QuestionData, QuestionEdit, UserType};
 use crate::utility::redirect;
 use crate::{FimficCfg, HttpClient};
 use actix_web::web::{Path, ThinData};
@@ -400,13 +401,15 @@ pub async fn set_question_new(
 
 #[get("/questions/{id}")]
 pub async fn get_question_edit(
-	path: Path<i32>, mut db: ThinData<Db>, _: WriterSessionInfo,
+	path: Path<i32>, population: ThinData<Arc<RwLock<Population>>>, mut db: ThinData<Db>,
+	_: WriterSessionInfo,
 ) -> actix_web::Result<impl Responder> {
 	let id = path.into_inner();
+	let population = population.0.read().unwrap().inner;
 	let question = db.get_question(id).await?;
 	if let Some(question) = question {
 		let data = db.get_latest_question_revision(question.id).await?;
-		let page = edit_question_html(question, data);
+		let page = edit_question_html(question, data, population);
 		Ok(HttpResponse::Ok()
 			.content_type("text/html; charset=utf-8")
 			.body(page))
@@ -431,4 +434,32 @@ pub async fn set_question_edit(
 	} else {
 		Ok(HttpResponse::BadRequest().finish())
 	}
+}
+
+#[get("/questions/{id}/revisions")]
+pub async fn get_question_revisions(
+	path: Path<i32>, population: ThinData<Arc<RwLock<Population>>>, mut db: ThinData<Db>,
+	_: WriterSessionInfo,
+) -> actix_web::Result<impl Responder> {
+	let id = path.into_inner();
+	let population = population.0.read().unwrap().inner;
+	let question = db.get_question(id).await?;
+	if question.is_none() {
+		return Ok(HttpResponse::BadRequest().finish());
+	}
+	let revisions = db.get_all_question_revisions_by_question(id).await?;
+	let mut users = SmartMap::default();
+	for revison in &revisions {
+		let user = db.get_user(revison.created_by).await?;
+		users.insert(revison.id, user);
+	}
+	let question_data = QuestionData {
+		meta: question.expect("Earlier check means this is always present."),
+		data: revisions,
+		users,
+	};
+	let page = question_history_html(question_data, population);
+	Ok(HttpResponse::Ok()
+		.content_type("text/html; charset=utf-8")
+		.body(page))
 }

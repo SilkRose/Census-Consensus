@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use chrono::{DateTime, Utc};
 use pony::{smart_map::SmartMap, structs::option_string};
 use serde::{Deserialize, Serialize};
@@ -31,6 +33,17 @@ pub enum QuestionType {
 	Multiselect,
 	#[serde(alias = "scale")]
 	Scale,
+}
+
+impl Display for QuestionType {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		let text = match self {
+			QuestionType::MultipleChoice => "Multiple Choice",
+			QuestionType::Multiselect => "Multi-Select",
+			QuestionType::Scale => "Scale",
+		};
+		write!(f, "{text}")
+	}
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, Eq, Hash, PartialEq)]

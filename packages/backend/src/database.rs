@@ -902,6 +902,24 @@ pub trait DbExecutor {
 			.ok_or_else(db_expect)?)
 	}
 
+	async fn get_all_question_revisions_by_question(
+		&mut self, question_id: i32,
+	) -> Result<Vec<QuestionRevision>> {
+		Ok(sqlx::query_as!(
+			QuestionRevision,
+			r#"SELECT
+				id, question_text, type AS "question_type: QuestionType", asked_by, response_percent,
+				option_writing, result_writing, question_id, created_by, date_created
+			FROM Question_revisions
+			WHERE question_id = $1
+			ORDER BY date_created DESC;"#,
+			question_id
+		)
+		.fetch_all(self.executor())
+		.await
+		.map_err(select_err)?)
+	}
+
 	async fn get_all_question_revisions(&mut self) -> Result<Vec<QuestionRevision>> {
 		Ok(sqlx::query_as!(
 			QuestionRevision,
