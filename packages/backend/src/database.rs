@@ -1013,12 +1013,29 @@ pub trait DbExecutor {
 		.map_err(select_err)?)
 	}
 
-	async fn get_all_questions(&mut self) -> Result<Vec<Question>> {
+	async fn get_questions_for_table(&mut self, chapter_id: i32) -> Result<Vec<Question>> {
 		Ok(sqlx::query_as!(
 			Question,
 			"SELECT
 				id, claimed_by, chapter_id, chapter_order, last_edit
-			FROM Questions;",
+			FROM Questions
+			WHERE chapter_id = $1 OR chapter_id IS NULL
+			ORDER BY chapter_order NULLS LAST, id;",
+			chapter_id
+		)
+		.fetch_all(self.executor())
+		.await
+		.map_err(select_err)?)
+	}
+
+	async fn get_all_questions(&mut self) -> Result<Vec<Question>> {
+		Ok(sqlx::query_as!(
+			Question,
+			"SELECT
+            q.id, q.claimed_by, q.chapter_id, q.chapter_order, q.last_edit
+        FROM Questions AS q
+        JOIN Chapters AS c ON q.chapter_id = c.id
+        ORDER BY c.chapter_order NULLS LAST, q.chapter_order, q.id;"
 		)
 		.fetch_all(self.executor())
 		.await
