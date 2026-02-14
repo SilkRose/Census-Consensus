@@ -1,6 +1,6 @@
 use crate::structs::{
 	Chapter, ChapterData, ChapterRevision, ChapterTable, Question, QuestionData, QuestionRevision,
-	QuestionType, Session,
+	QuestionTable, QuestionType, Session, User, UserType,
 };
 use crate::utility::count_words;
 use maud::{DOCTYPE, PreEscaped, html};
@@ -493,6 +493,115 @@ pub fn question_history_html(question: QuestionData, population: u32) -> String 
 		};
 	}
 	.into()
+}
+
+pub fn chapter_questions_html(
+	questions: Vec<QuestionTable>, chapter_id: u32, population: u32, user: User,
+) -> String {
+	html! {
+		(DOCTYPE) html lang = "en" {
+			body {
+				h1 { "Chapters" }
+				br;
+				table {
+					tr {
+						th { "ID" } // done
+						th { "Question" } // done
+						th { "Question" br; "Type" } // done
+						th { "Response" br; "Percent" } // done
+						th { "Chapter" br; "Order" } // done
+						th { "Options" } // done?
+						th { "Outcomes" } // done?
+						th { "Revisions" } // done
+						th { "Claiment" } // done
+						th { "Last" br; "Edit" }
+						th { "Last" br; "Revision" }
+						th { "Created" }
+						th { "Edit" }
+					}
+					@for question in questions.into_iter() {
+						(chapter_questions_table(question, chapter_id, population, &user))
+					}
+				}
+				(button_link("New Chapter", "/chapters/new"))
+			};
+		};
+	}
+	.into()
+}
+
+pub fn chapter_questions_table(
+	question: QuestionTable, chapter_id: u32, population: u32, user: &User,
+) -> PreEscaped<String> {
+	html! {
+		tr {
+			td { (question.meta.id) }
+			td { (question.last_data.question_text) }
+			td { (question.last_data.question_type) }
+			td {
+				(format_number_u128((population as f64 * question.last_data.response_percent / 100.0).round() as u128).unwrap())
+			}
+			td {
+				@if let Some(order) = question.meta.chapter_order {
+					@if order > 1 {
+						@let endpoint = format!("/chapters/{chapter_id}/questions/{}/ordered/1", question.meta.id);
+						(button_link("▲", &endpoint))
+					} @else {
+						(button_disabled("▲"))
+					}
+					(order)
+					@let endpoint = format!("/chapters/{chapter_id}/questions/{}/ordered/-1", question.meta.id);
+					(button_link("▼", &endpoint))
+				} @else {
+					@let endpoint = format!("/chapters/{chapter_id}/questions/{}/ordered", question.meta.id);
+					(button_link("Add", &endpoint))
+				}
+			}
+			td { (question.options) }
+			td { (question.outcomes) }
+			td {
+				(question.revisions)
+				button onclick = (format!("window.location.href='/questions/{}/revisions';", question.meta.id)) { "View" }
+			}
+			td {
+				@if let Some(claiment) = question.claiment {
+					@if let Some(pfp_url) = &claiment.pfp_url {
+						img src = (format!("{pfp_url}-32")) alt = (claiment.name) {}
+						" - "
+					}
+				(user.name)
+				@if user.id == claiment.id {
+					@let endpoint = format!("/chapters/{chapter_id}/questions/{}/unclaim", question.meta.id);
+					(button_link("Un-Claim", &endpoint))
+				} @else if user.user_type == UserType::Admin {
+					@let endpoint = format!("/chapters/{chapter_id}/questions/{}/unclaim", question.meta.id);
+					(button_link("Revoke", &endpoint))
+				}
+				} @ else {
+					@let endpoint = format!("/chapters/{chapter_id}/questions/{}/claim", question.meta.id);
+					(button_link("Claim", &endpoint))
+				}
+			}
+			td { (question.meta.last_edit.format("%d/%m/%Y %H:%M")) }
+			td {
+				(question.last_data.date_created.format("%d/%m/%Y %H:%M")) br;
+				@if let Some(pfp_url) = &question.last_user.pfp_url {
+					img src = (format!("{pfp_url}-32")) alt = (question.last_user.name) {}
+					" - "
+				}
+				(question.last_user.name)
+			}
+			td {
+				(question.first_data.date_created.format("%d/%m/%Y %H:%M")) br;
+				@if let Some(pfp_url) = &question.first_user.pfp_url {
+					img src = (format!("{pfp_url}-32")) alt = (question.first_user.name) {}
+					" - "
+				}
+				(question.first_user.name)
+			}
+			td { button onclick = (format!("window.location.href='/questions/{}';", question.meta.id)) { "Edit" } }
+		}
+	}
 }
 
 // HTML components go below this comment:

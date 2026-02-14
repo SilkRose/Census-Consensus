@@ -1,8 +1,9 @@
 use crate::error::Result;
 use crate::structs::{
 	BannedUser, Chapter, ChapterEdit, ChapterRevision, ChapterTable, Question, QuestionEdit,
-	QuestionRevision, QuestionType, Session, StoryUpdate, User, UserType, Vote,
+	QuestionRevision, QuestionTable, QuestionType, Session, StoryUpdate, User, UserType, Vote,
 };
+use crate::utility::{count_options, count_outcomes};
 use chrono::{DateTime, Utc};
 use pony::fimfiction_api::story::StoryData;
 use pony::fimfiction_api::user::UserData;
@@ -120,6 +121,39 @@ impl Db {
 		tx.insert_question_revision(data, user.id, meta.id).await?;
 		tx.commit().await?;
 		Ok(meta)
+	}
+
+	pub async fn get_chapter_questions_table(
+		&mut self, chapter_id: i32,
+	) -> Result<Vec<QuestionTable>> {
+		let mut tx = self.transaction().await?;
+		let questions = tx.get_questions_for_table(chapter_id).await?;
+		let mut data = vec![];
+		for question in questions {
+			let id = question.id;
+			let claiment = match question.claimed_by {
+				Some(id) => Some(tx.get_user(id).await?),
+				None => None,
+			};
+			let last_data = tx.get_oldest_question_revision(question.id).await?;
+			let first_data = tx.get_latest_question_revision(question.id).await?;
+			let last_user = tx.get_user(last_data.created_by).await?;
+			let first_user = tx.get_user(first_data.created_by).await?;
+			let table_data = QuestionTable {
+				meta: question,
+				revisions: tx.get_question_revision_count(id).await?,
+				options: count_options(&last_data.option_writing.clone().unwrap_or_default()),
+				outcomes: count_outcomes(&last_data.result_writing.clone().unwrap_or_default()),
+				claiment,
+				first_data,
+				last_data,
+				first_user,
+				last_user,
+			};
+			data.push(table_data);
+		}
+		tx.commit().await?;
+		Ok(data)
 	}
 }
 
@@ -931,6 +965,17 @@ pub trait DbExecutor {
 		.fetch_all(self.executor())
 		.await
 		.map_err(select_err)?)
+	}
+
+	async fn get_question_revision_count(&mut self, id: i32) -> Result<i64> {
+		Ok(
+			sqlx::query!("SELECT count(*) FROM Question_revisions WHERE id = $1;", id)
+				.fetch_one(self.executor())
+				.await
+				.map_err(select_err)?
+				.count
+				.ok_or_else(count_err)?,
+		)
 	}
 
 	async fn get_question_revisions_count(&mut self) -> Result<i64> {

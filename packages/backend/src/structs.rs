@@ -161,8 +161,8 @@ pub struct Question {
 pub struct QuestionTable {
 	pub meta: Question,
 	pub revisions: i64,
-	pub options: i64,
-	pub outcomes: i64,
+	pub options: u32,
+	pub outcomes: u32,
 	pub claiment: Option<User>,
 	pub first_data: QuestionRevision,
 	pub last_data: QuestionRevision,
