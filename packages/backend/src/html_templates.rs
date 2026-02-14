@@ -1,4 +1,3 @@
-use crate::endpoints::DATABASE_CONSTRAINT_EXPECT;
 use crate::structs::{
 	Chapter, ChapterData, ChapterRevision, ChapterTable, Question, QuestionRevision, QuestionType,
 	Session,
@@ -314,7 +313,7 @@ pub fn chapter_history_html(chapter: ChapterData) -> String {
 							summary {
 								"Date: " (revision.date_created.format("%d/%m/%Y %H:%M"))
 								" By: "
-								@let user = chapter.users.get(&revision.id).expect(DATABASE_CONSTRAINT_EXPECT);
+								@let user = chapter.users.get(&revision.id).expect("User will always be present.");
 								@if let Some(pfp_url) = &user.pfp_url {
 									img src = (format!("{pfp_url}-32")) alt = (user.name) {}
 									" - "

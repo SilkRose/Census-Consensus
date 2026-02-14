@@ -16,9 +16,6 @@ use std::collections::HashMap;
 use std::sync::{Arc, RwLock};
 use std::time::Duration;
 
-pub const DATABASE_CONSTRAINT_EXPECT: &str =
-	"Database constraints mean a user will always be present if they have a session.";
-
 #[get("/update-user")]
 pub async fn get_update_user() -> actix_web::Result<impl Responder> {
 	let page = update_user_info_html();
@@ -32,10 +29,7 @@ pub async fn set_update_user(
 	req: HttpRequest, mut db: ThinData<Db>, session: SessionInfo,
 	http_client: ThinData<HttpClient>, fimfic_cfg: ThinData<FimficCfg>,
 ) -> actix_web::Result<impl Responder> {
-	let user = db
-		.get_user(session.user_id)
-		.await?
-		.expect(DATABASE_CONSTRAINT_EXPECT);
+	let user = db.get_user(session.user_id).await?;
 	let next_fetch_time = user.date_last_fetch + Duration::from_hours(1);
 	if Utc::now() < next_fetch_time {
 		return Ok(HttpResponse::BadRequest().finish());
@@ -68,7 +62,7 @@ pub async fn set_update_user_role(
 	if user_id.is_none() || role.is_none() {
 		return Ok(HttpResponse::BadRequest().finish());
 	}
-	let user = db.get_user(user_id.unwrap()).await?;
+	let user = db.get_user_opt(user_id.unwrap()).await?;
 	if user.is_none() {
 		return Ok(HttpResponse::BadRequest().finish());
 	}
@@ -110,10 +104,7 @@ pub async fn set_ban_user(
 pub async fn get_user_feedback(
 	mut db: ThinData<Db>, session: SessionInfo,
 ) -> actix_web::Result<impl Responder> {
-	let user = db
-		.get_user(session.user_id)
-		.await?
-		.expect(DATABASE_CONSTRAINT_EXPECT);
+	let user = db.get_user(session.user_id).await?;
 	let page = user_feedback_html(user.feedback_private, user.feedback_public);
 	Ok(HttpResponse::Ok()
 		.content_type("text/html; charset=utf-8")
@@ -220,10 +211,7 @@ pub async fn get_chapter_edit(
 	let id = path.into_inner();
 	let chapter = db.get_chapter(id).await?;
 	if let Some(chapter) = chapter {
-		let data = db
-			.get_latest_chapter_revision(chapter.id)
-			.await?
-			.expect(DATABASE_CONSTRAINT_EXPECT);
+		let data = db.get_latest_chapter_revision(chapter.id).await?;
 		let page = edit_chapter_html(chapter, data);
 		Ok(HttpResponse::Ok()
 			.content_type("text/html; charset=utf-8")
@@ -349,10 +337,7 @@ pub async fn get_chapter_revisions(
 	let revisions = db.get_all_chapter_revisions_by_chapter(id).await?;
 	let mut users = SmartMap::default();
 	for revison in &revisions {
-		let user = db
-			.get_user(revison.created_by)
-			.await?
-			.expect(DATABASE_CONSTRAINT_EXPECT);
+		let user = db.get_user(revison.created_by).await?;
 		users.insert(revison.id, user);
 	}
 	let chapter_data = ChapterData {
@@ -420,10 +405,7 @@ pub async fn get_question_edit(
 	let id = path.into_inner();
 	let question = db.get_question(id).await?;
 	if let Some(question) = question {
-		let data = db
-			.get_latest_question_revision(question.id)
-			.await?
-			.expect(DATABASE_CONSTRAINT_EXPECT);
+		let data = db.get_latest_question_revision(question.id).await?;
 		let page = edit_question_html(question, data);
 		Ok(HttpResponse::Ok()
 			.content_type("text/html; charset=utf-8")

@@ -240,7 +240,7 @@ impl FromRequest for MaybeSessionInfo {
 /// Session info extractor requiring user to be logged in and an admin
 pub struct AdminSessionInfo {
 	pub session_info: SessionInfo,
-	pub user: User
+	pub user: User,
 }
 
 impl FromRequest for AdminSessionInfo {
@@ -267,7 +267,7 @@ impl FromRequest for AdminSessionInfo {
 /// Session info extractor requiring user to be logged in and an admin or writer
 pub struct WriterSessionInfo {
 	pub session_info: SessionInfo,
-	pub user: User
+	pub user: User,
 }
 
 impl FromRequest for WriterSessionInfo {
@@ -322,14 +322,15 @@ async fn verify_session_info(req: &HttpRequest, session_info: &SessionInfo) -> R
 
 async fn user_from_session_info(req: &HttpRequest, session_info: &SessionInfo) -> Result<User> {
 	let mut db = get_db(req)?;
-	let user = db.get_user(session_info.user_id)
-		.await?
-		.context("session for an invalid user")?;
+	let user = db.get_user(session_info.user_id).await?;
 	Ok(user)
 }
 
 fn get_db(req: &HttpRequest) -> Result<Data<Db>> {
-	Ok(req.app_data::<Data<Db>>().context("no ThinData<Db> found")?.clone())
+	Ok(req
+		.app_data::<Data<Db>>()
+		.context("no ThinData<Db> found")?
+		.clone())
 }
 
 #[derive(Clone, Deserialize)]

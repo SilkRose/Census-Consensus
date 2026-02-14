@@ -60,7 +60,7 @@ async fn main() -> Result<()> {
 	let http_client = HttpClient::new()?;
 	let http_client = Data(http_client);
 
-	let admin = match db.get_user(admin_id).await? {
+	let admin = match db.get_user_opt(admin_id).await? {
 		Some(admin) => {
 			if admin.user_type != UserType::Admin {
 				db.update_user_role(admin_id, UserType::Admin).await?;

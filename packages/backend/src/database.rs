@@ -1,4 +1,3 @@
-use crate::endpoints::DATABASE_CONSTRAINT_EXPECT;
 use crate::error::Result;
 use crate::structs::{
 	BannedUser, Chapter, ChapterEdit, ChapterRevision, ChapterTable, Question, QuestionEdit,
@@ -28,6 +27,10 @@ fn delete_err(err: sqlx::Error) -> String {
 
 fn count_err() -> &'static str {
 	"database counting error"
+}
+
+fn db_expect() -> &'static str {
+	"database constraints means this resource will always be present in the database."
 }
 
 // Going to order the database functions as followed:
@@ -69,22 +72,10 @@ impl Db {
 		let chapters = tx.get_all_chapters().await?;
 		let mut data = vec![];
 		for chapter in chapters {
-			let last_data = tx
-				.get_oldest_chapter_revision(chapter.id)
-				.await?
-				.expect(DATABASE_CONSTRAINT_EXPECT);
-			let first_data = tx
-				.get_latest_chapter_revision(chapter.id)
-				.await?
-				.expect(DATABASE_CONSTRAINT_EXPECT);
-			let last_user = tx
-				.get_user(last_data.created_by)
-				.await?
-				.expect(DATABASE_CONSTRAINT_EXPECT);
-			let first_user = tx
-				.get_user(first_data.created_by)
-				.await?
-				.expect(DATABASE_CONSTRAINT_EXPECT);
+			let last_data = tx.get_oldest_chapter_revision(chapter.id).await?;
+			let first_data = tx.get_latest_chapter_revision(chapter.id).await?;
+			let last_user = tx.get_user(last_data.created_by).await?;
+			let first_user = tx.get_user(first_data.created_by).await?;
 			let revisions = tx.get_chapter_revisions_count_by_id(chapter.id).await?;
 			let questions = tx.get_question_count_by_chapter(chapter.id).await?;
 			let table_data = ChapterTable {
@@ -206,7 +197,7 @@ pub trait DbExecutor {
 		.map_err(insert_err)?)
 	}
 
-	async fn get_user(&mut self, id: i32) -> Result<Option<User>> {
+	async fn get_user_opt(&mut self, id: i32) -> Result<Option<User>> {
 		Ok(sqlx::query_as!(
 			User,
 			r#"SELECT
@@ -218,6 +209,10 @@ pub trait DbExecutor {
 		.fetch_optional(self.executor())
 		.await
 		.map_err(select_err)?)
+	}
+
+	async fn get_user(&mut self, id: i32) -> Result<User> {
+		Ok(self.get_user_opt(id).await?.ok_or_else(db_expect)?)
 	}
 
 	async fn get_all_users(&mut self) -> Result<Vec<User>> {
@@ -522,7 +517,7 @@ pub trait DbExecutor {
 		.map_err(select_err)?)
 	}
 
-	async fn get_latest_chapter_revision(
+	async fn get_latest_chapter_revision_opt(
 		&mut self, chapter_id: i32,
 	) -> Result<Option<ChapterRevision>> {
 		Ok(sqlx::query_as!(
@@ -541,7 +536,14 @@ pub trait DbExecutor {
 		.map_err(select_err)?)
 	}
 
-	async fn get_oldest_chapter_revision(
+	async fn get_latest_chapter_revision(&mut self, chapter_id: i32) -> Result<ChapterRevision> {
+		Ok(self
+			.get_latest_chapter_revision_opt(chapter_id)
+			.await?
+			.ok_or_else(db_expect)?)
+	}
+
+	async fn get_oldest_chapter_revision_opt(
 		&mut self, chapter_id: i32,
 	) -> Result<Option<ChapterRevision>> {
 		Ok(sqlx::query_as!(
@@ -558,6 +560,13 @@ pub trait DbExecutor {
 		.fetch_optional(self.executor())
 		.await
 		.map_err(select_err)?)
+	}
+
+	async fn get_oldest_chapter_revision(&mut self, chapter_id: i32) -> Result<ChapterRevision> {
+		Ok(self
+			.get_oldest_chapter_revision_opt(chapter_id)
+			.await?
+			.ok_or_else(db_expect)?)
 	}
 
 	async fn get_all_chapter_revisions_by_chapter(
@@ -841,7 +850,7 @@ pub trait DbExecutor {
 		.map_err(select_err)?)
 	}
 
-	async fn get_latest_question_revision(
+	async fn get_latest_question_revision_opt(
 		&mut self, question_id: i32,
 	) -> Result<Option<QuestionRevision>> {
 		Ok(sqlx::query_as!(
@@ -860,7 +869,14 @@ pub trait DbExecutor {
 		.map_err(select_err)?)
 	}
 
-	async fn get_oldest_question_revision(
+	async fn get_latest_question_revision(&mut self, question_id: i32) -> Result<QuestionRevision> {
+		Ok(self
+			.get_latest_question_revision_opt(question_id)
+			.await?
+			.ok_or_else(db_expect)?)
+	}
+
+	async fn get_oldest_question_revision_opt(
 		&mut self, question_id: i32,
 	) -> Result<Option<QuestionRevision>> {
 		Ok(sqlx::query_as!(
@@ -877,6 +893,13 @@ pub trait DbExecutor {
 		.fetch_optional(self.executor())
 		.await
 		.map_err(select_err)?)
+	}
+
+	async fn get_oldest_question_revision(&mut self, question_id: i32) -> Result<QuestionRevision> {
+		Ok(self
+			.get_oldest_question_revision_opt(question_id)
+			.await?
+			.ok_or_else(db_expect)?)
 	}
 
 	async fn get_all_question_revisions(&mut self) -> Result<Vec<QuestionRevision>> {
