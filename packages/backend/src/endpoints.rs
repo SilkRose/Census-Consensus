@@ -521,7 +521,7 @@ pub async fn set_chapter_question_order(
 	let (chapter_id, question_id) = path.into_inner();
 	let questions = db.get_questions_by_chapter(chapter_id).await?;
 	let max = questions.iter().filter_map(|q| q.chapter_order).max();
-	db.update_question_chapter_order(question_id, max.map_or(1, |i| i + 1))
+	db.update_question_chapter_id_order(question_id, chapter_id, max.map_or(1, |i| i + 1))
 		.await?;
 	Ok(HttpResponse::SeeOther()
 		.append_header(("Location", redirect(req)))
@@ -549,7 +549,8 @@ pub async fn set_chapter_question_order_move(
 			db.swap_questions_by_order(question_id, above.id, order, movement)
 				.await?;
 		} else {
-			db.update_question_chapter_order_none(question_id).await?;
+			db.update_question_chapter_id_order_none(question_id)
+				.await?;
 		}
 	} else {
 		return Ok(HttpResponse::BadRequest().finish());

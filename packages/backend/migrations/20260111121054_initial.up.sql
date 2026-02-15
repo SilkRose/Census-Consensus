@@ -73,7 +73,7 @@ CREATE TABLE IF NOT EXISTS Questions (
 	claimed_by       integer          NULL,
 	chapter_id       integer          NULL,
 	chapter_order    integer          NULL,
-	last_edit     timestamptz NOT NULL DEFAULT now(),
+	last_edit        timestamptz      NOT NULL DEFAULT now(),
 
 	CONSTRAINT Questions_claimed_by_Users_fk FOREIGN KEY (claimed_by)
 		REFERENCES Users (id) ON DELETE CASCADE,
@@ -82,7 +82,10 @@ CREATE TABLE IF NOT EXISTS Questions (
 		REFERENCES Chapters (id) ON DELETE CASCADE,
 
 	CONSTRAINT Questions_chapter_order_unique
-		UNIQUE (chapter_id, chapter_order)
+		UNIQUE (chapter_id, chapter_order),
+
+	CONSTRAINT Chapter_id_order
+		CHECK ((chapter_id IS NULL) = (chapter_order IS NULL))
 );
 
 CREATE TABLE IF NOT EXISTS Question_revisions (
@@ -101,9 +104,6 @@ CREATE TABLE IF NOT EXISTS Question_revisions (
 		CHECK (response_percent >= 0 AND response_percent <= 100),
 
 	CONSTRAINT Questions_created_by_Users_fk FOREIGN KEY (created_by)
-		REFERENCES Users (id) ON DELETE CASCADE,
-
-	CONSTRAINT Question_revisions_created_by_Users_fk FOREIGN KEY (created_by)
 		REFERENCES Users (id) ON DELETE CASCADE,
 	
 	CONSTRAINT Question_revisions_question_id_fk FOREIGN KEY (question_id)

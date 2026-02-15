@@ -118,7 +118,7 @@ impl Db {
 	pub async fn insert_question(&mut self, data: QuestionEdit, user: User) -> Result<Question> {
 		let mut tx = self.transaction().await?;
 		let meta = tx.create_question().await?;
-		tx.insert_question_revision(data, user.id, meta.id).await?;
+		tx.insert_question_revision(data, meta.id, user.id).await?;
 		tx.commit().await?;
 		Ok(meta)
 	}
@@ -160,7 +160,7 @@ impl Db {
 		&mut self, self_id: i32, other_id: i32, order: i32, movement: i32,
 	) -> Result<()> {
 		let mut tx = self.transaction().await?;
-		tx.update_question_chapter_order_none(self_id).await?;
+		tx.update_question_chapter_order(self_id, 0).await?;
 		tx.update_question_chapter_order(other_id, order).await?;
 		tx.update_question_chapter_order(self_id, order + movement)
 			.await?;
@@ -1195,6 +1195,42 @@ pub trait DbExecutor {
 		Ok(sqlx::query!(
 			"UPDATE Questions
 			SET
+				chapter_order = NULL,
+				last_edit = now()
+			WHERE id = $1;",
+			id,
+		)
+		.execute(self.executor())
+		.await
+		.map_err(update_err)?
+		.rows_affected())
+	}
+
+	async fn update_question_chapter_id_order(
+		&mut self, id: i32, chapter_id: i32, chapter_order: i32,
+	) -> Result<u64> {
+		Ok(sqlx::query!(
+			"UPDATE Questions
+			SET
+				chapter_id = $2,
+				chapter_order = $3,
+				last_edit = now()
+			WHERE id = $1;",
+			id,
+			chapter_id,
+			chapter_order
+		)
+		.execute(self.executor())
+		.await
+		.map_err(update_err)?
+		.rows_affected())
+	}
+
+	async fn update_question_chapter_id_order_none(&mut self, id: i32) -> Result<u64> {
+		Ok(sqlx::query!(
+			"UPDATE Questions
+			SET
+				chapter_id = NULL,
 				chapter_order = NULL,
 				last_edit = now()
 			WHERE id = $1;",
