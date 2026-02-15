@@ -1114,7 +1114,8 @@ pub trait DbExecutor {
 		Ok(sqlx::query!(
 			"UPDATE Questions
 			SET
-				claimed_by = $2
+				claimed_by = $2,
+				last_edit = now()
 			WHERE id = $1;",
 			id,
 			claimed_by
@@ -1131,7 +1132,8 @@ pub trait DbExecutor {
 		Ok(sqlx::query!(
 			"UPDATE Questions
 			SET
-				chapter_id = $2
+				chapter_id = $2,
+				last_edit = now()
 			WHERE id = $1;",
 			id,
 			chapter_id
@@ -1148,7 +1150,8 @@ pub trait DbExecutor {
 		Ok(sqlx::query!(
 			"UPDATE Questions
 			SET
-				chapter_order = $2
+				chapter_order = $2,
+				last_edit = now()
 			WHERE id = $1;",
 			id,
 			chapter_order
