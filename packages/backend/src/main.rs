@@ -7,9 +7,10 @@ use crate::endpoints::{
 	get_chapters, get_population, get_question_edit, get_question_new, get_question_revisions,
 	get_sessions, get_update_user, get_update_user_role, get_user_feedback, set_ban_user,
 	set_chapter_edit, set_chapter_minutes_left_move, set_chapter_new, set_chapter_order,
-	set_chapter_order_move, set_chapter_vote_duration_move, set_population, set_question_claim,
-	set_question_edit, set_question_new, set_question_unclaim, set_revoke_sessions,
-	set_update_user, set_update_user_role, set_user_feedback,
+	set_chapter_order_move, set_chapter_question_order, set_chapter_question_order_move,
+	set_chapter_vote_duration_move, set_population, set_question_claim, set_question_edit,
+	set_question_new, set_question_unclaim, set_revoke_sessions, set_update_user,
+	set_update_user_role, set_user_feedback,
 };
 use crate::structs::{Population, UserType};
 
@@ -140,6 +141,8 @@ async fn main() -> Result<()> {
 			.service(get_chapter_questions)
 			.service(set_question_claim)
 			.service(set_question_unclaim)
+			.service(set_chapter_question_order)
+			.service(set_chapter_question_order_move)
 			.service(auth::dev_session)
 			.service(Files::new("/", "./target/site").index_file("index.html"))
 			.app_data(db.clone())

@@ -513,3 +513,48 @@ pub async fn set_question_unclaim(
 		Ok(HttpResponse::BadRequest().finish())
 	}
 }
+
+#[get("/chapters/{chapter_id}/questions/{question_id}/ordered")]
+pub async fn set_chapter_question_order(
+	path: Path<(i32, i32)>, req: HttpRequest, mut db: ThinData<Db>, _: AdminSessionInfo,
+) -> actix_web::Result<impl Responder> {
+	let (chapter_id, question_id) = path.into_inner();
+	let questions = db.get_questions_by_chapter(chapter_id).await?;
+	let max = questions.iter().filter_map(|q| q.chapter_order).max();
+	db.update_question_chapter_order(question_id, max.map_or(1, |i| i + 1))
+		.await?;
+	Ok(HttpResponse::SeeOther()
+		.append_header(("Location", redirect(req)))
+		.finish())
+}
+
+#[get("/chapters/{chapter_id}/questions/{question_id}/ordered/{movement}")]
+pub async fn set_chapter_question_order_move(
+	path: Path<(i32, i32, i32)>, req: HttpRequest, mut db: ThinData<Db>, _: AdminSessionInfo,
+) -> actix_web::Result<impl Responder> {
+	let (chapter_id, question_id, movement) = path.into_inner();
+	if movement.abs() != 1 {
+		return Ok(HttpResponse::BadRequest().finish());
+	}
+	if let Some(question) = db.get_question(question_id).await?
+		&& let Some(ch_id) = question.chapter_id
+		&& let Some(order) = question.chapter_order
+		&& chapter_id == ch_id
+		&& order + movement != 0
+	{
+		let question_above = db
+			.get_question_by_chapter_and_order(chapter_id, order + movement)
+			.await?;
+		if let Some(above) = question_above {
+			db.swap_questions_by_order(question_id, above.id, order, movement)
+				.await?;
+		} else {
+			db.update_question_chapter_order_none(question_id).await?;
+		}
+	} else {
+		return Ok(HttpResponse::BadRequest().finish());
+	}
+	Ok(HttpResponse::SeeOther()
+		.append_header(("Location", redirect(req)))
+		.finish())
+}

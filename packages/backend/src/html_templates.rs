@@ -544,13 +544,13 @@ pub fn chapter_questions_table(
 			td {
 				@if let Some(order) = question.meta.chapter_order {
 					@if order > 1 {
-						@let endpoint = format!("/chapters/{chapter_id}/questions/{}/ordered/1", question.meta.id);
+						@let endpoint = format!("/chapters/{chapter_id}/questions/{}/ordered/-1", question.meta.id);
 						(button_link("▲", &endpoint))
 					} @else {
 						(button_disabled("▲"))
 					}
 					(order)
-					@let endpoint = format!("/chapters/{chapter_id}/questions/{}/ordered/-1", question.meta.id);
+					@let endpoint = format!("/chapters/{chapter_id}/questions/{}/ordered/1", question.meta.id);
 					(button_link("▼", &endpoint))
 				} @else {
 					@let endpoint = format!("/chapters/{chapter_id}/questions/{}/ordered", question.meta.id);

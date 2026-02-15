@@ -155,6 +155,17 @@ impl Db {
 		tx.commit().await?;
 		Ok(data)
 	}
+
+	pub async fn swap_questions_by_order(
+		&mut self, self_id: i32, other_id: i32, order: i32, movement: i32,
+	) -> Result<()> {
+		let mut tx = self.transaction().await?;
+		tx.update_question_chapter_order_none(self_id).await?;
+		tx.update_question_chapter_order(other_id, order).await?;
+		tx.update_question_chapter_order(self_id, order + movement)
+			.await?;
+		tx.commit().await
+	}
 }
 
 impl DbExecutor for Db {
@@ -1031,7 +1042,26 @@ pub trait DbExecutor {
 		.map_err(select_err)?)
 	}
 
-	async fn get_questions_by_chapter(&mut self, chapter_id: Option<i32>) -> Result<Vec<Question>> {
+	async fn get_question_by_chapter_and_order(
+		&mut self, chapter_id: i32, order: i32,
+	) -> Result<Option<Question>> {
+		Ok(sqlx::query_as!(
+			Question,
+			"SELECT
+				id, claimed_by, chapter_id, chapter_order, last_edit
+			FROM Questions
+			WHERE
+				chapter_id = $1 AND chapter_order = $2
+			LIMIT 1;",
+			chapter_id,
+			order
+		)
+		.fetch_optional(self.executor())
+		.await
+		.map_err(select_err)?)
+	}
+
+	async fn get_questions_by_chapter(&mut self, chapter_id: i32) -> Result<Vec<Question>> {
 		Ok(sqlx::query_as!(
 			Question,
 			"SELECT
@@ -1145,9 +1175,7 @@ pub trait DbExecutor {
 		.rows_affected())
 	}
 
-	async fn update_question_chapter_order(
-		&mut self, id: i32, chapter_order: Option<i32>,
-	) -> Result<u64> {
+	async fn update_question_chapter_order(&mut self, id: i32, chapter_order: i32) -> Result<u64> {
 		Ok(sqlx::query!(
 			"UPDATE Questions
 			SET
@@ -1156,6 +1184,21 @@ pub trait DbExecutor {
 			WHERE id = $1;",
 			id,
 			chapter_order
+		)
+		.execute(self.executor())
+		.await
+		.map_err(update_err)?
+		.rows_affected())
+	}
+
+	async fn update_question_chapter_order_none(&mut self, id: i32) -> Result<u64> {
+		Ok(sqlx::query!(
+			"UPDATE Questions
+			SET
+				chapter_order = NULL,
+				last_edit = now()
+			WHERE id = $1;",
+			id,
 		)
 		.execute(self.executor())
 		.await
