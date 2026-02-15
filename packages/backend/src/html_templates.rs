@@ -357,7 +357,7 @@ pub fn new_question_html() -> String {
 					@let name = "response_percent";
 					label for = (name) { "Response Percentage:" }
 					br;
-					(input_float_required(name, name, 0.0, 100.0, 0.01))
+					(input_text_float_required(name, name))
 					br;
 					@let name = "asked_by";
 					label for = (name) { "Asked by:" }
@@ -403,7 +403,7 @@ pub fn edit_question_html(question: Question, data: QuestionRevision, population
 					@let name = "response_percent";
 					label for = (name) { "Response Percentage:" }
 					br;
-					(input_float_value_required(name, name, 0.0, 100.0, 0.1, data.response_percent))
+					(input_text_float_value_required(name, name, data.response_percent))
 					br;
 					"Ponies answered: "
 						(format_number_u128((population as f64 * data.response_percent / 100.0).round() as u128).unwrap())
@@ -633,32 +633,28 @@ fn input_text_value_required(
 	)
 }
 
-fn input_float_required(id: &str, name: &str, min: f64, max: f64, step: f64) -> PreEscaped<String> {
+fn input_text_float_required(id: &str, name: &str) -> PreEscaped<String> {
 	html!	(
 		input
 			id = (id)
-			type = "number"
+			type = "text"
 			name = (name)
-			inputmode = "decimal"
-			min = (min)
-			max = (max)
-			step = (step)
+			minlength = "1"
+			maxlength = "12"
+			pattern = r"[0-9]*[.]?[0-9]*"
 			required {}
 	)
 }
 
-fn input_float_value_required(
-	id: &str, name: &str, min: f64, max: f64, step: f64, value: f64,
-) -> PreEscaped<String> {
+fn input_text_float_value_required(id: &str, name: &str, value: f64) -> PreEscaped<String> {
 	html!	(
 		input
 			id = (id)
-			type = "number"
+			type = "text"
 			name = (name)
-			inputmode = "decimal"
-			min = (min)
-			max = (max)
-			step = (step)
+			minlength = "1"
+			maxlength = "12"
+			pattern = r"[0-9]*[.]?[0-9]*"
 			value = (value)
 			required {}
 	)
