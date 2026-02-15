@@ -2,7 +2,7 @@ use crate::auth::{AdminSessionInfo, SessionInfo, WriterSessionInfo};
 use crate::database::*;
 use crate::html_templates::{
 	ban_user_html, chapter_questions_html, chapters_html, edit_chapter_html, edit_question_html,
-	new_chapter_html, new_question_html, question_history_html, sessions_html,
+	new_chapter_html, new_question_html, question_history_html, questions_html, sessions_html,
 	update_user_info_html, update_user_role_html,
 };
 use crate::html_templates::{chapter_history_html, user_feedback_html};
@@ -558,4 +558,16 @@ pub async fn set_chapter_question_order_move(
 	Ok(HttpResponse::SeeOther()
 		.append_header(("Location", redirect(req)))
 		.finish())
+}
+
+#[get("/questions")]
+pub async fn get_questions(
+	population: ThinData<Arc<RwLock<Population>>>, mut db: ThinData<Db>, session: WriterSessionInfo,
+) -> actix_web::Result<impl Responder> {
+	let population = population.0.read().unwrap().inner;
+	let data = db.get_questions_table().await?;
+	let page = questions_html(data, population, session.user);
+	Ok(HttpResponse::Ok()
+		.content_type("text/html; charset=utf-8")
+		.body(page))
 }

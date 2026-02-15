@@ -156,6 +156,37 @@ impl Db {
 		Ok(data)
 	}
 
+	pub async fn get_questions_table(&mut self) -> Result<Vec<QuestionTable>> {
+		let mut tx = self.transaction().await?;
+		let questions = tx.get_all_questions().await?;
+		let mut data = vec![];
+		for question in questions {
+			let id = question.id;
+			let claiment = match question.claimed_by {
+				Some(id) => Some(tx.get_user(id).await?),
+				None => None,
+			};
+			let last_data = tx.get_oldest_question_revision(question.id).await?;
+			let first_data = tx.get_latest_question_revision(question.id).await?;
+			let last_user = tx.get_user(last_data.created_by).await?;
+			let first_user = tx.get_user(first_data.created_by).await?;
+			let table_data = QuestionTable {
+				meta: question,
+				revisions: tx.get_question_revision_count(id).await?,
+				options: count_options(&last_data.option_writing.clone().unwrap_or_default()),
+				outcomes: count_outcomes(&last_data.result_writing.clone().unwrap_or_default()),
+				claiment,
+				first_data,
+				last_data,
+				first_user,
+				last_user,
+			};
+			data.push(table_data);
+		}
+		tx.commit().await?;
+		Ok(data)
+	}
+
 	pub async fn swap_questions_by_order(
 		&mut self, self_id: i32, other_id: i32, order: i32, movement: i32,
 	) -> Result<()> {
@@ -1110,7 +1141,7 @@ pub trait DbExecutor {
 			"SELECT
             q.id, q.claimed_by, q.chapter_id, q.chapter_order, q.last_edit
         FROM Questions AS q
-        JOIN Chapters AS c ON q.chapter_id = c.id
+        LEFT JOIN Chapters AS c ON q.chapter_id = c.id
         ORDER BY c.chapter_order NULLS LAST, q.chapter_order, q.id;"
 		)
 		.fetch_all(self.executor())

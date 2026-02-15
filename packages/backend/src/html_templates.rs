@@ -273,7 +273,11 @@ fn chapter_table_row(
 					}
 				}
 			}
-			td { (chapter.questions) }
+			td {
+				(chapter.questions)
+				@let endpoint = format!("/chapters/{}/questions", chapter.meta.id);
+				(button_link("View", &endpoint))
+			}
 			td { (chapter.meta.fimfic_ch_id.map_or(String::default(), |m| m.to_string())) }
 			td { (chapter.last_data.intro_text.clone().map(|text| count_words(&text)).unwrap_or_default()) }
 			td { (chapter.last_data.outro_text.clone().map(|text| count_words(&text)).unwrap_or_default()) }
@@ -387,7 +391,7 @@ pub fn edit_question_html(question: Question, data: QuestionRevision, population
 		(DOCTYPE) html lang = "en" {
 			body {
 				form method = "post" action = (format!("/questions/{}", question.id)) {
-					h1 { "New Question" }
+					h1 { "Edit Question" }
 					br;
 					@let name = "question_text";
 					label for = (name) { "Question:" }
@@ -514,10 +518,10 @@ pub fn chapter_questions_html(
 						th { "Outcomes" } // done?
 						th { "Revisions" } // done
 						th { "Claiment" } // done
-						th { "Last" br; "Edit" }
-						th { "Last" br; "Revision" }
-						th { "Created" }
-						th { "Edit" }
+						th { "Last" br; "Edit" } // done
+						th { "Last" br; "Revision" } // done
+						th { "Created" } // done
+						th { "Edit" } // done
 					}
 					@for question in questions.into_iter() {
 						(chapter_questions_table(question, chapter_id, population, &user))
@@ -557,6 +561,101 @@ pub fn chapter_questions_table(
 					(button_link("Add", &endpoint))
 				}
 			}
+			td { (question.options) }
+			td { (question.outcomes) }
+			td {
+				(question.revisions)
+				button onclick = (format!("window.location.href='/questions/{}/revisions';", question.meta.id)) { "View" }
+			}
+			td {
+				@if let Some(claiment) = question.claiment {
+					@if let Some(pfp_url) = &claiment.pfp_url {
+						img src = (format!("{pfp_url}-32")) alt = (claiment.name) {}
+						" - "
+					}
+				(user.name)
+				@if user.id == claiment.id {
+					@let endpoint = format!("/questions/{}/unclaim", question.meta.id);
+					br; (button_link("Un-Claim", &endpoint))
+				} @else if user.user_type == UserType::Admin {
+					@let endpoint = format!("/questions/{}/unclaim", question.meta.id);
+					br; (button_link("Revoke", &endpoint))
+				}
+				} @ else {
+					@let endpoint = format!("/questions/{}/claim", question.meta.id);
+					(button_link("Claim", &endpoint))
+				}
+			}
+			td { (question.meta.last_edit.format("%d/%m/%Y %H:%M")) }
+			td {
+				(question.last_data.date_created.format("%d/%m/%Y %H:%M")) br;
+				@if let Some(pfp_url) = &question.last_user.pfp_url {
+					img src = (format!("{pfp_url}-32")) alt = (question.last_user.name) {}
+					" - "
+				}
+				(question.last_user.name)
+			}
+			td {
+				(question.first_data.date_created.format("%d/%m/%Y %H:%M")) br;
+				@if let Some(pfp_url) = &question.first_user.pfp_url {
+					img src = (format!("{pfp_url}-32")) alt = (question.first_user.name) {}
+					" - "
+				}
+				(question.first_user.name)
+			}
+			td { button onclick = (format!("window.location.href='/questions/{}';", question.meta.id)) { "Edit" } }
+		}
+	}
+}
+
+pub fn questions_html(questions: Vec<QuestionTable>, population: u32, user: User) -> String {
+	html! {
+		(DOCTYPE) html lang = "en" {
+			body {
+				h1 { "Questions" }
+				br;
+				table {
+					tr {
+						th { "ID" } // done
+						th { "Chapter" br; "Number" } // done
+						th { "Chapter" br; "Order" } // done
+						th { "Question" } // done
+						th { "Question" br; "Type" } // done
+						th { "Response" br; "Percent" } // done
+						th { "Options" } // done?
+						th { "Outcomes" } // done?
+						th { "Revisions" } // done
+						th { "Claiment" } // done
+						th { "Last" br; "Edit" } // done
+						th { "Last" br; "Revision" } // done
+						th { "Created" } // done
+						th { "Edit" } // done
+					}
+					@for question in questions.into_iter() {
+						(questions_table(question, population, &user))
+					}
+				}
+				(button_link("New Question", "/questions/new"))
+			};
+		};
+	}
+	.into()
+}
+
+pub fn questions_table(
+	question: QuestionTable, population: u32, user: &User,
+) -> PreEscaped<String> {
+	html! {
+		tr {
+			td { (question.meta.id) }
+			td { (question.meta.chapter_id.map(|id| id.to_string()).unwrap_or_default()) }
+			td { (question.meta.chapter_order.map(|order| order.to_string()).unwrap_or_default()) }
+			td { (question.last_data.question_text) }
+			td { (question.last_data.question_type) }
+			td {
+				(format_number_u128((population as f64 * question.last_data.response_percent / 100.0).round() as u128).unwrap())
+			}
+
 			td { (question.options) }
 			td { (question.outcomes) }
 			td {
