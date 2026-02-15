@@ -496,7 +496,7 @@ pub fn question_history_html(question: QuestionData, population: u32) -> String 
 }
 
 pub fn chapter_questions_html(
-	questions: Vec<QuestionTable>, chapter_id: u32, population: u32, user: User,
+	questions: Vec<QuestionTable>, chapter_id: i32, population: u32, user: User,
 ) -> String {
 	html! {
 		(DOCTYPE) html lang = "en" {
@@ -523,7 +523,7 @@ pub fn chapter_questions_html(
 						(chapter_questions_table(question, chapter_id, population, &user))
 					}
 				}
-				(button_link("New Chapter", "/chapters/new"))
+				(button_link("New Question", "/questions/new"))
 			};
 		};
 	}
@@ -531,7 +531,7 @@ pub fn chapter_questions_html(
 }
 
 pub fn chapter_questions_table(
-	question: QuestionTable, chapter_id: u32, population: u32, user: &User,
+	question: QuestionTable, chapter_id: i32, population: u32, user: &User,
 ) -> PreEscaped<String> {
 	html! {
 		tr {

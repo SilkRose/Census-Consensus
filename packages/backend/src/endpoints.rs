@@ -1,9 +1,9 @@
 use crate::auth::{AdminSessionInfo, SessionInfo, WriterSessionInfo};
 use crate::database::*;
 use crate::html_templates::{
-	ban_user_html, chapters_html, edit_chapter_html, edit_question_html, new_chapter_html,
-	new_question_html, question_history_html, sessions_html, update_user_info_html,
-	update_user_role_html,
+	ban_user_html, chapter_questions_html, chapters_html, edit_chapter_html, edit_question_html,
+	new_chapter_html, new_question_html, question_history_html, sessions_html,
+	update_user_info_html, update_user_role_html,
 };
 use crate::html_templates::{chapter_history_html, user_feedback_html};
 use crate::structs::{ChapterData, ChapterEdit, Population, QuestionData, QuestionEdit, UserType};
@@ -459,6 +459,20 @@ pub async fn get_question_revisions(
 		users,
 	};
 	let page = question_history_html(question_data, population);
+	Ok(HttpResponse::Ok()
+		.content_type("text/html; charset=utf-8")
+		.body(page))
+}
+
+#[get("/chapters/{chapter_id}/questions")]
+pub async fn get_chapter_questions(
+	path: Path<i32>, population: ThinData<Arc<RwLock<Population>>>, mut db: ThinData<Db>,
+	session: WriterSessionInfo,
+) -> actix_web::Result<impl Responder> {
+	let chapter_id = path.into_inner();
+	let population = population.0.read().unwrap().inner;
+	let data = db.get_chapter_questions_table(chapter_id).await?;
+	let page = chapter_questions_html(data, chapter_id, population, session.user);
 	Ok(HttpResponse::Ok()
 		.content_type("text/html; charset=utf-8")
 		.body(page))
