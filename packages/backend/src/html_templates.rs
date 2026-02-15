@@ -233,8 +233,8 @@ fn chapter_table_row(
 				@if let Some(order) = chapter.meta.chapter_order {
 					@if !active && admin {
 						@if !first_number {
-						@let endpoint = format!("/chapters/{}/ordered/-1", chapter.meta.id);
-						(button_link("▲", &endpoint))
+							@let endpoint = format!("/chapters/{}/ordered/-1", chapter.meta.id);
+							(button_link("▲", &endpoint))
 						} @else {
 							(button_disabled("▲"))
 						}
@@ -250,24 +250,24 @@ fn chapter_table_row(
 				}
 			}
 			td {
-				@if chapter.meta.fimfic_ch_id.is_none() && admin {
+				@if !active && admin {
 					@let endpoint = format!("/chapters/{}/vote-duration/1", chapter.meta.id);
 					(button_link("▲", &endpoint))
 				}
 				(chapter.meta.vote_duration)
-				@if chapter.meta.fimfic_ch_id.is_none() && admin {
+				@if !active && admin {
 					@let endpoint = format!("/chapters/{}/vote-duration/-1", chapter.meta.id);
 					(button_link("▼", &endpoint))
 				}
 			}
 			td {
 				@if let Some(minutes_left) = chapter.meta.minutes_left {
-					@if chapter.meta.fimfic_ch_id.is_none() && admin {
+					@if !active && admin {
 						@let endpoint = format!("/chapters/{}/minutes-left/1", chapter.meta.id);
 						(button_link("▲", &endpoint))
 					}
 					(minutes_left)
-					@if chapter.meta.fimfic_ch_id.is_none() && admin {
+					@if !active && admin {
 						@let endpoint = format!("/chapters/{}/minutes-left/-1", chapter.meta.id);
 						(button_link("▼", &endpoint))
 					}
@@ -512,7 +512,7 @@ pub fn chapter_questions_html(
 						th { "ID" } // done
 						th { "Question" } // done
 						th { "Question" br; "Type" } // done
-						th { "Response" br; "Percent" } // done
+						th { "Response Percent" br; "/Ponies" } // done
 						th { "Chapter" br; "Order" } // done
 						th { "Options" } // done?
 						th { "Outcomes" } // done?
@@ -543,6 +543,7 @@ pub fn chapter_questions_table(
 			td { (question.last_data.question_text) }
 			td { (question.last_data.question_type) }
 			td {
+				(question.last_data.response_percent) "%" br;
 				(format_number_u128((population as f64 * question.last_data.response_percent / 100.0).round() as u128).unwrap())
 			}
 			td {
@@ -621,7 +622,7 @@ pub fn questions_html(questions: Vec<QuestionTable>, population: u32, user: User
 						th { "Chapter" br; "Order" } // done
 						th { "Question" } // done
 						th { "Question" br; "Type" } // done
-						th { "Response" br; "Percent" } // done
+						th { "Response Percent" br; "/Ponies" } // done
 						th { "Options" } // done?
 						th { "Outcomes" } // done?
 						th { "Revisions" } // done
@@ -653,6 +654,7 @@ pub fn questions_table(
 			td { (question.last_data.question_text) }
 			td { (question.last_data.question_type) }
 			td {
+				(question.last_data.response_percent) "%" br;
 				(format_number_u128((population as f64 * question.last_data.response_percent / 100.0).round() as u128).unwrap())
 			}
 
