@@ -501,7 +501,7 @@ pub fn chapter_questions_html(
 	html! {
 		(DOCTYPE) html lang = "en" {
 			body {
-				h1 { "Chapters" }
+				h1 { "Chapter Questions" }
 				br;
 				table {
 					tr {
