@@ -967,15 +967,16 @@ pub trait DbExecutor {
 		.map_err(select_err)?)
 	}
 
-	async fn get_question_revision_count(&mut self, id: i32) -> Result<i64> {
-		Ok(
-			sqlx::query!("SELECT count(*) FROM Question_revisions WHERE id = $1;", id)
-				.fetch_one(self.executor())
-				.await
-				.map_err(select_err)?
-				.count
-				.ok_or_else(count_err)?,
+	async fn get_question_revision_count(&mut self, question_id: i32) -> Result<i64> {
+		Ok(sqlx::query!(
+			"SELECT count(*) FROM Question_revisions WHERE question_id = $1;",
+			question_id
 		)
+		.fetch_one(self.executor())
+		.await
+		.map_err(select_err)?
+		.count
+		.ok_or_else(count_err)?)
 	}
 
 	async fn get_question_revisions_count(&mut self) -> Result<i64> {
