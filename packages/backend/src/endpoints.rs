@@ -477,3 +477,39 @@ pub async fn get_chapter_questions(
 		.content_type("text/html; charset=utf-8")
 		.body(page))
 }
+
+#[get("/questions/{id}/claim")]
+pub async fn set_question_claim(
+	path: Path<i32>, req: HttpRequest, mut db: ThinData<Db>, session: WriterSessionInfo,
+) -> actix_web::Result<impl Responder> {
+	let id = path.into_inner();
+	if let Some(question) = db.get_question(id).await?
+		&& question.claimed_by.is_none()
+	{
+		db.update_question_claimed_by(id, Some(session.user.id))
+			.await?;
+		Ok(HttpResponse::SeeOther()
+			.append_header(("Location", redirect(req)))
+			.finish())
+	} else {
+		Ok(HttpResponse::BadRequest().finish())
+	}
+}
+
+#[get("/questions/{id}/unclaim")]
+pub async fn set_question_unclaim(
+	path: Path<i32>, req: HttpRequest, mut db: ThinData<Db>, session: WriterSessionInfo,
+) -> actix_web::Result<impl Responder> {
+	let id = path.into_inner();
+	if let Some(question) = db.get_question(id).await?
+		&& let Some(claiment) = question.claimed_by
+		&& (claiment == session.user.id || session.user.user_type == UserType::Admin)
+	{
+		db.update_question_claimed_by(id, None).await?;
+		Ok(HttpResponse::SeeOther()
+			.append_header(("Location", redirect(req)))
+			.finish())
+	} else {
+		Ok(HttpResponse::BadRequest().finish())
+	}
+}

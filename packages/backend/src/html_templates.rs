@@ -571,14 +571,14 @@ pub fn chapter_questions_table(
 					}
 				(user.name)
 				@if user.id == claiment.id {
-					@let endpoint = format!("/chapters/{chapter_id}/questions/{}/unclaim", question.meta.id);
-					(button_link("Un-Claim", &endpoint))
+					@let endpoint = format!("/questions/{}/unclaim", question.meta.id);
+					br; (button_link("Un-Claim", &endpoint))
 				} @else if user.user_type == UserType::Admin {
-					@let endpoint = format!("/chapters/{chapter_id}/questions/{}/unclaim", question.meta.id);
-					(button_link("Revoke", &endpoint))
+					@let endpoint = format!("/questions/{}/unclaim", question.meta.id);
+					br; (button_link("Revoke", &endpoint))
 				}
 				} @ else {
-					@let endpoint = format!("/chapters/{chapter_id}/questions/{}/claim", question.meta.id);
+					@let endpoint = format!("/questions/{}/claim", question.meta.id);
 					(button_link("Claim", &endpoint))
 				}
 			}
