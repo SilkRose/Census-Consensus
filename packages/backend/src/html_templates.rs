@@ -32,12 +32,12 @@ pub fn update_user_role_html() -> String {
 					br;
 					label for = "role" { "User Role:" }
 					br;
-					input id = "voter" type = "radio" name = "role" value = "voter" required {}
-					label for = "voter" { "Voter" }
-					input id = "writer" type = "radio" name = "role" value = "writer" {}
-					label for = "writer" { "Writer" }
-					input id = "admin" type = "radio" name = "role" value = "admin" {}
-					label for = "admin" { "Admin" }
+					input id = "voter" type = "radio" name = "role" value = (UserType::Voter) required {}
+					label for = "voter" { (UserType::Voter) }
+					input id = "writer" type = "radio" name = "role" value = (UserType::Writer) {}
+					label for = "writer" { (UserType::Writer) }
+					input id = "admin" type = "radio" name = "role" value = (UserType::Admin) {}
+					label for = "admin" { (UserType::Admin) }
 					br;
 					button type = "submit" { "Update User Role" }
 				}
@@ -353,9 +353,9 @@ pub fn new_question_html() -> String {
 					@let name = "question_type";
 					label for = (name) { "Question Type: " }
 					select name = (name) id = (name) {
-						option value = "multiple_choice" { "Multiple Choice" }
-						option value = "multi_select" { "Multi-Select" }
-						option value = "scale" { "Scale" }
+						option value = (QuestionType::MultipleChoice) { (QuestionType::MultipleChoice) }
+						option value = (QuestionType::Multiselect) { (QuestionType::Multiselect) }
+						option value = (QuestionType::Scale) { (QuestionType::Scale) }
 					}
 					br;
 					@let name = "response_percent";
@@ -442,19 +442,19 @@ fn question_type_match(question_type: QuestionType) -> PreEscaped<String> {
 	html!(
 		@match question_type {
 			 QuestionType::MultipleChoice => {
-				option value = "multiple_choice" selected { "Multiple Choice" }
-				option value = "multi_select" { "Multi-Select" }
-				option value = "scale" { "Scale" }
+				option value = (QuestionType::MultipleChoice) selected { (QuestionType::MultipleChoice) }
+				option value = (QuestionType::Multiselect) { (QuestionType::Multiselect) }
+				option value = (QuestionType::Scale) { (QuestionType::Scale) }
 			 },
 			 QuestionType::Multiselect => {
-				option value = "multiple_choice" { "Multiple Choice" }
-				option value = "multi_select" selected { "Multi-Select" }
-				option value = "scale" { "Scale" }
+				option value = (QuestionType::MultipleChoice) { (QuestionType::MultipleChoice) }
+				option value = (QuestionType::Multiselect) selected { (QuestionType::Multiselect) }
+				option value = (QuestionType::Scale) { (QuestionType::Scale) }
 			 },
 			 QuestionType::Scale => {
-				option value = "multiple_choice" { "Multiple Choice" }
-				option value = "multi_select" { "Multi-Select" }
-				option value = "scale" selected { "Scale" }
+				option value = (QuestionType::MultipleChoice) { (QuestionType::MultipleChoice) }
+				option value = (QuestionType::Multiselect) { (QuestionType::Multiselect) }
+				option value = (QuestionType::Scale) selected { (QuestionType::Scale) }
 			 },
 		}
 	)

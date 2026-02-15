@@ -1,9 +1,8 @@
-use std::fmt::Display;
-
 use chrono::{DateTime, Utc};
 use pony::{smart_map::SmartMap, structs::option_string};
 use serde::{Deserialize, Serialize};
 use sqlx::Type;
+use std::fmt::{self, Display};
 
 #[derive(Clone, Debug, Deserialize, Serialize, Type, Eq, Hash, PartialEq)]
 #[sqlx(type_name = "user_type", rename_all = "snake_case")]
@@ -13,25 +12,25 @@ pub enum UserType {
 	Voter,
 }
 
-impl UserType {
-	pub fn from_str(value: &str) -> Option<Self> {
-		match value {
-			"admin" => Some(UserType::Admin),
-			"writer" => Some(UserType::Writer),
-			"voter" => Some(UserType::Voter),
-			_ => None,
-		}
+impl fmt::Display for UserType {
+	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+		let text = match self {
+			UserType::Admin => "Admin",
+			UserType::Writer => "Writer",
+			UserType::Voter => "Voter",
+		};
+		write!(f, "{text}")
 	}
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, Type, Eq, Hash, PartialEq)]
 #[sqlx(type_name = "question_type", rename_all = "snake_case")]
 pub enum QuestionType {
-	#[serde(alias = "multiple_choice")]
+	#[serde(rename = "Multiple Choice")]
 	MultipleChoice,
-	#[serde(alias = "multi_select")]
+	#[serde(rename = "Multi-Select")]
 	Multiselect,
-	#[serde(alias = "scale")]
+	#[serde(rename = "Scale")]
 	Scale,
 }
 
@@ -205,4 +204,10 @@ pub struct StoryUpdate {
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Population {
 	pub inner: u32,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct UserRoleUpdate {
+	pub id: i32,
+	pub role: UserType,
 }

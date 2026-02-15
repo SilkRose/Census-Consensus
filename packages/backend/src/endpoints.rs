@@ -6,7 +6,9 @@ use crate::html_templates::{
 	update_user_info_html, update_user_role_html,
 };
 use crate::html_templates::{chapter_history_html, user_feedback_html};
-use crate::structs::{ChapterData, ChapterEdit, Population, QuestionData, QuestionEdit, UserType};
+use crate::structs::{
+	ChapterData, ChapterEdit, Population, QuestionData, QuestionEdit, UserRoleUpdate, UserType,
+};
 use crate::utility::redirect;
 use crate::{FimficCfg, HttpClient};
 use actix_web::web::{Path, ThinData};
@@ -57,20 +59,15 @@ pub async fn get_update_user_role(_: AdminSessionInfo) -> actix_web::Result<impl
 pub async fn set_update_user_role(
 	req: HttpRequest, body: String, mut db: ThinData<Db>, _: AdminSessionInfo,
 ) -> actix_web::Result<impl Responder> {
-	let user = serde_urlencoded::from_str::<HashMap<String, String>>(&body)?;
-	let user_id = user.get("id").and_then(|id| id.parse::<i32>().ok());
-	let role = user.get("role").and_then(|role| UserType::from_str(role));
-	if user_id.is_none() || role.is_none() {
-		return Ok(HttpResponse::BadRequest().finish());
+	let user_update = serde_urlencoded::from_str::<UserRoleUpdate>(&body)?;
+	if let Some(user) = db.get_user_opt(user_update.id).await? {
+		db.update_user_role(user.id, user_update.role).await?;
+		Ok(HttpResponse::SeeOther()
+			.append_header(("Location", redirect(req)))
+			.finish())
+	} else {
+		Ok(HttpResponse::BadRequest().finish())
 	}
-	let user = db.get_user_opt(user_id.unwrap()).await?;
-	if user.is_none() {
-		return Ok(HttpResponse::BadRequest().finish());
-	}
-	db.update_user_role(user_id.unwrap(), role.unwrap()).await?;
-	Ok(HttpResponse::SeeOther()
-		.append_header(("Location", redirect(req)))
-		.finish())
 }
 
 #[get("/ban-user")]
@@ -229,7 +226,9 @@ pub async fn set_chapter_edit(
 	let id = path.into_inner();
 	let chapter_rev = serde_urlencoded::from_str::<ChapterEdit>(&body)?;
 	let chapter = db.get_chapter(id).await?;
-	if let Some(chapter) = chapter {
+	if let Some(chapter) = chapter
+		&& chapter.fimfic_ch_id.is_none()
+	{
 		db.insert_chapter_revision(chapter_rev, session.user.id, chapter.id)
 			.await?;
 		Ok(HttpResponse::SeeOther()
