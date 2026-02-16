@@ -16,6 +16,7 @@ use actix_web::web::{Path, ThinData};
 use actix_web::{HttpRequest, HttpResponse, Responder, get, post};
 use chrono::Utc;
 use pony::smart_map::SmartMap;
+use pony::time::format_milliseconds;
 use std::collections::{HashMap, HashSet};
 use std::sync::{Arc, RwLock};
 use std::time::Duration;
@@ -35,17 +36,23 @@ pub async fn set_update_user(
 ) -> actix_web::Result<impl Responder> {
 	let user = db.get_user(session.user_id).await?;
 	let next_fetch_time = user.date_last_fetch + Duration::from_hours(1);
-	if Utc::now() < next_fetch_time {
-		return Ok(HttpResponse::BadRequest().finish());
+	if Utc::now() > next_fetch_time {
+		let user_update = http_client
+			.get_fimfic_user(user.id, &fimfic_cfg.bearer_token)
+			.await?;
+		db.insert_user(user.id, &user_update.data, user.user_type)
+			.await?;
+		Ok(HttpResponse::SeeOther()
+			.append_header(("Location", redirect(req)))
+			.finish())
+	} else {
+		let remaining = format_milliseconds(
+			(next_fetch_time - Utc::now()).num_milliseconds() as u128,
+			None,
+		)?;
+		let msg = format!("Please wait {remaining} before trying again.");
+		Ok(HttpResponse::TooManyRequests().body(msg))
 	}
-	let user_update = http_client
-		.get_fimfic_user(user.id, &fimfic_cfg.bearer_token)
-		.await?;
-	db.insert_user(user.id, &user_update.data, user.user_type)
-		.await?;
-	Ok(HttpResponse::SeeOther()
-		.append_header(("Location", redirect(req)))
-		.finish())
 }
 
 #[get("/user-role")]
