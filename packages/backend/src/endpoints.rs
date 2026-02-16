@@ -541,10 +541,8 @@ pub async fn set_chapter_question_order_move(
 	path: Path<(i32, i32, i32)>, req: HttpRequest, mut db: ThinData<Db>, _: AdminSessionInfo,
 ) -> actix_web::Result<impl Responder> {
 	let (chapter_id, question_id, movement) = path.into_inner();
-	if movement.abs() != 1 {
-		return Ok(HttpResponse::BadRequest().finish());
-	}
-	if let Some(question) = db.get_question(question_id).await?
+	if movement.abs() == 1
+		&& let Some(question) = db.get_question(question_id).await?
 		&& let Some(ch_id) = question.chapter_id
 		&& let Some(order) = question.chapter_order
 		&& chapter_id == ch_id
@@ -560,19 +558,22 @@ pub async fn set_chapter_question_order_move(
 			db.update_question_chapter_id_order_none(question_id)
 				.await?;
 		}
+		Ok(HttpResponse::SeeOther()
+			.append_header(("Location", redirect(req)))
+			.finish())
 	} else {
-		return Ok(HttpResponse::BadRequest().finish());
+		Ok(HttpResponse::BadRequest().finish())
 	}
-	Ok(HttpResponse::SeeOther()
-		.append_header(("Location", redirect(req)))
-		.finish())
 }
 
 #[get("/questions")]
 pub async fn get_questions(
 	population: ThinData<Arc<RwLock<Population>>>, mut db: ThinData<Db>, session: WriterSessionInfo,
 ) -> actix_web::Result<impl Responder> {
-	let population = population.0.read().unwrap().inner;
+	let Ok(ref pop) = population.0.read() else {
+		return Ok(HttpResponse::InternalServerError().finish());
+	};
+	let population = pop.inner;
 	let data = db.get_questions_table().await?;
 	let page = questions_html(data, population, session.user);
 	Ok(HttpResponse::Ok()
