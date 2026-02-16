@@ -440,26 +440,29 @@ pub async fn get_question_revisions(
 	_: WriterSessionInfo,
 ) -> actix_web::Result<impl Responder> {
 	let id = path.into_inner();
-	let population = population.0.read().unwrap().inner;
-	let question = db.get_question(id).await?;
-	if question.is_none() {
-		return Ok(HttpResponse::BadRequest().finish());
-	}
-	let revisions = db.get_all_question_revisions_by_question(id).await?;
-	let mut users = SmartMap::default();
-	for revison in &revisions {
-		let user = db.get_user(revison.created_by).await?;
-		users.insert(revison.id, user);
-	}
-	let question_data = QuestionData {
-		meta: question.expect("Earlier check means this is always present."),
-		data: revisions,
-		users,
+	let Ok(ref pop) = population.0.read() else {
+		return Ok(HttpResponse::InternalServerError().finish());
 	};
-	let page = question_history_html(question_data, population);
-	Ok(HttpResponse::Ok()
-		.content_type("text/html; charset=utf-8")
-		.body(page))
+	let population = pop.inner;
+	if let Some(question) = db.get_question(id).await? {
+		let revisions = db.get_all_question_revisions_by_question(id).await?;
+		let mut users = SmartMap::default();
+		for revison in &revisions {
+			let user = db.get_user(revison.created_by).await?;
+			users.insert(revison.id, user);
+		}
+		let question_data = QuestionData {
+			meta: question,
+			data: revisions,
+			users,
+		};
+		let page = question_history_html(question_data, population);
+		Ok(HttpResponse::Ok()
+			.content_type("text/html; charset=utf-8")
+			.body(page))
+	} else {
+		Ok(HttpResponse::BadRequest().finish())
+	}
 }
 
 #[get("/chapters/{chapter_id}/questions")]
