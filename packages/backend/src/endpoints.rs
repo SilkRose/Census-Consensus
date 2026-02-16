@@ -16,7 +16,7 @@ use actix_web::web::{Path, ThinData};
 use actix_web::{HttpRequest, HttpResponse, Responder, get, post};
 use chrono::Utc;
 use pony::smart_map::SmartMap;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::sync::{Arc, RwLock};
 use std::time::Duration;
 
@@ -137,27 +137,24 @@ pub async fn get_sessions(
 pub async fn set_revoke_sessions(
 	req: HttpRequest, body: String, mut db: ThinData<Db>, session: SessionInfo,
 ) -> actix_web::Result<impl Responder> {
-	let sessions = serde_urlencoded::from_str::<HashMap<u32, String>>(&body)?
+	let sessions: HashSet<String> = serde_urlencoded::from_str::<HashMap<u32, String>>(&body)?
 		.into_values()
-		.collect::<Vec<_>>();
-	let logout = sessions.contains(&session.token);
-	for session_del in sessions {
-		let check = db.get_session_by_token(&session_del).await?;
+		.collect();
+	for session_del in &sessions {
+		let check = db.get_session_by_token(session_del).await?;
 		if let Some(check) = check
 			&& check.user_id == session.user_id
 		{
-			db.delete_session(&session_del).await?;
+			db.delete_session(session_del).await?;
 		}
 	}
-	if logout {
-		Ok(HttpResponse::SeeOther()
-			.append_header(("Location", "/logout"))
-			.finish())
-	} else {
-		Ok(HttpResponse::SeeOther()
-			.append_header(("Location", redirect(req)))
-			.finish())
-	}
+	let url = match sessions.contains(&session.token) {
+		true => "/logout",
+		false => &redirect(req),
+	};
+	Ok(HttpResponse::SeeOther()
+		.append_header(("Location", url))
+		.finish())
 }
 
 #[get("/chapters")]
