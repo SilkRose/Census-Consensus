@@ -15,6 +15,7 @@ use crate::{FimficCfg, HttpClient};
 use actix_web::web::{Path, ThinData};
 use actix_web::{HttpRequest, HttpResponse, Responder, get, post};
 use chrono::Utc;
+use pony::number_format::format_number_u128;
 use pony::smart_map::SmartMap;
 use pony::time::format_milliseconds;
 use std::collections::{HashMap, HashSet};
@@ -328,25 +329,25 @@ pub async fn get_chapter_revisions(
 	path: Path<i32>, mut db: ThinData<Db>, _: WriterSessionInfo,
 ) -> actix_web::Result<impl Responder> {
 	let id = path.into_inner();
-	let chapter = db.get_chapter(id).await?;
-	if chapter.is_none() {
-		return Ok(HttpResponse::BadRequest().finish());
+	if let Some(chapter) = db.get_chapter(id).await? {
+		let revisions = db.get_all_chapter_revisions_by_chapter(id).await?;
+		let mut users = SmartMap::default();
+		for revison in &revisions {
+			let user = db.get_user(revison.created_by).await?;
+			users.insert(revison.id, user);
+		}
+		let chapter_data = ChapterData {
+			meta: chapter,
+			data: revisions,
+			users,
+		};
+		let page = chapter_history_html(chapter_data);
+		Ok(HttpResponse::Ok()
+			.content_type("text/html; charset=utf-8")
+			.body(page))
+	} else {
+		Ok(HttpResponse::BadRequest().finish())
 	}
-	let revisions = db.get_all_chapter_revisions_by_chapter(id).await?;
-	let mut users = SmartMap::default();
-	for revison in &revisions {
-		let user = db.get_user(revison.created_by).await?;
-		users.insert(revison.id, user);
-	}
-	let chapter_data = ChapterData {
-		meta: chapter.expect("Earlier check means this is always present."),
-		data: revisions,
-		users,
-	};
-	let page = chapter_history_html(chapter_data);
-	Ok(HttpResponse::Ok()
-		.content_type("text/html; charset=utf-8")
-		.body(page))
 }
 
 #[get("/population")]
@@ -356,7 +357,7 @@ pub async fn get_population(
 	if let Ok(pop) = population.read() {
 		Ok(HttpResponse::Ok()
 			.content_type("text/html; charset=utf-8")
-			.body(pop.inner.to_string()))
+			.body(format_number_u128(pop.inner as u128)?))
 	} else {
 		Ok(HttpResponse::InternalServerError().finish())
 	}
@@ -369,12 +370,12 @@ pub async fn set_population(
 	let new_pop = path.into_inner();
 	if let Ok(mut pop) = population.write() {
 		pop.inner = new_pop;
+		Ok(HttpResponse::SeeOther()
+			.append_header(("Location", "/population"))
+			.finish())
 	} else {
-		return Ok(HttpResponse::InternalServerError().finish());
+		Ok(HttpResponse::InternalServerError().finish())
 	}
-	Ok(HttpResponse::SeeOther()
-		.append_header(("Location", "/population"))
-		.finish())
 }
 
 #[get("/questions/new")]
