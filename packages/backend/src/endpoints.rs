@@ -471,12 +471,19 @@ pub async fn get_chapter_questions(
 	session: WriterSessionInfo,
 ) -> actix_web::Result<impl Responder> {
 	let chapter_id = path.into_inner();
-	let population = population.0.read().unwrap().inner;
-	let data = db.get_chapter_questions_table(chapter_id).await?;
-	let page = chapter_questions_html(data, chapter_id, population, session.user);
-	Ok(HttpResponse::Ok()
-		.content_type("text/html; charset=utf-8")
-		.body(page))
+	let Ok(ref pop) = population.0.read() else {
+		return Ok(HttpResponse::InternalServerError().finish());
+	};
+	let population = pop.inner;
+	if db.get_chapter_exists(chapter_id).await? {
+		let data = db.get_chapter_questions_table(chapter_id).await?;
+		let page = chapter_questions_html(data, chapter_id, population, session.user);
+		Ok(HttpResponse::Ok()
+			.content_type("text/html; charset=utf-8")
+			.body(page))
+	} else {
+		Ok(HttpResponse::BadRequest().finish())
+	}
 }
 
 #[get("/questions/{id}/claim")]

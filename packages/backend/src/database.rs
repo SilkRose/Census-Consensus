@@ -30,6 +30,10 @@ fn count_err() -> &'static str {
 	"database counting error"
 }
 
+fn exist_err() -> &'static str {
+	"database exist error"
+}
+
 fn db_expect() -> &'static str {
 	"database constraints means this resource will always be present in the database."
 }
@@ -738,6 +742,17 @@ pub trait DbExecutor {
 		.fetch_optional(self.executor())
 		.await
 		.map_err(select_err)?)
+	}
+
+	async fn get_chapter_exists(&mut self, id: i32) -> Result<bool> {
+		Ok(
+			sqlx::query!("SELECT EXISTS(SELECT 1 FROM Chapters WHERE id = $1);", id)
+				.fetch_one(self.executor())
+				.await
+				.map_err(select_err)?
+				.exists
+				.ok_or_else(exist_err)?,
+		)
 	}
 
 	async fn get_chapter_by_order(&mut self, order: i32) -> Result<Option<Chapter>> {
