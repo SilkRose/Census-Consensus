@@ -230,13 +230,21 @@ pub async fn set_chapter_order(
 	path: Path<i32>, mut db: ThinData<Db>, _: AdminSessionInfo,
 ) -> actix_web::Result<impl Responder> {
 	let id = path.into_inner();
-	let chapters = db.get_all_chapters().await?;
-	let max = chapters.iter().filter_map(|c| c.chapter_order).max();
-	db.update_chapter_order(id, max.map_or(1, |i| i + 1))
-		.await?;
-	Ok(HttpResponse::SeeOther()
-		.append_header(("Location", "/chapters"))
-		.finish())
+	if let Some(chapter) = db.get_chapter(id).await?
+		&& chapter.chapter_order.is_none()
+		&& chapter.minutes_left.is_none()
+		&& chapter.fimfic_ch_id.is_none()
+	{
+		let chapters = db.get_all_chapters().await?;
+		let max = chapters.iter().filter_map(|c| c.chapter_order).max();
+		db.update_chapter_order(id, max.map_or(1, |i| i + 1))
+			.await?;
+		Ok(HttpResponse::SeeOther()
+			.append_header(("Location", "/chapters"))
+			.finish())
+	} else {
+		Ok(HttpResponse::BadRequest().finish())
+	}
 }
 
 #[get("/chapters/{id}/ordered/{movement}")]
@@ -244,16 +252,13 @@ pub async fn set_chapter_order_move(
 	path: Path<(i32, i32)>, mut db: ThinData<Db>, _: AdminSessionInfo,
 ) -> actix_web::Result<impl Responder> {
 	let (id, movement) = path.into_inner();
-	if movement.abs() != 1 {
-		return Ok(HttpResponse::BadRequest().finish());
-	}
-	let chapter = db.get_chapter(id).await?;
-	if let Some(chapter) = chapter
+	if movement.abs() == 1
+		&& let Some(chapter) = db.get_chapter(id).await?
 		&& let Some(order) = chapter.chapter_order
+		&& chapter.minutes_left.is_none()
+		&& chapter.fimfic_ch_id.is_none()
+		&& order + movement > 0
 	{
-		if order + movement == 0 {
-			return Ok(HttpResponse::BadRequest().finish());
-		}
 		let chapter_above = db.get_chapter_by_order(order + movement).await?;
 		if let Some(above) = chapter_above {
 			db.swap_chapters_by_order(id, above.id, order, movement)
@@ -261,10 +266,12 @@ pub async fn set_chapter_order_move(
 		} else {
 			db.update_chapter_order_none(id).await?;
 		}
+		Ok(HttpResponse::SeeOther()
+			.append_header(("Location", "/chapters"))
+			.finish())
+	} else {
+		Ok(HttpResponse::BadRequest().finish())
 	}
-	Ok(HttpResponse::SeeOther()
-		.append_header(("Location", "/chapters"))
-		.finish())
 }
 
 #[get("/chapters/{id}/vote-duration/{movement}")]
@@ -272,20 +279,20 @@ pub async fn set_chapter_vote_duration_move(
 	path: Path<(i32, i32)>, mut db: ThinData<Db>, _: AdminSessionInfo,
 ) -> actix_web::Result<impl Responder> {
 	let (id, movement) = path.into_inner();
-	if movement.abs() != 1 {
-		return Ok(HttpResponse::BadRequest().finish());
-	}
-	let chapter = db.get_chapter(id).await?;
-	if let Some(chapter) = chapter {
+	if movement.abs() == 1
+		&& let Some(chapter) = db.get_chapter(id).await?
+		&& chapter.minutes_left.is_none()
+		&& chapter.fimfic_ch_id.is_none()
+		&& chapter.vote_duration + movement > 0
+	{
 		let new_duratrion = chapter.vote_duration + movement;
-		if new_duratrion == 0 {
-			return Ok(HttpResponse::BadRequest().finish());
-		}
 		db.update_chapter_vote_duration(id, new_duratrion).await?;
+		Ok(HttpResponse::SeeOther()
+			.append_header(("Location", "/chapters"))
+			.finish())
+	} else {
+		Ok(HttpResponse::BadRequest().finish())
 	}
-	Ok(HttpResponse::SeeOther()
-		.append_header(("Location", "/chapters"))
-		.finish())
 }
 
 #[get("/chapters/{id}/minutes-left/{movement}")]
@@ -293,22 +300,20 @@ pub async fn set_chapter_minutes_left_move(
 	path: Path<(i32, i32)>, mut db: ThinData<Db>, _: AdminSessionInfo,
 ) -> actix_web::Result<impl Responder> {
 	let (id, movement) = path.into_inner();
-	if movement.abs() != 1 {
-		return Ok(HttpResponse::BadRequest().finish());
-	}
-	let chapter = db.get_chapter(id).await?;
-	if let Some(chapter) = chapter
+	if movement.abs() == 1
+		&& let Some(chapter) = db.get_chapter(id).await?
 		&& let Some(minutes_left) = chapter.minutes_left
+		&& chapter.fimfic_ch_id.is_none()
+		&& minutes_left + movement > 0
 	{
 		let new_left = minutes_left + movement;
-		if new_left < 0 {
-			return Ok(HttpResponse::BadRequest().finish());
-		}
 		db.update_chapter_minutes_left(id, new_left).await?;
+		Ok(HttpResponse::SeeOther()
+			.append_header(("Location", "/chapters"))
+			.finish())
+	} else {
+		Ok(HttpResponse::BadRequest().finish())
 	}
-	Ok(HttpResponse::SeeOther()
-		.append_header(("Location", "/chapters"))
-		.finish())
 }
 
 #[get("/chapters/{id}/revisions")]
