@@ -7,7 +7,8 @@ use crate::html_templates::{
 };
 use crate::html_templates::{chapter_history_html, user_feedback_html};
 use crate::structs::{
-	ChapterData, ChapterEdit, Population, QuestionData, QuestionEdit, UserRoleUpdate, UserType,
+	ChapterData, ChapterEdit, Population, QuestionData, QuestionEdit, UserBan, UserFeedback,
+	UserRoleUpdate, UserType,
 };
 use crate::utility::redirect;
 use crate::{FimficCfg, HttpClient};
@@ -82,17 +83,11 @@ pub async fn get_ban_user(_: AdminSessionInfo) -> actix_web::Result<impl Respond
 pub async fn set_ban_user(
 	req: HttpRequest, body: String, mut db: ThinData<Db>, _: AdminSessionInfo,
 ) -> actix_web::Result<impl Responder> {
-	let user = serde_urlencoded::from_str::<HashMap<String, String>>(&body)?;
-	let user_id = user.get("id").and_then(|id| id.parse::<i32>().ok());
-	let reason = user
-		.get("reason")
-		.and_then(|msg| if msg.is_empty() { None } else { Some(msg) })
-		.cloned();
-	if user_id.is_none() || reason.is_none() {
-		return Ok(HttpResponse::BadRequest().finish());
+	let user = serde_urlencoded::from_str::<UserBan>(&body)?;
+	db.insert_banned_user(user.id, &user.reason).await?;
+	if let Some(user) = db.get_user_opt(user.id).await? {
+		db.update_user_role(user.id, UserType::Voter).await?;
 	}
-	db.insert_banned_user(user_id.unwrap(), &reason.unwrap())
-		.await?;
 	Ok(HttpResponse::SeeOther()
 		.append_header(("Location", redirect(req)))
 		.finish())
@@ -113,19 +108,13 @@ pub async fn get_user_feedback(
 pub async fn set_user_feedback(
 	req: HttpRequest, body: String, mut db: ThinData<Db>, session: SessionInfo,
 ) -> actix_web::Result<impl Responder> {
-	let feedback = serde_urlencoded::from_str::<HashMap<String, String>>(&body)?;
-	let private_feedback = feedback
-		.get("feedback_private")
-		.and_then(|msg| if msg.is_empty() { None } else { Some(msg) })
-		.cloned();
-	let public_feedback = feedback
-		.get("feedback_public")
-		.and_then(|msg| if msg.is_empty() { None } else { Some(msg) })
-		.cloned();
-
-	db.update_user_feedback(session.user_id, private_feedback, public_feedback)
-		.await?;
-
+	let feedback = serde_urlencoded::from_str::<UserFeedback>(&body)?;
+	db.update_user_feedback(
+		session.user_id,
+		feedback.feedback_private,
+		feedback.feedback_public,
+	)
+	.await?;
 	Ok(HttpResponse::SeeOther()
 		.append_header(("Location", redirect(req)))
 		.finish())

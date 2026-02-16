@@ -211,3 +211,17 @@ pub struct UserRoleUpdate {
 	pub id: i32,
 	pub role: UserType,
 }
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct UserBan {
+	pub id: i32,
+	pub reason: String,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct UserFeedback {
+	#[serde(deserialize_with = "option_string")]
+	pub feedback_private: Option<String>,
+	#[serde(deserialize_with = "option_string")]
+	pub feedback_public: Option<String>,
+}
