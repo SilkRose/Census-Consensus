@@ -1,8 +1,5 @@
 use crate::error::Result;
-use crate::structs::{
-	BannedUser, Chapter, ChapterEdit, ChapterRevision, ChapterTable, Question, QuestionEdit,
-	QuestionRevision, QuestionTable, QuestionType, Session, StoryUpdate, User, UserType, Vote,
-};
+use crate::structs::*;
 use crate::utility::{count_options, count_outcomes};
 use chrono::{DateTime, Utc};
 use pony::fimfiction_api::story::StoryData;

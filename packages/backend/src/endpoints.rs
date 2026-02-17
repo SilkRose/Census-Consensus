@@ -1,15 +1,7 @@
 use crate::auth::{AdminSessionInfo, SessionInfo, WriterSessionInfo};
 use crate::database::*;
-use crate::html_templates::{
-	ban_user_html, chapter_questions_html, chapters_html, edit_chapter_html, edit_question_html,
-	new_chapter_html, new_question_html, question_history_html, questions_html, sessions_html,
-	update_user_info_html, update_user_role_html,
-};
-use crate::html_templates::{chapter_history_html, user_feedback_html};
-use crate::structs::{
-	ChapterData, ChapterEdit, Population, QuestionData, QuestionEdit, UserBan, UserFeedback,
-	UserRoleUpdate, UserType,
-};
+use crate::html_templates::*;
+use crate::structs::*;
 use crate::utility::redirect;
 use crate::{FimficCfg, HttpClient};
 use actix_web::web::{Path, ThinData};

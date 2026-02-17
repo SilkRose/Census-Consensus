@@ -1,7 +1,4 @@
-use crate::structs::{
-	Chapter, ChapterData, ChapterRevision, ChapterTable, Question, QuestionData, QuestionRevision,
-	QuestionTable, QuestionType, Session, User, UserType,
-};
+use crate::structs::*;
 use crate::utility::count_words;
 use maud::{DOCTYPE, PreEscaped, html};
 use pony::number_format::format_number_u128;
