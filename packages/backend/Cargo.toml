@@ -20,3 +20,4 @@ serde = { workspace = true }
 serde-json = { workspace = true }
 serde-urlencoded = { workspace = true }
 sqlx = { workspace = true }
+url = { workspace = true }

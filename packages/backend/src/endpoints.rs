@@ -19,8 +19,16 @@ use pony::number_format::format_number_u128;
 use pony::smart_map::SmartMap;
 use pony::time::format_milliseconds;
 use std::collections::{HashMap, HashSet};
+use std::fs;
 use std::sync::{Arc, RwLock};
 use std::time::Duration;
+
+#[get("/style.css")]
+pub async fn get_css() -> actix_web::Result<impl Responder> {
+	Ok(HttpResponse::Ok()
+		.content_type("text/css; charset=utf-8")
+		.body(fs::read_to_string("./src/style.css")?))
+}
 
 #[get("/update-user")]
 pub async fn get_update_user() -> actix_web::Result<impl Responder> {

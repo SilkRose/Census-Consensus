@@ -4,10 +4,10 @@ use std::sync::{Arc, RwLock};
 
 use crate::endpoints::{
 	get_ban_user, get_chapter_edit, get_chapter_new, get_chapter_questions, get_chapter_revisions,
-	get_chapters, get_population, get_question_edit, get_question_new, get_question_revisions,
-	get_questions, get_sessions, get_update_user, get_update_user_role, get_user_feedback,
-	set_ban_user, set_chapter_edit, set_chapter_minutes_left_move, set_chapter_new,
-	set_chapter_order, set_chapter_order_move, set_chapter_question_order,
+	get_chapters, get_css, get_population, get_question_edit, get_question_new,
+	get_question_revisions, get_questions, get_sessions, get_update_user, get_update_user_role,
+	get_user_feedback, set_ban_user, set_chapter_edit, set_chapter_minutes_left_move,
+	set_chapter_new, set_chapter_order, set_chapter_order_move, set_chapter_question_order,
 	set_chapter_question_order_move, set_chapter_vote_duration_move, set_population,
 	set_question_claim, set_question_edit, set_question_new, set_question_unclaim,
 	set_revoke_sessions, set_update_user, set_update_user_role, set_user_feedback,
@@ -109,6 +109,7 @@ async fn main() -> Result<()> {
 
 	let server = HttpServer::new(move || {
 		ActixApp::new()
+			.service(get_css)
 			.service(auth::fimfic_auth)
 			.service(auth::fimfic_auth_logout)
 			.service(get_sessions)

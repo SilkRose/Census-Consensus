@@ -5,10 +5,20 @@ use crate::structs::{
 use crate::utility::count_words;
 use maud::{DOCTYPE, PreEscaped, html};
 use pony::number_format::format_number_u128;
+use url::form_urlencoded;
+
+const SITE_NAME: &str = "Census Consensus";
+const SITE_LINK: &str = "https://survey.silkrose.dev";
 
 pub fn update_user_info_html() -> String {
+	let title: String = format!("User Update - {SITE_NAME}");
+	let description = "Update your user info once per hour.";
+	let link = format!("{SITE_LINK}/update-user");
 	html! {
 		(DOCTYPE) html lang = "en" {
+			head {
+				(html_head(&title, description, &link))
+			}
 			body {
 				form method = "post" action = "/update-user" {
 					p { "You can only update your info once per hour." }
@@ -706,6 +716,43 @@ pub fn questions_table(
 }
 
 // HTML components go below this comment:
+
+pub fn html_head(title: &str, description: &str, link: &str) -> PreEscaped<String> {
+	html! {
+		title { (title) };
+		meta charset = "UTF-8";
+		meta http-equiv = "X-UA-Compatible" content = "IE=edge";
+		meta name = "viewport" content = "width=device-width,initial-scale=1";
+		link rel = "stylesheet" crossorigin href = "/style.css";
+		meta name = "theme-color" content = { "#F5B7D0" };
+		link rel = "canonical" href = (link);
+		meta property = "og:title" content = (title);
+		meta property = "og:description" content = (description);
+		meta property = "og:url" content = (link);
+		meta property = "og:type" content = "website";
+		meta property = "og:site_name" content = (SITE_NAME);
+		@let encode = encode_url(title);
+		link
+			crossorigin
+			rel = "alternate"
+			type = "application/json+oembed"
+			href = { "https://www.fixfiction.net/oembed?" (encode) }
+			title = (title);
+
+	}
+}
+
+fn encode_url(title: &str) -> String {
+	let mut encode = form_urlencoded::Serializer::new(String::new());
+	encode.append_pair("type", "rich");
+	encode.append_pair("version", "1.0");
+	encode.append_pair("provider_name", SITE_NAME);
+	encode.append_pair("provider_url", SITE_LINK);
+	encode.append_pair("title", title);
+	encode.append_pair("cache_age", "86400");
+	encode.append_pair("html", "");
+	encode.finish()
+}
 
 fn input_text_required(id: &str, name: &str, min: u32, max: u32) -> PreEscaped<String> {
 	html!	(

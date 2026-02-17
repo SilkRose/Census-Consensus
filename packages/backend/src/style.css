@@ -1,0 +1,205 @@
+@layer styling, colors, reset;
+
+:root {
+	--font-family-base: system-ui;
+	--font-family-base-line-height: 1.6;
+	--font-family-heading: system-ui;
+	--font-family-heading-line-height: 1.1;
+	--font-family-code: monospace;
+	--body-max-width: 75ch;
+}
+
+/* This reset was adapted from Kevin Powell's video: https://www.youtube.com/watch?v=CAPo3HZBWS0 */
+@layer reset {
+	*,
+	*::before,
+	*::after {
+		box-sizing: border-box;
+	}
+
+	html {
+		-moz-text-size-adjust: none;
+		-webkit-text-size-adjust: none;
+		text-size-adjust: none;
+		font-family: var(--font-family-base);
+		color-scheme: light dark;
+		interpolate-size: allow-keywords;
+	}
+
+	body {
+		margin: 0;
+		min-height: 100vh;
+		line-height: var(--font-family-base-line-height);
+	}
+
+	h1,
+	h2,
+	h3,
+	h4,
+	button,
+	input,
+	label {
+		line-height: var(--font-family-heading-line-height);
+	}
+
+	input,
+	button,
+	textarea,
+	select {
+		font-family: inherit;
+		font-size: inherit;
+	}
+
+	textarea:not([rows]) {
+		min-height: 10em;
+	}
+
+	ul[role="list"],
+	ol[role="list"] {
+		list-style: none;
+		margin: 0;
+		padding: 0;
+	}
+
+	h1,
+	h2,
+	h3,
+	h4 {
+		text-wrap: balance;
+		font-family: var(--font-family-heading);
+	}
+
+	p,
+	li,
+	figcaption {
+		max-width: var(--body-max-width);
+		text-wrap: pretty;
+	}
+
+	code {
+		font-family: var(--font-family-code);
+	}
+
+	:first-child {
+		margin-block-start: 0;
+	}
+
+	h1,
+	h2,
+	h3,
+	h4,
+	p,
+	figure,
+	blockquote,
+	dl,
+	dd {
+		margin-block-end: 0;
+	}
+
+	img,
+	picture {
+		max-width: 100%;
+		display: block;
+	}
+
+	input,
+	button,
+	textarea,
+	select {
+		font: inherit;
+	}
+
+	td,
+	math,
+	time[datetime*=":"] {
+		font-variant-numeric: tabular-nums lining-nums;
+	}
+
+	table {
+		border-collapse: collapse;
+	}
+
+	:target {
+		scroll-margin-block: 32px;
+		scroll-margin-block: 5rlh;
+	}
+
+	@media (prefers-reduced-motion: no-preference) {
+		html {
+			scroll-behavior: smooth;
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		html {
+			scroll-behavior: auto;
+		}
+
+		*,
+		*::before,
+		*::after {
+			animation-duration: 0.01ms !important;
+			animation-iteration-count: 1 !important;
+			transition-duration: 0.01ms !important;
+			scroll-behavior: auto !important;
+		}
+	}
+}
+
+@layer colors {
+	/* Celestia light theme: https://www.realtimecolors.com/?colors=5e2f79-fef6fb-fcd8b6-fdf5b4-f2d9e8 */
+	@media (prefers-color-scheme: light) {
+		:root {
+			color-scheme: light;
+			--text: hsl(278 44% 33%);
+			--background: hsl(323 80% 98%);
+			--primary: hsl(29 92% 85%);
+			--secondary: hsl(53 95% 85%);
+			--accent: hsl(324 49% 90%);
+		}
+	}
+
+	/* Luna dark theme: https://www.realtimecolors.com/?colors=a7bef1-171a35-3adfc3-00c5cc-aba4f4 */
+	@media (prefers-color-scheme: dark) {
+		:root {
+			color-scheme: dark;
+			--text: hsl(221 73% 80%);
+			--background: hsl(234 39% 15%);
+			--primary: hsl(170 72% 55%);
+			--secondary: hsl(182 100% 40%);
+			--accent: hsl(245 78% 80%);
+		}
+	}
+}
+
+@layer styling {
+	html {
+		color: var(--text);
+		background-color: var(--background);
+	}
+
+	button {
+		border: none;
+		border-radius: 6px;
+		color: var(--background);
+		background-color: var(--primary);
+	}
+
+	table > button {
+		background-color: var(--secondary);
+	}
+
+	:not(table) > button {
+		background-color: var(--primary);
+		padding: 10px;
+	}
+
+	input,
+	textarea,
+	select {
+		padding: 0.5em 1em;
+		min-width: 7em;
+		max-width: 100%;
+		field-sizing: content;
+	}
+}
