@@ -1,4 +1,4 @@
-@layer styling, colors, reset;
+@layer reset, colors, styling;
 
 :root {
 	--font-family-base: system-ui;
@@ -178,10 +178,14 @@
 		background-color: var(--background);
 	}
 
+	header {
+		display: flex;
+		flex-direction: row;
+	}
+
 	button {
 		border: none;
 		border-radius: 6px;
-		color: var(--background);
 		background-color: var(--primary);
 	}
 
@@ -194,12 +198,91 @@
 		padding: 10px;
 	}
 
-	input,
+	input:not([type="radio"]),
 	textarea,
 	select {
 		padding: 0.5em 1em;
 		min-width: 7em;
 		max-width: 100%;
 		field-sizing: content;
+	}
+
+	body {
+		max-width: 900px;
+		margin-inline: auto;
+		justify-content: center;
+		min-height: 100vh;
+		display: flex;
+		flex-direction: column;
+	}
+
+	main {
+		flex: 1;
+		display: flex;
+		flex-direction: column;
+		justify-content: center;
+		align-items: center;
+	}
+
+	form {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 0.5rem;
+	}
+
+	nav > a {
+		color: var(--text);
+		text-decoration: none;
+	}
+
+	nav,
+	fieldset {
+		border: 0;
+		display: flex;
+		gap: 0.5rem;
+		width: fit-content;
+		padding: 0.5rem 0.5rem;
+		margin-inline: auto;
+		align-items: center;
+	}
+
+	input[type="radio"] {
+		appearance: none;
+		width: 0.75rem;
+		height: 0.75rem;
+		outline: 2px solid var(--text);
+		outline-offset: 3px;
+		border-radius: 50%;
+	}
+
+	input[type="radio"]:checked {
+		background-color: var(--text);
+	}
+
+	:root:has(#light:checked) {
+		color-scheme: light;
+		--text: hsl(278 44% 33%);
+		--background: hsl(323 80% 98%);
+		--primary: hsl(29 92% 85%);
+		--secondary: hsl(53 95% 85%);
+		--accent: hsl(324 49% 90%);
+
+		button {
+			color: var(--text);
+		}
+	}
+
+	:root:has(#dark:checked) {
+		color-scheme: dark;
+		--text: hsl(221 73% 80%);
+		--background: hsl(234 39% 15%);
+		--primary: hsl(170 72% 55%);
+		--secondary: hsl(182 100% 40%);
+		--accent: hsl(245 78% 80%);
+
+		button {
+			color: var(--background);
+		}
 	}
 }

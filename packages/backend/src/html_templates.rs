@@ -17,10 +17,15 @@ pub fn update_user_info_html() -> String {
 				(html_head(&title, description, &link))
 			}
 			body {
-				form method = "post" action = "/update-user" {
+				header {
+					(header_html())
+				}
+				main {
+					form method = "post" action = "/update-user" {
 					p { "You can only update your info once per hour." }
 					br;
 					button type = "submit" { "Update User Info" }
+				}
 				}
 			};
 		};
@@ -749,6 +754,31 @@ fn encode_url(title: &str) -> String {
 	encode.append_pair("cache_age", "86400");
 	encode.append_pair("html", "");
 	encode.finish()
+}
+
+fn header_html() -> PreEscaped<String> {
+	html!(
+		fieldset {
+			input id = "census" type = "radio" name = "logo" value = "census" {}
+			label for = "census" { "Census" }
+			input id = "consensus" type = "radio" name = "logo" value = "consensus" {}
+			label for = "consensus" { "Consensus" }
+		}
+		nav {
+			input type = "radio" name = "page" value = "home" {}
+			a href = "/" { "Home" }
+			input type = "radio" name = "page" value = "update-user" checked {}
+			a href = "/update-user" { "Update User" }
+
+		}
+		fieldset {
+			span { "Theme:" }
+			input id = "light" type = "radio" name = "theme" value = "light" {}
+			label for = "light" { "Celestia" }
+			input id = "dark" type = "radio" name = "theme" value = "dark" {}
+			label for = "dark" { "Luna" }
+		}
+	)
 }
 
 fn input_text_required(id: &str, name: &str, min: u32, max: u32) -> PreEscaped<String> {
