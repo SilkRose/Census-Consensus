@@ -7,6 +7,7 @@ use crate::{FimficCfg, HttpClient};
 use actix_web::web::{Path, ThinData};
 use actix_web::{HttpRequest, HttpResponse, Responder, get, post};
 use chrono::Utc;
+use lightningcss::stylesheet::{MinifyOptions, ParserOptions, PrinterOptions, StyleSheet};
 use pony::number_format::format_number_u128;
 use pony::smart_map::SmartMap;
 use pony::time::format_milliseconds;
@@ -17,9 +18,30 @@ use std::time::Duration;
 
 #[get("/style.css")]
 pub async fn get_css() -> actix_web::Result<impl Responder> {
-	Ok(HttpResponse::Ok()
-		.content_type("text/css; charset=utf-8")
-		.body(fs::read_to_string("./src/style.css")?))
+	if let Ok(ref css_file) = fs::read_to_string("./src/style.css")
+		&& let Ok(mut stylesheet) = StyleSheet::parse(css_file, ParserOptions::default())
+	{
+		if stylesheet.minify(MinifyOptions::default()).is_err() {
+			return Ok(HttpResponse::Ok()
+				.content_type("text/css; charset=utf-8")
+				.body(css_file.clone()));
+		}
+		let opts = PrinterOptions {
+			minify: true,
+			..Default::default()
+		};
+		if let Ok(styles) = stylesheet.to_css(opts) {
+			Ok(HttpResponse::Ok()
+				.content_type("text/css; charset=utf-8")
+				.body(styles.code))
+		} else {
+			Ok(HttpResponse::Ok()
+				.content_type("text/css; charset=utf-8")
+				.body(css_file.clone()))
+		}
+	} else {
+		Ok(HttpResponse::InternalServerError().finish())
+	}
 }
 
 #[get("/update-user")]

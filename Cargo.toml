@@ -21,6 +21,7 @@ leptos-mview = { version = "0.4.4", features = ["nightly"] }
 leptos-router = { package = "leptos_router", version = "0.8.11", features = [
 	"nightly",
 ] }
+lightningcss = "1.0.0-alpha.70"
 maud = "0.27.0"
 pony = { git = "https://github.com/SilkRose/Pony", rev = "8f465bf4c89cad8ef1620f682e3058c0435352c7" }
 rand = { version = "0.10.0", default-features = false, features = [

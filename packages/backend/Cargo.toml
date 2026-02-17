@@ -14,6 +14,7 @@ chrono = { workspace = true }
 dotenvy = { workspace = true }
 maud = { workspace = true }
 pony = { workspace = true }
+lightningcss = { workspace = true }
 rand = { workspace = true }
 reqwest = { workspace = true }
 serde = { workspace = true }
