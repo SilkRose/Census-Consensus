@@ -147,6 +147,35 @@
 }
 
 @layer colors {
+	html {
+		color: var(--text);
+		background-color: var(--background);
+	}
+
+	button {
+		background-color: var(--primary);
+	}
+
+	input[type="radio"]:checked {
+		background-color: var(--text);
+	}
+
+	table > button {
+		background-color: var(--secondary);
+	}
+
+	:not(table) > button {
+		background-color: var(--primary);
+	}
+
+	nav > a {
+		color: var(--text);
+	}
+
+	input[type="radio"] {
+		outline: 2px solid var(--text);
+	}
+
 	/* Celestia light theme: https://www.realtimecolors.com/?colors=5e2f79-fef6fb-fcd8b6-fdf5b4-f2d9e8 */
 	@media (prefers-color-scheme: light) {
 		:root {
@@ -156,6 +185,23 @@
 			--primary: hsl(29 92% 85%);
 			--secondary: hsl(53 95% 85%);
 			--accent: hsl(324 49% 90%);
+		}
+
+		button {
+			color: var(--text);
+		}
+	}
+
+	:root:has(#light:checked) {
+		color-scheme: light;
+		--text: hsl(278 44% 33%);
+		--background: hsl(323 80% 98%);
+		--primary: hsl(29 92% 85%);
+		--secondary: hsl(53 95% 85%);
+		--accent: hsl(324 49% 90%);
+
+		button {
+			color: var(--text);
 		}
 	}
 
@@ -169,15 +215,27 @@
 			--secondary: hsl(182 100% 40%);
 			--accent: hsl(245 78% 80%);
 		}
+
+		button {
+			color: var(--background);
+		}
+	}
+
+	:root:has(#dark:checked) {
+		color-scheme: dark;
+		--text: hsl(221 73% 80%);
+		--background: hsl(234 39% 15%);
+		--primary: hsl(170 72% 55%);
+		--secondary: hsl(182 100% 40%);
+		--accent: hsl(245 78% 80%);
+
+		button {
+			color: var(--background);
+		}
 	}
 }
 
 @layer styling {
-	html {
-		color: var(--text);
-		background-color: var(--background);
-	}
-
 	header {
 		display: flex;
 		flex-direction: row;
@@ -186,15 +244,9 @@
 	button {
 		border: none;
 		border-radius: 6px;
-		background-color: var(--primary);
-	}
-
-	table > button {
-		background-color: var(--secondary);
 	}
 
 	:not(table) > button {
-		background-color: var(--primary);
 		padding: 10px;
 	}
 
@@ -232,7 +284,6 @@
 	}
 
 	nav > a {
-		color: var(--text);
 		text-decoration: none;
 	}
 
@@ -251,38 +302,7 @@
 		appearance: none;
 		width: 0.75rem;
 		height: 0.75rem;
-		outline: 2px solid var(--text);
 		outline-offset: 3px;
 		border-radius: 50%;
-	}
-
-	input[type="radio"]:checked {
-		background-color: var(--text);
-	}
-
-	:root:has(#light:checked) {
-		color-scheme: light;
-		--text: hsl(278 44% 33%);
-		--background: hsl(323 80% 98%);
-		--primary: hsl(29 92% 85%);
-		--secondary: hsl(53 95% 85%);
-		--accent: hsl(324 49% 90%);
-
-		button {
-			color: var(--text);
-		}
-	}
-
-	:root:has(#dark:checked) {
-		color-scheme: dark;
-		--text: hsl(221 73% 80%);
-		--background: hsl(234 39% 15%);
-		--primary: hsl(170 72% 55%);
-		--secondary: hsl(182 100% 40%);
-		--accent: hsl(245 78% 80%);
-
-		button {
-			color: var(--background);
-		}
 	}
 }
