@@ -32,6 +32,12 @@
 		line-height: var(--font-family-base-line-height);
 	}
 
+	header,
+	main,
+	footer {
+		width: 100%;
+	}
+
 	h1,
 	h2,
 	h3,
@@ -248,6 +254,7 @@
 
 	:not(table) > button {
 		padding: 10px;
+		margin: 5px;
 	}
 
 	input:not([type="radio"]),
