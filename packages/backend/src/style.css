@@ -266,6 +266,7 @@
 		min-height: 100vh;
 		display: flex;
 		flex-direction: column;
+		text-align: center;
 	}
 
 	main {
@@ -316,5 +317,26 @@
 		display: flex;
 		flex-direction: row;
 		gap: 1rem;
+	}
+
+	button {
+		-webkit-transform: perspective(1px) translateZ(0);
+		transform: perspective(1px) translateZ(0);
+		-webkit-transition-duration: 0.3s;
+		transition-duration: 0.3s;
+		-webkit-transition-property: transform;
+		transition-property: transform;
+	}
+
+	button:hover,
+	button:focus,
+	button:active {
+		-webkit-transform: scale(1.075);
+		transform: scale(1.075);
+		filter: brightness(1.05);
+	}
+
+	button:disabled {
+		filter: brightness(0.5);
 	}
 }
