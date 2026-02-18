@@ -106,7 +106,7 @@ async fn main() -> Result<()> {
 			.service(get_sessions)
 			.service(set_revoke_sessions)
 			.service(set_update_user)
-			.service(get_update_user)
+			.service(get_user)
 			.service(get_update_user_role)
 			.service(set_update_user_role)
 			.service(get_ban_user)

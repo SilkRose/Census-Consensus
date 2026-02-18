@@ -16,6 +16,8 @@ use std::fs;
 use std::sync::{Arc, RwLock};
 use std::time::Duration;
 
+pub const MIN_USER_UPDATE_TIME: Duration = Duration::from_hours(1);
+
 #[get("/style.css")]
 pub async fn get_css() -> actix_web::Result<impl Responder> {
 	if let Ok(ref css_file) = fs::read_to_string("./src/style.css")
@@ -44,22 +46,28 @@ pub async fn get_css() -> actix_web::Result<impl Responder> {
 	}
 }
 
-#[get("/update-user")]
-pub async fn get_update_user() -> actix_web::Result<impl Responder> {
-	let page = update_user_info_html();
+#[get("/user")]
+pub async fn get_user(
+	mut db: ThinData<Db>, session: SessionInfo,
+) -> actix_web::Result<impl Responder> {
+	let user = db.get_user(session.user_id).await?;
+	let mut sessions = db.get_all_user_sessions(session.user_id).await?;
+	sessions.sort_by_key(|k| k.last_seen);
+	sessions.reverse();
+	let page = user_settings_html(user, sessions);
 	Ok(HttpResponse::Ok()
 		.content_type("text/html; charset=utf-8")
 		.body(page))
 }
 
-#[post("/update-user")]
+#[get("/user/update")]
 pub async fn set_update_user(
 	req: HttpRequest, mut db: ThinData<Db>, session: SessionInfo,
 	http_client: ThinData<HttpClient>, fimfic_cfg: ThinData<FimficCfg>,
 ) -> actix_web::Result<impl Responder> {
 	let user = db.get_user(session.user_id).await?;
-	let next_fetch_time = user.date_last_fetch + Duration::from_hours(1);
-	if Utc::now() > next_fetch_time {
+	let next_fetch_time = user.date_last_fetch + MIN_USER_UPDATE_TIME;
+	if Utc::now() > next_fetch_time || user.user_type == UserType::Admin {
 		let user_update = http_client
 			.get_fimfic_user(user.id, &fimfic_cfg.bearer_token)
 			.await?;

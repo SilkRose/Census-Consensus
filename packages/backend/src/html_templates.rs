@@ -1,5 +1,6 @@
-use crate::structs::*;
 use crate::utility::count_words;
+use crate::{endpoints::MIN_USER_UPDATE_TIME, structs::*};
+use chrono::Utc;
 use maud::{DOCTYPE, PreEscaped, html};
 use pony::number_format::format_number_u128;
 use url::form_urlencoded;
@@ -7,30 +8,51 @@ use url::form_urlencoded;
 const SITE_NAME: &str = "Census Consensus";
 const SITE_LINK: &str = "https://survey.silkrose.dev";
 
-pub fn update_user_info_html() -> String {
-	let title: String = format!("User Update - {SITE_NAME}");
-	let description = "Update your user info once per hour.";
-	let link = format!("{SITE_LINK}/update-user");
+pub fn user_settings_html(user: User, sessions: Vec<Session>) -> String {
+	let heading = "User Settings";
+	let title: String = format!("{heading} - {SITE_NAME}");
+	let description = "User sessions, update, and feedback.";
+	let link = format!("{SITE_LINK}/user-settings");
 	html! {
 		(DOCTYPE) html lang = "en" {
 			head {
-				(html_head(&title, description, &link))
+				(head_html(&title, description, &link))
 			}
 			body {
 				header {
 					(header_html())
 				}
 				main {
-					form method = "post" action = "/update-user" {
-					p { "You can only update your info once per hour." }
-					br;
-					button type = "submit" { "Update User Info" }
-				}
+					h1 { (heading) }
+					p { (description) }
+					(update_user_html(&user))
 				}
 			};
 		};
 	}
 	.into()
+}
+
+fn update_user_html(user: &User) -> PreEscaped<String> {
+	let next_fetch_time = user.date_last_fetch + MIN_USER_UPDATE_TIME;
+	let button_text = "Update User Info";
+	html!(
+		h2 { ("Update Info") }
+		p { "Update your info once per hour." }
+		span class = "row" {
+			@if let Some(pfp_url) = &user.pfp_url {
+				img src = (format!("{pfp_url}-32")) alt = (user.name) {}
+				" - "
+			}
+			(user.name) br;
+		}
+		@if Utc::now() > next_fetch_time || user.user_type == UserType::Admin {
+			(button_link(button_text, "/user/update"))
+		} @else {
+			// Insert wait message here.
+			(button_disabled(button_text))
+		}
+	)
 }
 
 pub fn update_user_role_html() -> String {
@@ -719,7 +741,7 @@ pub fn questions_table(
 
 // HTML components go below this comment:
 
-pub fn html_head(title: &str, description: &str, link: &str) -> PreEscaped<String> {
+pub fn head_html(title: &str, description: &str, link: &str) -> PreEscaped<String> {
 	html! {
 		title { (title) };
 		meta charset = "UTF-8";
