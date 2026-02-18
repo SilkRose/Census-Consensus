@@ -183,6 +183,20 @@
 		outline: 2px solid var(--text);
 	}
 
+	input[type="checkbox"] {
+		background-color: var(--background);
+	}
+
+	textarea,
+	input {
+		accent-color: var(--accent);
+	}
+
+	input[type="checkbox"],
+	button {
+		accent-color: var(--text);
+	}
+
 	/* Celestia light theme: https://www.realtimecolors.com/?colors=5e2f79-fef6fb-fcd8b6-fdf5b4-f2d9e8 */
 	@media (prefers-color-scheme: light) {
 		:root {
@@ -447,7 +461,7 @@
 	}
 
 	button:hover,
-	button:focus,
+	button:focus-visible,
 	button:active {
 		-webkit-transform: scale(1.075);
 		transform: scale(1.075);
