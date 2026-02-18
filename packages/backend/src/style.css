@@ -28,6 +28,7 @@
 
 	body {
 		margin: 0;
+		margin-bottom: 25vh;
 		min-height: 100vh;
 		line-height: var(--font-family-base-line-height);
 	}

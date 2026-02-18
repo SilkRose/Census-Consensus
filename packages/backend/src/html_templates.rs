@@ -31,6 +31,7 @@ pub fn user_settings_html(user: User, sessions: Vec<Session>) -> String {
 						(ban_user_html())
 					}
 					(update_user_html(&user))
+					(user_feedback_html(user))
 				}
 			};
 		};
@@ -103,29 +104,19 @@ pub fn ban_user_html() -> PreEscaped<String> {
 	}
 }
 
-pub fn user_feedback_html(
-	private_feedback: Option<String>, public_feedback: Option<String>,
-) -> String {
+pub fn user_feedback_html(user: User) -> PreEscaped<String> {
 	html! {
-		(DOCTYPE) html lang = "en" {
-			body {
-				form method = "post" action = "/user-feedback" {
-					label for = "public" { h3  { "Public Feedback" } }
-					br;
-					p style = "opacity: 80%" { "May appear in a future blog post about this event." }
-					(textarea_value("public", "feedback_public", 1_000_000, &public_feedback.unwrap_or_default()))
-					br;
-					label for = "private" { h3  { "Private Feedback" } }
-					br;
-					p style = "opacity: 80%" { "Shared only with the developers and writers of this event." }
-					(textarea_value("private", "feedback_private", 1_000_000, &private_feedback.unwrap_or_default()))
-					br;
-					button type = "submit" { "Submit Feedback" }
-				}
-			};
-		};
+		form method = "post" action = "/user/feedback" {
+			h2 { ("Update User Feedback") }
+			label for = "public" { h3  { "Public Feedback" } }
+			p { "May appear in a future blog post about this event." }
+			(textarea_value("public", "feedback_public", 1_000_000, &user.feedback_public.unwrap_or_default()))
+			label for = "private" { h3  { "Private Feedback" } }
+			p { "Shared only with the developers and writers of this event." }
+			(textarea_value("private", "feedback_private", 1_000_000, &user.feedback_private.unwrap_or_default()))
+			button type = "submit" { "Submit Feedback" }
+		}
 	}
-	.into()
 }
 
 pub fn sessions_html(sessions: Vec<Session>) -> String {

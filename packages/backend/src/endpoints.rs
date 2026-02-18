@@ -115,18 +115,7 @@ pub async fn set_ban_user(
 		.finish())
 }
 
-#[get("/user-feedback")]
-pub async fn get_user_feedback(
-	mut db: ThinData<Db>, session: SessionInfo,
-) -> actix_web::Result<impl Responder> {
-	let user = db.get_user(session.user_id).await?;
-	let page = user_feedback_html(user.feedback_private, user.feedback_public);
-	Ok(HttpResponse::Ok()
-		.content_type("text/html; charset=utf-8")
-		.body(page))
-}
-
-#[post("/user-feedback")]
+#[post("/user/feedback")]
 pub async fn set_user_feedback(
 	req: HttpRequest, body: String, mut db: ThinData<Db>, session: SessionInfo,
 ) -> actix_web::Result<impl Responder> {

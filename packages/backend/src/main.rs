@@ -109,7 +109,6 @@ async fn main() -> Result<()> {
 			.service(get_user)
 			.service(set_update_user_role)
 			.service(set_ban_user)
-			.service(get_user_feedback)
 			.service(set_user_feedback)
 			.service(get_chapters)
 			.service(set_chapter_new)
