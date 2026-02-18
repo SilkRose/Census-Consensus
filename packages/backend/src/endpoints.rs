@@ -86,15 +86,7 @@ pub async fn set_update_user(
 	}
 }
 
-#[get("/user-role")]
-pub async fn get_update_user_role(_: AdminSessionInfo) -> actix_web::Result<impl Responder> {
-	let page = update_user_role_html();
-	Ok(HttpResponse::Ok()
-		.content_type("text/html; charset=utf-8")
-		.body(page))
-}
-
-#[post("/user-role")]
+#[post("/user/role")]
 pub async fn set_update_user_role(
 	req: HttpRequest, body: String, mut db: ThinData<Db>, _: AdminSessionInfo,
 ) -> actix_web::Result<impl Responder> {
@@ -109,15 +101,7 @@ pub async fn set_update_user_role(
 	}
 }
 
-#[get("/ban-user")]
-pub async fn get_ban_user(_: AdminSessionInfo) -> actix_web::Result<impl Responder> {
-	let page = ban_user_html();
-	Ok(HttpResponse::Ok()
-		.content_type("text/html; charset=utf-8")
-		.body(page))
-}
-
-#[post("/ban-user")]
+#[post("/user/ban")]
 pub async fn set_ban_user(
 	req: HttpRequest, body: String, mut db: ThinData<Db>, _: AdminSessionInfo,
 ) -> actix_web::Result<impl Responder> {

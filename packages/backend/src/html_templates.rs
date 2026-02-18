@@ -26,6 +26,10 @@ pub fn user_settings_html(user: User, sessions: Vec<Session>) -> String {
 				main {
 					h1 { (heading) }
 					p { (description) }
+					@if user.user_type == UserType::Admin {
+						(update_user_role_html())
+						(ban_user_html())
+					}
 					(update_user_html(&user))
 				}
 			};
@@ -60,51 +64,43 @@ fn update_user_html(user: &User) -> PreEscaped<String> {
 	)
 }
 
-pub fn update_user_role_html() -> String {
+pub fn update_user_role_html() -> PreEscaped<String> {
 	html! {
-		(DOCTYPE) html lang = "en" {
-			body {
-				form method = "post" action = "/user-role" {
-					label for = "id" { "User ID:" }
-					br;
-					(input_text_numeric_required("id", "id", 1, 8))
-					br;
-					label for = "role" { "User Role:" }
-					br;
-					input id = "voter" type = "radio" name = "role" value = (UserType::Voter) required {}
-					label for = "voter" { (UserType::Voter) }
-					input id = "writer" type = "radio" name = "role" value = (UserType::Writer) {}
-					label for = "writer" { (UserType::Writer) }
-					input id = "admin" type = "radio" name = "role" value = (UserType::Admin) {}
-					label for = "admin" { (UserType::Admin) }
-					br;
-					button type = "submit" { "Update User Role" }
-				}
-			};
-		};
+		form method = "post" action = "/user/role" {
+			h2 { ("Update User Role") }
+			p { "Update a user's role based off their Fimfiction ID." }
+			span class = "row" {
+				label for = "id" { "User ID:" }
+				(input_text_numeric_required("id", "id", 1, 8))
+			}
+			span class = "row" {
+				label for = "role" { "User Role:" }
+				input id = "voter" type = "radio" name = "role" value = (UserType::Voter) required {}
+				label for = "voter" { (UserType::Voter) }
+				input id = "writer" type = "radio" name = "role" value = (UserType::Writer) {}
+				label for = "writer" { (UserType::Writer) }
+				input id = "admin" type = "radio" name = "role" value = (UserType::Admin) {}
+				label for = "admin" { (UserType::Admin) }
+			}
+			button type = "submit" { "Update User Role" }
+		}
 	}
-	.into()
 }
 
-pub fn ban_user_html() -> String {
+pub fn ban_user_html() -> PreEscaped<String> {
 	html! {
-		(DOCTYPE) html lang = "en" {
-			body {
-				form method = "post" action = "/ban-user" {
-					label for = "id" { "User ID:" }
-					br;
-					(input_text_numeric_required("id", "id", 1, 8))
-					br;
-					label for = "reason" { "Ban Reason:" }
-					br;
-					(textarea_required("reason", "reason", 8, 256))
-					br;
-					button type = "submit" { "Ban User" }
-				}
-			};
-		};
+		form method = "post" action = "/user/ban" {
+			h2 { ("Ban User") }
+			p { "Ban a user based off their Fimfiction ID." }
+			span class = "row" {
+				label for = "id" { "User ID:" }
+				(input_text_numeric_required("id", "id", 1, 8))
+			}
+			label for = "reason" { "Ban Reason:" }
+			(textarea_required("reason", "reason", 8, 256))
+			button type = "submit" { "Ban User" }
+		}
 	}
-	.into()
 }
 
 pub fn user_feedback_html(

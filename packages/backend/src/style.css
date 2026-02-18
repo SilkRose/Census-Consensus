@@ -57,7 +57,7 @@
 	}
 
 	textarea:not([rows]) {
-		min-height: 10em;
+		min-height: 6em;
 	}
 
 	ul[role="list"],
@@ -261,7 +261,7 @@
 	textarea,
 	select {
 		padding: 0.5em 1em;
-		min-width: 7em;
+		min-width: 20ch;
 		max-width: 100%;
 		field-sizing: content;
 	}
@@ -317,12 +317,16 @@
 	.column {
 		display: flex;
 		flex-direction: column;
+		justify-content: center;
+		align-items: center;
 		gap: 1rem;
 	}
 
 	.row {
 		display: flex;
 		flex-direction: row;
+		justify-content: center;
+		align-items: center;
 		gap: 1rem;
 	}
 
