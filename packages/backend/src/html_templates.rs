@@ -3,6 +3,7 @@ use crate::{endpoints::MIN_USER_UPDATE_TIME, structs::*};
 use chrono::Utc;
 use maud::{DOCTYPE, PreEscaped, html};
 use pony::number_format::format_number_u128;
+use pony::time::format_milliseconds;
 use url::form_urlencoded;
 
 const SITE_NAME: &str = "Census Consensus";
@@ -38,18 +39,22 @@ fn update_user_html(user: &User) -> PreEscaped<String> {
 	let button_text = "Update User Info";
 	html!(
 		h2 { ("Update Info") }
-		p { "Update your info once per hour." }
+		p { "This site pulls user information from Fimfiction.
+			If you update your name or profile picture on Fimfiction,
+			we have no idea unless you click the button to re-fetch your data." }
 		span class = "row" {
 			@if let Some(pfp_url) = &user.pfp_url {
 				img src = (format!("{pfp_url}-32")) alt = (user.name) {}
 				" - "
 			}
-			(user.name) br;
+			(user.name)
 		}
 		@if Utc::now() > next_fetch_time || user.user_type == UserType::Admin {
 			(button_link(button_text, "/user/update"))
 		} @else {
-			// Insert wait message here.
+			@let remaining = format_milliseconds(
+				(next_fetch_time - Utc::now()).num_milliseconds() as u128, Some(2)).unwrap();
+			(format!("Please wait {remaining} before trying again."))
 			(button_disabled(button_text))
 		}
 	)
@@ -789,8 +794,8 @@ fn header_html() -> PreEscaped<String> {
 		nav {
 			input type = "radio" name = "page" value = "home" {}
 			a href = "/" { "Home" }
-			input type = "radio" name = "page" value = "update-user" checked {}
-			a href = "/update-user" { "Update User" }
+			input type = "radio" name = "page" value = "user" checked {}
+			a href = "/user" { "User" }
 
 		}
 		fieldset {

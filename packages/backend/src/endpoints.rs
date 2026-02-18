@@ -79,7 +79,7 @@ pub async fn set_update_user(
 	} else {
 		let remaining = format_milliseconds(
 			(next_fetch_time - Utc::now()).num_milliseconds() as u128,
-			None,
+			Some(2),
 		)?;
 		let msg = format!("Please wait {remaining} before trying again.");
 		Ok(HttpResponse::TooManyRequests().body(msg))
