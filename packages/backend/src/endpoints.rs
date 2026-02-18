@@ -131,20 +131,7 @@ pub async fn set_user_feedback(
 		.finish())
 }
 
-#[get("/sessions")]
-pub async fn get_sessions(
-	mut db: ThinData<Db>, session: SessionInfo,
-) -> actix_web::Result<impl Responder> {
-	let mut sessions = db.get_all_user_sessions(session.user_id).await?;
-	sessions.sort_by_key(|k| k.last_seen);
-	sessions.reverse();
-	let page = sessions_html(sessions);
-	Ok(HttpResponse::Ok()
-		.content_type("text/html; charset=utf-8")
-		.body(page))
-}
-
-#[post("/revoke-sessions")]
+#[post("/user/revoke-sessions")]
 pub async fn set_revoke_sessions(
 	req: HttpRequest, body: String, mut db: ThinData<Db>, session: SessionInfo,
 ) -> actix_web::Result<impl Responder> {

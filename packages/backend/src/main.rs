@@ -103,7 +103,6 @@ async fn main() -> Result<()> {
 			.service(get_css)
 			.service(auth::fimfic_auth)
 			.service(auth::fimfic_auth_logout)
-			.service(get_sessions)
 			.service(set_revoke_sessions)
 			.service(set_update_user)
 			.service(get_user)

@@ -32,6 +32,7 @@ pub fn user_settings_html(user: User, sessions: Vec<Session>) -> String {
 					}
 					(update_user_html(&user))
 					(user_feedback_html(user))
+					(user_sessions_html(sessions))
 				}
 			};
 		};
@@ -119,32 +120,46 @@ pub fn user_feedback_html(user: User) -> PreEscaped<String> {
 	}
 }
 
-pub fn sessions_html(sessions: Vec<Session>) -> String {
+pub fn user_sessions_html(sessions: Vec<Session>) -> PreEscaped<String> {
 	html! {
-		(DOCTYPE) html lang = "en" {
-			body {
-				form method = "post" action = "/revoke-sessions" {
-					h1 { "Sessions" }
-					br;
-					table {
-						tr {
-							th { "Revoke?" }
-							th { "User Agent" }
-							th { "Created" }
-							th { "Last Seen" }
-						}
-						(session_table_row(&sessions[0], 0))
-						@for (num, session) in sessions.iter().enumerate().skip(1) {
-							(session_table_row(session, num))
-						}
+		form method = "post" action = "/user/revoke-sessions" {
+			h1 { "Sessions" }
+			table role = "table" {
+				caption role = "caption" { "Active User Sessions" }
+				thead role = "rowgroup" {
+					tr role = "row" {
+						th role = "columnheader" { "Revoke?" }
+						th role = "columnheader" { "User Agent" }
+						th role = "columnheader" { "Created" }
+						th role = "columnheader" { "Last Seen" }
 					}
-					br;
-					button type = "submit" { "Revoke Sessions" }
 				}
-			};
-		};
+				tbody role = "rowgroup" {
+					(session_table_row(&sessions[0], 0))
+					@for (num, session) in sessions.iter().enumerate().skip(1) {
+						(session_table_row(session, num))
+					}
+				}
+			}
+			button type = "submit" { "Revoke Sessions" }
+		}
 	}
-	.into()
+}
+
+fn session_table_row(session: &Session, num: usize) -> PreEscaped<String> {
+	html! (
+		tr role = "row" {
+			td role = "cell" data-cell = "Revoke: "
+				{ input type = "checkbox" id = (num) name = (num) value = (session.token) {} }
+			@if num == 0 {
+				td role = "cell" data-cell = "User Agent: " { b { "(Active) " } (session.user_agent) }
+			} @else {
+				td role = "cell" data-cell = "User Agent: " { (session.user_agent) }
+			}
+			td role = "cell" data-cell = "Created: " { (session.date_created.format("%d/%m/%Y %H:%M")) }
+			td role = "cell" data-cell = "Last Seen: " { (session.last_seen.format("%d/%m/%Y %H:%M")) }
+		}
+	)
 }
 
 pub fn new_chapter_html() -> String {
@@ -906,20 +921,5 @@ fn button_link(text: &str, endpoint: &str) -> PreEscaped<String> {
 fn button_disabled(text: &str) -> PreEscaped<String> {
 	html! (
 		button disabled { (text) }
-	)
-}
-
-fn session_table_row(session: &Session, num: usize) -> PreEscaped<String> {
-	html! (
-		tr {
-			td { input type = "checkbox" id = (num) name = (num) value = (session.token) {} }
-			@if num == 0 {
-				td { b { "(Active) " } (session.user_agent) }
-			} @else {
-				td { (session.user_agent) }
-			}
-			td { (session.date_created.format("%d/%m/%Y %H:%M")) }
-			td { (session.last_seen.format("%d/%m/%Y %H:%M")) }
-		}
 	)
 }
