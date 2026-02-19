@@ -159,6 +159,18 @@
 		background-color: var(--background);
 	}
 
+	.logo {
+		background-color: var(--table-row-1);
+	}
+
+	.nav {
+		background-color: var(--table-row-2);
+	}
+
+	.theme {
+		background-color: var(--table-row-3);
+	}
+
 	button {
 		background-color: var(--primary);
 	}
@@ -377,6 +389,12 @@
 	header {
 		display: flex;
 		flex-direction: row;
+		justify-content: space-between;
+		margin-top: 5px;
+	}
+
+	header > * {
+		border-radius: 6px;
 	}
 
 	button {
@@ -433,8 +451,7 @@
 		display: flex;
 		gap: 0.5rem;
 		width: fit-content;
-		padding: 0.5rem 0.5rem;
-		margin-inline: auto;
+		padding: 0.5rem;
 		align-items: center;
 	}
 
@@ -484,6 +501,15 @@
 	}
 
 	@media (max-width: 700px) {
+		header {
+			flex-direction: column;
+			gap: 0.5em;
+		}
+
+		header > * {
+			margin-inline: auto;
+		}
+
 		th {
 			display: none;
 		}

@@ -787,13 +787,13 @@ fn encode_url(title: &str) -> String {
 
 fn header_html() -> PreEscaped<String> {
 	html!(
-		fieldset {
+		fieldset class = "logo" {
 			input id = "census" type = "radio" name = "logo" value = "census" {}
 			label for = "census" { "Census" }
 			input id = "consensus" type = "radio" name = "logo" value = "consensus" {}
 			label for = "consensus" { "Consensus" }
 		}
-		nav {
+		nav class = "nav" {
 			input type = "radio" name = "page" value = "home" disabled {}
 			a href = "/" { "Home" }
 			input type = "radio" name = "page" value = "user" checked {}
@@ -801,7 +801,7 @@ fn header_html() -> PreEscaped<String> {
 			input type = "radio" name = "page" value = "about" disabled {}
 			a href = "/about" { "About" }
 		}
-		fieldset {
+		fieldset class = "theme" {
 			span { "Theme:" }
 			input id = "light" type = "radio" name = "theme" value = "light" {}
 			label for = "light" { "Celestia" }
