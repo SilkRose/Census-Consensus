@@ -798,7 +798,8 @@ fn header_html() -> PreEscaped<String> {
 			a href = "/" { "Home" }
 			input type = "radio" name = "page" value = "user" checked {}
 			a href = "/user" { "User" }
-
+			input type = "radio" name = "page" value = "about" {}
+			a href = "/about" { "About" }
 		}
 		fieldset {
 			span { "Theme:" }
