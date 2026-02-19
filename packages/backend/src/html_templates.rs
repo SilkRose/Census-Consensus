@@ -794,11 +794,11 @@ fn header_html() -> PreEscaped<String> {
 			label for = "consensus" { "Consensus" }
 		}
 		nav {
-			input type = "radio" name = "page" value = "home" {}
+			input type = "radio" name = "page" value = "home" disabled {}
 			a href = "/" { "Home" }
 			input type = "radio" name = "page" value = "user" checked {}
 			a href = "/user" { "User" }
-			input type = "radio" name = "page" value = "about" {}
+			input type = "radio" name = "page" value = "about" disabled {}
 			a href = "/about" { "About" }
 		}
 		fieldset {
