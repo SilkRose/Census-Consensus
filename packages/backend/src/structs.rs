@@ -225,3 +225,13 @@ pub struct UserFeedback {
 	#[serde(deserialize_with = "option_string")]
 	pub feedback_public: Option<String>,
 }
+
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+pub enum Pages {
+	Home,
+	User,
+	About,
+	Chapters,
+	Questions,
+	Feedback,
+}

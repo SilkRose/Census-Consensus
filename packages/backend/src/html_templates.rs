@@ -1,5 +1,6 @@
+use crate::endpoints::MIN_USER_UPDATE_TIME;
+use crate::structs::*;
 use crate::utility::count_words;
-use crate::{endpoints::MIN_USER_UPDATE_TIME, structs::*};
 use chrono::Utc;
 use maud::{DOCTYPE, PreEscaped, html};
 use pony::number_format::format_number_u128;
@@ -21,7 +22,7 @@ pub fn user_settings_html(user: User, sessions: Vec<Session>) -> String {
 			}
 			body {
 				header {
-					(header_html(Some(&user)))
+					(header_html(Some(&user), Pages::User))
 				}
 				main {
 					h1 { (heading) }
@@ -785,7 +786,7 @@ fn encode_url(title: &str) -> String {
 	encode.finish()
 }
 
-fn header_html(user: Option<&User>) -> PreEscaped<String> {
+fn header_html(user: Option<&User>, page: Pages) -> PreEscaped<String> {
 	html!(
 		fieldset class = "logo" {
 			input id = "census" type = "radio" name = "logo" value = "census" {}
@@ -795,21 +796,17 @@ fn header_html(user: Option<&User>) -> PreEscaped<String> {
 		}
 		nav {
 			span class = "nav" {
-				input type = "radio" name = "page" value = "home" disabled {}
-				a href = "/" { "Home" }
-				input type = "radio" name = "page" value = "user" checked {}
-				a href = "/user" { "User" }
-				input type = "radio" name = "page" value = "about" disabled {}
-				a href = "/about" { "About" }
+				(header_link_html("/", "Home", page == Pages::Home))
+				@if user.is_some() {
+					(header_link_html("/user", "User", page == Pages::User))
+				}
+				(header_link_html("/about", "About", page == Pages::About))
 			}
 			@if let Some(user) = user && user.user_type != UserType::Voter {
 				span class = "nav" {
-					input type = "radio" name = "page" value = "chapters" disabled {}
-					a href = "/chapters" { "Chapters" }
-					input type = "radio" name = "page" value = "questions" disabled {}
-					a href = "/questions" { "Questions" }
-					input type = "radio" name = "page" value = "feedback" disabled {}
-					a href = "/feedback" { "Feedback" }
+					(header_link_html("/chapters", "Chapters", page == Pages::Chapters))
+					(header_link_html("/questions", "Questions", page == Pages::Questions))
+					(header_link_html("/feedback", "Feedback", page == Pages::Feedback))
 				}
 			}
 		}
@@ -819,6 +816,18 @@ fn header_html(user: Option<&User>) -> PreEscaped<String> {
 			label for = "light" { "Celestia" }
 			input id = "dark" type = "radio" name = "theme" value = "dark" {}
 			label for = "dark" { "Luna" }
+		}
+	)
+}
+
+fn header_link_html(link: &str, text: &str, checked: bool) -> PreEscaped<String> {
+	html!(
+		@if checked {
+			input type = "radio" name = "page" checked {}
+			a href = (link) { (text) }
+		} @ else {
+			input type = "radio" name = "page" disabled {}
+			a href = (link) { (text) }
 		}
 	)
 }
