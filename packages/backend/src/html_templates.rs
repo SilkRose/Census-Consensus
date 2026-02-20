@@ -27,11 +27,11 @@ pub fn user_settings_html(user: User, sessions: Vec<Session>) -> String {
 					h1 { (heading) }
 					p { (description) }
 					@if user.user_type == UserType::Admin {
-						(update_user_role_html())
-						(ban_user_html())
+						(update_user_role_html()) hr;
+						(ban_user_html()) hr;
 					}
-					(update_user_html(&user))
-					(user_feedback_html(user))
+					(update_user_html(&user)) hr;
+					(user_feedback_html(user)) hr;
 					(user_sessions_html(sessions))
 				}
 			};

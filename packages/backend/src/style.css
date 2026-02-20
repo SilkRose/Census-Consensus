@@ -266,6 +266,22 @@
 		tr:nth-child(4n + 4) {
 			background-color: var(--table-row-4);
 		}
+
+		hr:nth-of-type(3n + 1) {
+			background-color: var(--table-row-1);
+		}
+
+		hr:nth-of-type(3n + 2) {
+			background-color: var(--table-row-2);
+		}
+
+		hr:nth-of-type(3n + 3) {
+			background-color: var(--table-row-3);
+		}
+
+		hr:nth-of-type(3n + 4) {
+			background-color: var(--table-row-4);
+		}
 	}
 
 	:root:has(#light:checked) {
@@ -309,6 +325,22 @@
 		tr:nth-child(4n + 4) {
 			background-color: var(--table-row-4);
 		}
+
+		hr:nth-of-type(3n + 1) {
+			background-color: var(--table-row-1);
+		}
+
+		hr:nth-of-type(3n + 2) {
+			background-color: var(--table-row-2);
+		}
+
+		hr:nth-of-type(3n + 3) {
+			background-color: var(--table-row-3);
+		}
+
+		hr:nth-of-type(3n + 4) {
+			background-color: var(--table-row-4);
+		}
 	}
 
 	/* Luna dark theme: https://www.realtimecolors.com/?colors=a7bef1-171a35-3adfc3-00c5cc-aba4f4 */
@@ -350,6 +382,18 @@
 		tr:nth-child(3n + 3) {
 			background-color: var(--table-row-3);
 		}
+
+		hr:nth-of-type(3n + 1) {
+			background-color: var(--table-row-1);
+		}
+
+		hr:nth-of-type(3n + 2) {
+			background-color: var(--table-row-2);
+		}
+
+		hr:nth-of-type(3n + 3) {
+			background-color: var(--table-row-3);
+		}
 	}
 
 	:root:has(#dark:checked) {
@@ -388,6 +432,18 @@
 		tr:nth-child(3n + 3) {
 			background-color: var(--table-row-3);
 		}
+
+		hr:nth-of-type(3n + 1) {
+			background-color: var(--table-row-1);
+		}
+
+		hr:nth-of-type(3n + 2) {
+			background-color: var(--table-row-2);
+		}
+
+		hr:nth-of-type(3n + 3) {
+			background-color: var(--table-row-3);
+		}
 	}
 }
 
@@ -397,6 +453,13 @@
 		flex-direction: row;
 		justify-content: space-between;
 		margin-top: 5px;
+	}
+
+	hr {
+		width: 85%;
+		color: transparent;
+		height: 12px;
+		border-radius: 6px;
 	}
 
 	header > * {
