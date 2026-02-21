@@ -15,12 +15,15 @@ function setTheme() {
 	if (!theme) {
 		const darkModeQuery = window.matchMedia('(prefers-color-scheme: dark)');
 		if (darkModeQuery.matches) {
-			document.getElementById("dark").checked = true;
 			theme = "dark";
 		} else {
-			document.getElementById("light").checked = true;
 			theme = "light";
 		}
+	}
+	if (theme === "light") {
+		document.getElementById("light").checked = true;
+	} else if (theme === "dark") {
+		document.getElementById("dark").checked = true;
 	}
 	updateTheme(theme);
 }
