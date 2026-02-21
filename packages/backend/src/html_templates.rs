@@ -790,9 +790,9 @@ fn encode_url(title: &str) -> String {
 fn header_html(user: Option<&User>, page: Pages) -> PreEscaped<String> {
 	html!(
 		fieldset class = "logo" {
-			input id = "census" type = "radio" name = "logo" value = "census" {}
+			input id = "census" type = "radio" name = "logo" onclick = "submitLogo('census')" {}
 			label for = "census" { "Census" }
-			input id = "consensus" type = "radio" name = "logo" value = "consensus" {}
+			input id = "consensus" type = "radio" name = "logo" onclick = "submitLogo('consensus')" {}
 			label for = "consensus" { "Consensus" }
 		}
 		nav {

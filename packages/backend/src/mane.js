@@ -36,3 +36,10 @@ function updateTheme(theme) {
 }
 
 window.onload = setTheme;
+
+function submitLogo(logo) {
+	if (logo !== "census" && logo !== "consensus") {
+		return;
+	}
+	fetch(`/logo/${logo}`, { method: 'POST' });
+}
