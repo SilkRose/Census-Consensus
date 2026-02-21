@@ -1,4 +1,4 @@
-use crate::auth::{AdminSessionInfo, SessionInfo, WriterSessionInfo};
+use crate::auth::{AdminSessionInfo, MaybeSessionInfo, SessionInfo, WriterSessionInfo};
 use crate::database::*;
 use crate::html_templates::*;
 use crate::structs::*;
@@ -51,6 +51,25 @@ pub async fn get_js() -> actix_web::Result<impl Responder> {
 	Ok(HttpResponse::Ok()
 		.content_type("text/javascript; charset=utf-8")
 		.body(fs::read_to_string("./src/mane.js")?))
+}
+
+#[post("/logo/{opt}")]
+pub async fn set_logo_submit(
+	path: Path<String>, req: HttpRequest, mut db: ThinData<Db>, session: MaybeSessionInfo,
+) -> actix_web::Result<impl Responder> {
+	let opt = path.into_inner();
+	let ip = req
+		.connection_info()
+		.realip_remote_addr()
+		.map(str::to_owned);
+	let user_id = session.session_info.map(|s| s.user_id);
+	let logo = match opt.as_str() {
+		"census" => Logo::Census,
+		"consensus" => Logo::Consensus,
+		_ => return Ok(HttpResponse::BadRequest().finish()),
+	};
+	db.insert_logo_stat(logo, user_id, ip).await?;
+	Ok(HttpResponse::Ok().finish())
 }
 
 #[get("/user")]

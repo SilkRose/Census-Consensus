@@ -235,3 +235,19 @@ pub enum Pages {
 	Questions,
 	Feedback,
 }
+
+#[derive(Clone, Debug, Deserialize, Serialize, Type, Eq, Hash, PartialEq)]
+#[sqlx(type_name = "user_type", rename_all = "snake_case")]
+pub enum Logo {
+	Census,
+	Consensus,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct LogoStat {
+	pub id: i32,
+	pub logo: Logo,
+	pub user_id: Option<i32>,
+	pub ip_addr: Option<String>,
+	pub date_created: DateTime<Utc>,
+}

@@ -1,0 +1,3 @@
+DROP TABLE IF EXISTS Logo_stats;
+
+DROP TYPE IF EXISTS logo;
