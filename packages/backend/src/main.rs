@@ -102,6 +102,7 @@ async fn main() -> Result<()> {
 		ActixApp::new()
 			.service(get_css)
 			.service(get_js)
+			.service(set_logo_submit)
 			.service(auth::fimfic_auth)
 			.service(auth::fimfic_auth_logout)
 			.service(set_revoke_sessions)

@@ -77,7 +77,7 @@ pub fn update_user_role_html() -> PreEscaped<String> {
 				(input_text_numeric_required("id", "id", 1, 8))
 			}
 			span class = "row" {
-				label for = "role" { "User Role:" }
+				span { "User Role:" }
 				input id = "voter" type = "radio" name = "role" value = (UserType::Voter) required {}
 				label for = "voter" { (UserType::Voter) }
 				input id = "writer" type = "radio" name = "role" value = (UserType::Writer) {}
