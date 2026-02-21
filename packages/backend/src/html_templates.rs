@@ -770,6 +770,7 @@ pub fn head_html(title: &str, description: &str, link: &str) -> PreEscaped<Strin
 			type = "application/json+oembed"
 			href = { "https://www.fixfiction.net/oembed?" (encode) }
 			title = (title);
+		script crossorigin defer src = "/mane.js" {}
 
 	}
 }
@@ -812,9 +813,9 @@ fn header_html(user: Option<&User>, page: Pages) -> PreEscaped<String> {
 		}
 		fieldset class = "theme" {
 			span { "Theme:" }
-			input id = "light" type = "radio" name = "theme" value = "light" {}
+			input id = "light" type = "radio" name = "theme" onchange = "updateTheme('light')" {}
 			label for = "light" { "Celestia" }
-			input id = "dark" type = "radio" name = "theme" value = "dark" {}
+			input id = "dark" type = "radio" name = "theme" onchange = "updateTheme('dark')" {}
 			label for = "dark" { "Luna" }
 		}
 	)

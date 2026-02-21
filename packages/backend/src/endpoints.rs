@@ -46,6 +46,13 @@ pub async fn get_css() -> actix_web::Result<impl Responder> {
 	}
 }
 
+#[get("/mane.js")]
+pub async fn get_js() -> actix_web::Result<impl Responder> {
+	Ok(HttpResponse::Ok()
+		.content_type("text/javascript; charset=utf-8")
+		.body(fs::read_to_string("./src/mane.js")?))
+}
+
 #[get("/user")]
 pub async fn get_user(
 	mut db: ThinData<Db>, session: SessionInfo,
