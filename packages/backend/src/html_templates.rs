@@ -2,6 +2,7 @@ use crate::endpoints::MIN_USER_UPDATE_TIME;
 use crate::structs::*;
 use crate::theme::Theme;
 use crate::utility::count_words;
+use bon::builder;
 use chrono::Utc;
 use maud::{DOCTYPE, PreEscaped, html};
 use pony::number_format::format_number_u128;
@@ -11,35 +12,51 @@ use url::form_urlencoded;
 const SITE_NAME: &str = "Census Consensus";
 const SITE_LINK: &str = "https://survey.silkrose.dev";
 
+#[builder]
+fn html_builder(
+	theme: &Theme, head: PreEscaped<String>, header: PreEscaped<String>, mane: PreEscaped<String>,
+) -> String {
+	let body_content = html! {
+		header { (header) }
+		main { (mane) }
+	};
+	let body = match theme {
+		Theme::Light => html! {body class = "light" { (body_content) }},
+		Theme::Dark => html! {body class = "dark" { (body_content) }},
+		Theme::None => html! {body { (body_content) }},
+	};
+	html!(
+		(DOCTYPE) html lang = "en" {
+			head { (head) }
+			(body)
+		}
+	)
+	.into()
+}
+
 pub fn user_settings_html(user: User, theme: Theme, sessions: Vec<Session>) -> String {
 	let heading = "User Settings";
 	let title: String = format!("{heading} - {SITE_NAME}");
 	let description = "User sessions, update, and feedback.";
 	let link = format!("{SITE_LINK}/user-settings");
-	html! {
-		(DOCTYPE) html lang = "en" {
-			head {
-				(head_html(&title, description, &link))
-			}
-			body class = (body_theme_class_html(&theme)) {
-				header {
-					(header_html(Some(&user), Pages::User, theme))
-				}
-				main {
-					h1 { (heading) }
-					p { (description) }
-					@if user.user_type == UserType::Admin {
-						(update_user_role_html()) hr;
-						(ban_user_html()) hr;
-					}
-					(update_user_html(&user)) hr;
-					(user_feedback_html(user)) hr;
-					(user_sessions_html(sessions))
-				}
-			};
-		};
-	}
-	.into()
+	let user_type = user.user_type.clone();
+	let mane = html! {
+		h1 { (heading) }
+		p { (description) }
+		@if user_type == UserType::Admin {
+			(update_user_role_html()) hr;
+			(ban_user_html()) hr;
+		}
+		(update_user_html(&user)) hr;
+		(user_feedback_html(user)) hr;
+		(user_sessions_html(sessions))
+	};
+	html_builder()
+		.theme(&theme)
+		.head(head_html(&title, description, &link))
+		.header(header_html(Some(user_type), Pages::User, &theme))
+		.mane(mane)
+		.call()
 }
 
 fn update_user_html(user: &User) -> PreEscaped<String> {
@@ -788,7 +805,7 @@ fn encode_url(title: &str) -> String {
 	encode.finish()
 }
 
-fn header_html(user: Option<&User>, page: Pages, theme: Theme) -> PreEscaped<String> {
+fn header_html(user_type: Option<UserType>, page: Pages, theme: &Theme) -> PreEscaped<String> {
 	html!(
 		fieldset class = "logo" {
 			input id = "census" type = "radio" name = "logo" onclick = "submitLogo('census')" {}
@@ -799,12 +816,12 @@ fn header_html(user: Option<&User>, page: Pages, theme: Theme) -> PreEscaped<Str
 		nav {
 			span class = "nav" {
 				(header_link_html("/", "Home", page == Pages::Home))
-				@if user.is_some() {
+				@if user_type.is_some() {
 					(header_link_html("/user", "User", page == Pages::User))
 				}
 				(header_link_html("/about", "About", page == Pages::About))
 			}
-			@if let Some(user) = user && user.user_type != UserType::Voter {
+			@if let Some(user_type) = user_type && user_type != UserType::Voter {
 				span class = "nav" {
 					(header_link_html("/chapters", "Chapters", page == Pages::Chapters))
 					(header_link_html("/questions", "Questions", page == Pages::Questions))
@@ -814,8 +831,8 @@ fn header_html(user: Option<&User>, page: Pages, theme: Theme) -> PreEscaped<Str
 		}
 		fieldset class = "theme" {
 			span { "Theme:" }
-			(header_theme_html("light", "Celestia", theme == Theme::Light))
-			(header_theme_html("dark", "Luna", theme == Theme::Dark))
+			(header_theme_html("light", "Celestia", theme == &Theme::Light))
+			(header_theme_html("dark", "Luna", theme == &Theme::Dark))
 		}
 	)
 }
@@ -830,14 +847,6 @@ fn header_link_html(link: &str, text: &str, checked: bool) -> PreEscaped<String>
 			a href = (link) { (text) }
 		}
 	)
-}
-
-fn body_theme_class_html(theme: &Theme) -> &'static str {
-	match theme {
-		Theme::Light => "light",
-		Theme::Dark => "dark",
-		Theme::None => "",
-	}
 }
 
 fn header_theme_html(theme: &str, text: &str, checked: bool) -> PreEscaped<String> {
