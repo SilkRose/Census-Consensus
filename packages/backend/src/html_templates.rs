@@ -380,6 +380,52 @@ pub fn chapter_history_html(user: User, theme: Theme, chapter: ChapterData) -> S
 		.call()
 }
 
+pub fn feedback_html(user: User, theme: Theme, users: Vec<User>) -> String {
+	let heading = "User Feedback";
+	let title: String = format!("{heading} - {SITE_NAME}");
+	let description = "Public and private feedback from every user.";
+	let link = format!("{SITE_LINK}/feedback");
+	let user_type = user.user_type.clone();
+	let mane = html! {
+		h1 { (heading) }
+		p { (description) }
+		@for user in users {
+			span class = "list-item" {
+				h2 { (user.name) }
+				@if let Some(pfp_url) = &user.pfp_url {
+					img src = (format!("{pfp_url}-64")) alt = (user.name) {}
+				}
+				@if let Some(public) = user.feedback_public {
+					h3 { "Public:" }
+					(line_break_string_html(&public))
+				}
+				@if let Some(private) = user.feedback_private {
+					h3 { "Private:" }
+					(line_break_string_html(&private))
+				}
+			}
+		}
+	};
+	html_builder()
+		.theme(&theme)
+		.head(head_html(&title, description, &link))
+		.header(header_html(Some(user_type), Pages::Feedback, &theme))
+		.mane(mane)
+		.call()
+}
+
+fn line_break_string_html(text: &str) -> PreEscaped<String> {
+	html! {
+		@for line in text.lines() {
+			@if !line.is_empty() {
+				p { (line) }
+			} @else {
+				br;
+			}
+		}
+	}
+}
+
 pub fn new_question_html() -> String {
 	html! {
 		(DOCTYPE) html lang = "en" {

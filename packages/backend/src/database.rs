@@ -298,7 +298,8 @@ pub trait DbExecutor {
 			r#"SELECT
 				id, name, pfp_url, type AS "user_type: UserType", feedback_private,
 				feedback_public, date_last_fetch, date_joined
-			FROM Users;"#,
+			FROM Users
+			ORDER BY date_joined;"#,
 		)
 		.fetch_all(self.executor())
 		.await

@@ -358,6 +358,20 @@ pub async fn get_chapter_revisions(
 	}
 }
 
+#[get("/feedback")]
+pub async fn get_feedback(
+	theme: Theme, mut db: ThinData<Db>, session: WriterSessionInfo,
+) -> actix_web::Result<impl Responder> {
+	if let Ok(users) = db.get_all_users().await {
+		let page = feedback_html(session.user, theme, users);
+		Ok(HttpResponse::Ok()
+			.content_type("text/html; charset=utf-8")
+			.body(page))
+	} else {
+		Ok(HttpResponse::InternalServerError().finish())
+	}
+}
+
 #[get("/population")]
 pub async fn get_population(
 	_: WriterSessionInfo, population: ThinData<Arc<RwLock<Population>>>,
