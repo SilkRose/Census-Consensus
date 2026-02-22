@@ -1,5 +1,6 @@
 use crate::endpoints::MIN_USER_UPDATE_TIME;
 use crate::structs::*;
+use crate::theme::Theme;
 use crate::utility::count_words;
 use chrono::Utc;
 use maud::{DOCTYPE, PreEscaped, html};
@@ -10,7 +11,7 @@ use url::form_urlencoded;
 const SITE_NAME: &str = "Census Consensus";
 const SITE_LINK: &str = "https://survey.silkrose.dev";
 
-pub fn user_settings_html(user: User, sessions: Vec<Session>) -> String {
+pub fn user_settings_html(user: User, theme: Theme, sessions: Vec<Session>) -> String {
 	let heading = "User Settings";
 	let title: String = format!("{heading} - {SITE_NAME}");
 	let description = "User sessions, update, and feedback.";
@@ -22,7 +23,7 @@ pub fn user_settings_html(user: User, sessions: Vec<Session>) -> String {
 			}
 			body {
 				header {
-					(header_html(Some(&user), Pages::User))
+					(header_html(Some(&user), Pages::User, theme))
 				}
 				main {
 					h1 { (heading) }
@@ -787,7 +788,7 @@ fn encode_url(title: &str) -> String {
 	encode.finish()
 }
 
-fn header_html(user: Option<&User>, page: Pages) -> PreEscaped<String> {
+fn header_html(user: Option<&User>, page: Pages, theme: Theme) -> PreEscaped<String> {
 	html!(
 		fieldset class = "logo" {
 			input id = "census" type = "radio" name = "logo" onclick = "submitLogo('census')" {}
@@ -813,10 +814,8 @@ fn header_html(user: Option<&User>, page: Pages) -> PreEscaped<String> {
 		}
 		fieldset class = "theme" {
 			span { "Theme:" }
-			input id = "light" type = "radio" name = "theme" onchange = "updateTheme('light')" {}
-			label for = "light" { "Celestia" }
-			input id = "dark" type = "radio" name = "theme" onchange = "updateTheme('dark')" {}
-			label for = "dark" { "Luna" }
+			(header_theme_html("light", "Celestia", theme == Theme::Dark))
+			(header_theme_html("dark", "Luna", theme == Theme::Dark))
 		}
 	)
 }
@@ -829,6 +828,19 @@ fn header_link_html(link: &str, text: &str, checked: bool) -> PreEscaped<String>
 		} @ else {
 			input type = "radio" name = "page" disabled {}
 			a href = (link) { (text) }
+		}
+	)
+}
+
+fn header_theme_html(theme: &str, text: &str, checked: bool) -> PreEscaped<String> {
+	let on_click = format!("updateTheme('{theme}')");
+	html!(
+		@if checked {
+			input id = (theme) type = "radio" name = "theme" onchange = (on_click) checked {}
+			label for = (theme) { (text) }
+		} @ else {
+			input id = (theme) type = "radio" name = "theme" onchange = (on_click) {}
+			label for = (theme) { (text) }
 		}
 	)
 }

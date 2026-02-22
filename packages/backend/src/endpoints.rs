@@ -2,6 +2,7 @@ use crate::auth::{AdminSessionInfo, MaybeSessionInfo, SessionInfo, WriterSession
 use crate::database::*;
 use crate::html_templates::*;
 use crate::structs::*;
+use crate::theme::Theme;
 use crate::utility::redirect;
 use crate::{FimficCfg, HttpClient};
 use actix_web::web::{Path, ThinData};
@@ -74,13 +75,13 @@ pub async fn set_logo_submit(
 
 #[get("/user")]
 pub async fn get_user(
-	mut db: ThinData<Db>, session: SessionInfo,
+	theme: Theme, mut db: ThinData<Db>, session: SessionInfo,
 ) -> actix_web::Result<impl Responder> {
 	let user = db.get_user(session.user_id).await?;
 	let mut sessions = db.get_all_user_sessions(session.user_id).await?;
 	sessions.sort_by_key(|k| k.last_seen);
 	sessions.reverse();
-	let page = user_settings_html(user, sessions);
+	let page = user_settings_html(user, theme, sessions);
 	Ok(HttpResponse::Ok()
 		.content_type("text/html; charset=utf-8")
 		.body(page))
