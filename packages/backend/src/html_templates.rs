@@ -310,34 +310,36 @@ pub fn new_chapter_html() -> PreEscaped<String> {
 	}
 }
 
-pub fn edit_chapter_html(chapter: Chapter, data: ChapterRevision) -> String {
-	html! {
-		(DOCTYPE) html lang = "en" {
-			body {
-				form method = "post" action = (format!("/chapters/{}", chapter.id)) {
-					h1 { "Edit Chapter" }
-					br;
-					@let name = "title";
-					label for = (name) { "Title:" }
-					br;
-					(input_text_value_required(name, name, 8, 256, &data.title))
-					br;
-					@let name = "intro_text";
-					label for = (name) { "Intro:" }
-					br;
-					(textarea_value(name, name, 1_000_000, &data.intro_text.unwrap_or_default()))
-					br;
-					@let name = "outro_text";
-					label for = (name) { "Outro:" }
-					br;
-					(textarea_value(name, name, 1_000_000, &data.outro_text.unwrap_or_default()))
-					br;
-					button type = "submit" { "Save Chapter" }
-				}
-			};
-		};
-	}
-	.into()
+pub fn edit_chapter_html(
+	user: User, theme: Theme, chapter: Chapter, data: ChapterRevision,
+) -> String {
+	let heading = "Edit Chapter";
+	let title: String = format!("{heading} - {SITE_NAME}");
+	let description = "Make changes to the specified chapter.";
+	let link = format!("{SITE_LINK}/chapters/{}", chapter.id);
+	let user_type = user.user_type.clone();
+	let mane = html! {
+		h1 { (heading) }
+		p { (description) }
+		form method = "post" action = (format!("/chapters/{}", chapter.id)) {
+			@let name = "title";
+			label for = (name) { "Title:" }
+			(input_text_value_required(name, name, 8, 256, &data.title))
+			@let name = "intro_text";
+			label for = (name) { "Intro:" }
+			(textarea_value(name, name, 1_000_000, &data.intro_text.unwrap_or_default()))
+			@let name = "outro_text";
+			label for = (name) { "Outro:" }
+			(textarea_value(name, name, 1_000_000, &data.outro_text.unwrap_or_default()))
+			button type = "submit" { "Save Chapter" }
+		}
+	};
+	html_builder()
+		.theme(&theme)
+		.head(head_html(&title, description, &link))
+		.header(header_html(Some(user_type), Pages::Chapters, &theme))
+		.mane(mane)
+		.call()
 }
 
 pub fn chapter_history_html(chapter: ChapterData) -> String {

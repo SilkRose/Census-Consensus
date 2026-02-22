@@ -206,13 +206,13 @@ pub async fn set_chapter_new(
 
 #[get("/chapters/{id}")]
 pub async fn get_chapter_edit(
-	path: Path<i32>, mut db: ThinData<Db>, _: WriterSessionInfo,
+	path: Path<i32>, theme: Theme, mut db: ThinData<Db>, session: WriterSessionInfo,
 ) -> actix_web::Result<impl Responder> {
 	let id = path.into_inner();
 	let chapter = db.get_chapter(id).await?;
 	if let Some(chapter) = chapter {
 		let data = db.get_latest_chapter_revision(chapter.id).await?;
-		let page = edit_chapter_html(chapter, data);
+		let page = edit_chapter_html(session.user, theme, chapter, data);
 		Ok(HttpResponse::Ok()
 			.content_type("text/html; charset=utf-8")
 			.body(page))
