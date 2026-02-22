@@ -21,7 +21,7 @@ pub fn user_settings_html(user: User, theme: Theme, sessions: Vec<Session>) -> S
 			head {
 				(head_html(&title, description, &link))
 			}
-			body {
+			body class = (body_theme_class_html(&theme)) {
 				header {
 					(header_html(Some(&user), Pages::User, theme))
 				}
@@ -814,7 +814,7 @@ fn header_html(user: Option<&User>, page: Pages, theme: Theme) -> PreEscaped<Str
 		}
 		fieldset class = "theme" {
 			span { "Theme:" }
-			(header_theme_html("light", "Celestia", theme == Theme::Dark))
+			(header_theme_html("light", "Celestia", theme == Theme::Light))
 			(header_theme_html("dark", "Luna", theme == Theme::Dark))
 		}
 	)
@@ -830,6 +830,14 @@ fn header_link_html(link: &str, text: &str, checked: bool) -> PreEscaped<String>
 			a href = (link) { (text) }
 		}
 	)
+}
+
+fn body_theme_class_html(theme: &Theme) -> &'static str {
+	match theme {
+		Theme::Light => "light",
+		Theme::Dark => "dark",
+		Theme::None => "",
+	}
 }
 
 fn header_theme_html(theme: &str, text: &str, checked: bool) -> PreEscaped<String> {

@@ -154,7 +154,7 @@
 }
 
 @layer colors {
-	html {
+	body {
 		color: var(--text);
 		background-color: var(--background);
 	}
@@ -285,7 +285,7 @@
 		}
 	}
 
-	:root:has(#light:checked) {
+	.light {
 		color-scheme: light;
 		--text: hsl(278 44% 33%);
 		--background: hsl(323 80% 98%);
@@ -397,7 +397,7 @@
 		}
 	}
 
-	:root:has(#dark:checked) {
+	.dark {
 		color-scheme: dark;
 		--text: hsl(221 73% 80%);
 		--background: hsl(234 39% 15%);
