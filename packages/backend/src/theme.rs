@@ -33,11 +33,11 @@ impl FromRequest for Theme {
 			return ready(Ok(Theme::None))
 		};
 
-		let cookie = cookie.value();
-		let theme = cookie
+		let theme = cookie.value()
 			.parse()
-			.map_err(|_| anyhow::format_err!("invalid theme value: {cookie}").into());
+			.ok()
+			.unwrap_or(Theme::None);
 
-		ready(theme)
+		ready(Ok(theme))
 	}
 }
