@@ -25,6 +25,7 @@ mod html_templates;
 mod http;
 mod rand;
 mod structs;
+mod theme;
 mod utility;
 
 #[actix_web::main]
