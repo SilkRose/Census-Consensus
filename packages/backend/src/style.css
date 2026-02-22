@@ -68,6 +68,11 @@
 		padding: 0;
 	}
 
+	img,
+	picture {
+		vertical-align: middle;
+	}
+
 	h1,
 	h2,
 	h3,

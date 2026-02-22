@@ -334,7 +334,7 @@ pub async fn set_chapter_minutes_left_move(
 
 #[get("/chapters/{id}/revisions")]
 pub async fn get_chapter_revisions(
-	path: Path<i32>, mut db: ThinData<Db>, _: WriterSessionInfo,
+	path: Path<i32>, theme: Theme, mut db: ThinData<Db>, session: WriterSessionInfo,
 ) -> actix_web::Result<impl Responder> {
 	let id = path.into_inner();
 	if let Some(chapter) = db.get_chapter(id).await? {
@@ -349,7 +349,7 @@ pub async fn get_chapter_revisions(
 			data: revisions,
 			users,
 		};
-		let page = chapter_history_html(chapter_data);
+		let page = chapter_history_html(session.user, theme, chapter_data);
 		Ok(HttpResponse::Ok()
 			.content_type("text/html; charset=utf-8")
 			.body(page))

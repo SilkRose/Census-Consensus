@@ -342,35 +342,42 @@ pub fn edit_chapter_html(
 		.call()
 }
 
-pub fn chapter_history_html(chapter: ChapterData) -> String {
-	html! {
-		(DOCTYPE) html lang = "en" {
-			body {
-				h1 { "Chapter Revisions" }
-				br;
-				@for revision in chapter.data.into_iter() {
-						details {
-							summary {
-								"Date: " (revision.date_created.format("%d/%m/%Y %H:%M"))
-								" By: "
-								@let user = chapter.users.get(&revision.id).expect("User will always be present.");
-								@if let Some(pfp_url) = &user.pfp_url {
-									img src = (format!("{pfp_url}-32")) alt = (user.name) {}
-									" - "
-								}
-								(user.name)
-							}
-							"title: " (revision.title) br;
-							"Intro:" br;
-							(revision.intro_text.unwrap_or_default()) br;
-							"outro:" br;
-							(revision.outro_text.unwrap_or_default())
-						}
+pub fn chapter_history_html(user: User, theme: Theme, chapter: ChapterData) -> String {
+	let heading = "Chapter Revisions";
+	let title: String = format!("{heading} - {SITE_NAME}");
+	let description = "Chapter version history.";
+	let link = format!("{SITE_LINK}/chapters/{}/revisions", chapter.meta.id);
+	let user_type = user.user_type.clone();
+	let mane = html! {
+		h1 { (heading) }
+		p { (description) }
+		@for revision in chapter.data.into_iter() {
+			details class = "list-item" name = "revision" {
+				summary {
+					"Date: " (revision.date_created.format("%y-%m-%d %H:%M"))
+					" By: "
+					@let user = chapter.users.get(&revision.id).expect("User will always be present.");
+					@if let Some(pfp_url) = &user.pfp_url {
+						img src = (format!("{pfp_url}-32")) alt = (user.name) {}
+						" - "
 					}
-			};
-		};
-	}
-	.into()
+					(user.name)
+				}
+				h3 { "title:" }
+				(revision.title)
+				h3 { "Intro:" }
+				(revision.intro_text.unwrap_or_default())
+				h3 { "outro:" }
+				(revision.outro_text.unwrap_or_default())
+			}
+		}
+	};
+	html_builder()
+		.theme(&theme)
+		.head(head_html(&title, description, &link))
+		.header(header_html(Some(user_type), Pages::Chapters, &theme))
+		.mane(mane)
+		.call()
 }
 
 pub fn new_question_html() -> String {
