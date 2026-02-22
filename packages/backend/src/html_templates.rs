@@ -771,7 +771,7 @@ pub fn head_html(title: &str, description: &str, link: &str) -> PreEscaped<Strin
 			type = "application/json+oembed"
 			href = { "https://www.fixfiction.net/oembed?" (encode) }
 			title = (title);
-		script crossorigin defer src = "/mane.js" {}
+		script crossorigin src = "/mane.js" {}
 
 	}
 }
