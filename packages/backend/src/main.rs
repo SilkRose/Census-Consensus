@@ -114,7 +114,6 @@ async fn main() -> Result<()> {
 			.service(set_user_feedback)
 			.service(get_chapters)
 			.service(set_chapter_new)
-			.service(get_chapter_new)
 			.service(get_chapter_edit)
 			.service(set_chapter_edit)
 			.service(set_chapter_order)

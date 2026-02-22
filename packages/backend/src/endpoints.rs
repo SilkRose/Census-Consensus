@@ -184,25 +184,16 @@ pub async fn set_revoke_sessions(
 
 #[get("/chapters")]
 pub async fn get_chapters(
-	mut db: ThinData<Db>, session: WriterSessionInfo,
+	theme: Theme, mut db: ThinData<Db>, session: WriterSessionInfo,
 ) -> actix_web::Result<impl Responder> {
-	let admin = session.user.user_type == UserType::Admin;
-	let data = db.get_chapters_table().await?;
-	let page = chapters_html(data, admin);
+	let chapters = db.get_chapters_table().await?;
+	let page = chapters_html(session.user, theme, chapters);
 	Ok(HttpResponse::Ok()
 		.content_type("text/html; charset=utf-8")
 		.body(page))
 }
 
-#[get("/chapters/new")]
-pub async fn get_chapter_new(_: WriterSessionInfo) -> actix_web::Result<impl Responder> {
-	let page = new_chapter_html();
-	Ok(HttpResponse::Ok()
-		.content_type("text/html; charset=utf-8")
-		.body(page))
-}
-
-#[post("/chapters/new")]
+#[post("/chapters")]
 pub async fn set_chapter_new(
 	body: String, mut db: ThinData<Db>, session: WriterSessionInfo,
 ) -> actix_web::Result<impl Responder> {

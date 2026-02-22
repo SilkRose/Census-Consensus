@@ -181,34 +181,133 @@ fn session_table_row(session: &Session, num: usize) -> PreEscaped<String> {
 	)
 }
 
-pub fn new_chapter_html() -> String {
+pub fn chapters_html(user: User, theme: Theme, chapters: Vec<ChapterTable>) -> String {
+	let heading = "Chapters";
+	let title: String = format!("{heading} - {SITE_NAME}");
+	let description = "Chapter list and new chapter page.";
+	let link = format!("{SITE_LINK}/chapters");
+	let user_type = user.user_type.clone();
+	let mane = html! {
+		h1 { (heading) }
+		p { (description) }
+		(chapters_list_html(chapters, user_type == UserType::Admin))
+		(new_chapter_html())
+	};
+	html_builder()
+		.theme(&theme)
+		.head(head_html(&title, description, &link))
+		.header(header_html(Some(user_type), Pages::Chapters, &theme))
+		.mane(mane)
+		.call()
+}
+
+pub fn chapters_list_html(chapters: Vec<ChapterTable>, admin: bool) -> PreEscaped<String> {
 	html! {
-		(DOCTYPE) html lang = "en" {
-			body {
-				form method = "post" action = "/chapters/new" {
-					h1 { "New Chapter" }
-					br;
-					@let name = "title";
-					label for = (name) { "Title:" }
-					br;
-					(input_text_required(name, name, 8, 256))
-					br;
-					@let name = "intro_text";
-					label for = (name) { "Intro:" }
-					br;
-					(textarea(name, name, 1_000_000))
-					br;
-					@let name = "outro_text";
-					label for = (name) { "Outro:" }
-					br;
-					(textarea(name, name, 1_000_000))
-					br;
-					button type = "submit" { "Create Chapter" }
-				}
-			};
-		};
+		h2 { "Chapter List" }
+		@let mut prev_published: Option<bool> = None;
+		@for chapter in chapters.iter() {
+			span class = "list-item" {
+				(chapter_list_item_html(chapter, &mut prev_published, admin))
+			}
+		}
 	}
-	.into()
+}
+
+fn chapter_list_item_html(
+	chapter: &ChapterTable, prev_published: &mut Option<bool>, admin: bool,
+) -> PreEscaped<String> {
+	let active = chapter.meta.fimfic_ch_id.is_some() || chapter.meta.minutes_left.is_some();
+	let first_number = !active && chapter.meta.chapter_order.is_some() && prev_published.is_none();
+	*prev_published = match first_number {
+		true => Some(chapter.meta.fimfic_ch_id.is_some()),
+		false => None,
+	};
+	html! (
+		h3 { a href = (format!("/chapters/{}", chapter.meta.id)) { (chapter.last_data.title) sup { "↗" } } }
+		p {
+			b { " Ch Order: " }
+			@if let Some(order) = chapter.meta.chapter_order {
+				@if !active && admin {
+					@if !first_number {
+						@let endpoint = format!("/chapters/{}/ordered/-1", chapter.meta.id);
+						(button_link("▲", &endpoint))
+					} @else {
+						(button_disabled("▲"))
+					}
+				}
+				(order)
+				@if !active && admin {
+					@let endpoint = format!("/chapters/{}/ordered/1", chapter.meta.id);
+					(button_link("▼", &endpoint))
+				}
+			} @else {
+				@let endpoint = format!("/chapters/{}/ordered", chapter.meta.id);
+				(button_link("Add", &endpoint))
+			}
+			b { " Vote Duration: " }
+			@if !active && admin {
+				@let endpoint = format!("/chapters/{}/vote-duration/1", chapter.meta.id);
+				(button_link("▲", &endpoint))
+			}
+			(chapter.meta.vote_duration)
+			@if !active && admin {
+				@let endpoint = format!("/chapters/{}/vote-duration/-1", chapter.meta.id);
+				(button_link("▼", &endpoint))
+			}
+			@if let Some(minutes_left) = chapter.meta.minutes_left {
+				b { " Min Left: " }
+				@if admin && minutes_left != 0 {
+					@let endpoint = format!("/chapters/{}/minutes-left/1", chapter.meta.id);
+					(button_link("▲", &endpoint))
+				}
+				(minutes_left)
+				@if admin && minutes_left != 0 {
+					@let endpoint = format!("/chapters/{}/minutes-left/-1", chapter.meta.id);
+					(button_link("▼", &endpoint))
+				}
+			}
+		}
+		p {
+			b { "Questions: " }
+			a href = (format!("/chapters/{}/questions", chapter.meta.id)) { (chapter.questions) sup { "↗" } }
+			b { " Revisions: " }
+			a href = (format!("/chapters/{}/revisions", chapter.meta.id)) { (chapter.revisions) sup { "↗" } }
+			@if let Some(id) = chapter.meta.fimfic_ch_id {
+				b { " Fimfic Ch ID: " }
+				a href = (format!("https://www.fimfiction.net/chapter/{id}")) { (id) sup { "↗" } }
+			}
+			b { " Intro/Outro Word Count: " }
+			(chapter.last_data.intro_text.clone().map(|text| count_words(&text)).unwrap_or_default())
+			"/"
+			(chapter.last_data.outro_text.clone().map(|text| count_words(&text)).unwrap_or_default())
+		}
+		p {
+			b { "Last Edit: " }
+			(chapter.meta.last_edit.format("%y-%m-%d %H:%M"))
+			b { " Last Revision: " }
+			(chapter.last_data.date_created.format("%y-%m-%d %H:%M"))
+			b { " Created: " }
+			(chapter.first_data.date_created.format("%y-%m-%d %H:%M"))
+		}
+	)
+}
+
+pub fn new_chapter_html() -> PreEscaped<String> {
+	html! {
+		form method = "post" action = "/chapters" {
+			h2 { "New Chapter" }
+			@let name = "title";
+			label for = (name) { "Title:" }
+			(input_text_required(name, name, 8, 256))
+			@let name = "intro_text";
+			label for = (name) { "Intro:" }
+			(textarea(name, name, 1_000_000))
+			@let name = "outro_text";
+			label for = (name) { "Outro:" }
+			(textarea(name, name, 1_000_000))
+			button type = "submit" { "Create Chapter" }
+		}
+	}
 }
 
 pub fn edit_chapter_html(chapter: Chapter, data: ChapterRevision) -> String {
@@ -239,132 +338,6 @@ pub fn edit_chapter_html(chapter: Chapter, data: ChapterRevision) -> String {
 		};
 	}
 	.into()
-}
-
-pub fn chapters_html(chapters: Vec<ChapterTable>, admin: bool) -> String {
-	html! {
-		(DOCTYPE) html lang = "en" {
-			body {
-				h1 { "Chapters" }
-				br;
-				table {
-					tr {
-						th { "ID" } // done
-						th { "Title" } // done
-						th { "Chapter" br; "Number" } // done
-						th { "Vote" br; "Duration" } // done
-						th { "Minutes" br; "Left" } // done
-						th { "Questions" } // done
-						th { "Fimfic" br; "Ch ID" } // done
-						th { "Intro" br; "Words" } // done
-						th { "Outro" br; "Words" } // done
-						th { "Revisions" } // done
-						th { "Last" br; "Edit" } // done
-						th { "Last" br; "Revision" } // done
-						th { "Created" } // done
-						th { "Edit" } // done
-					}
-					@let mut prev_published: Option<bool> = None;
-					@for chapter in chapters.iter() {
-						(chapter_table_row(chapter, &mut prev_published, admin))
-					}
-				}
-				(button_link("New Chapter", "/chapters/new"))
-			};
-		};
-	}
-	.into()
-}
-
-fn chapter_table_row(
-	chapter: &ChapterTable, prev_published: &mut Option<bool>, admin: bool,
-) -> PreEscaped<String> {
-	let active = chapter.meta.fimfic_ch_id.is_some() || chapter.meta.minutes_left.is_some();
-	let first_number = !active && chapter.meta.chapter_order.is_some() && prev_published.is_none();
-	*prev_published = match first_number {
-		true => Some(chapter.meta.fimfic_ch_id.is_some()),
-		false => None,
-	};
-	html! (
-		tr {
-			td { (chapter.meta.id) }
-			td { (chapter.last_data.title) }
-			td {
-				@if let Some(order) = chapter.meta.chapter_order {
-					@if !active && admin {
-						@if !first_number {
-							@let endpoint = format!("/chapters/{}/ordered/-1", chapter.meta.id);
-							(button_link("▲", &endpoint))
-						} @else {
-							(button_disabled("▲"))
-						}
-					}
-					(order)
-					@if !active && admin {
-						@let endpoint = format!("/chapters/{}/ordered/1", chapter.meta.id);
-						(button_link("▼", &endpoint))
-					}
-				} @else {
-					@let endpoint = format!("/chapters/{}/ordered", chapter.meta.id);
-					(button_link("Add", &endpoint))
-				}
-			}
-			td {
-				@if !active && admin {
-					@let endpoint = format!("/chapters/{}/vote-duration/1", chapter.meta.id);
-					(button_link("▲", &endpoint))
-				}
-				(chapter.meta.vote_duration)
-				@if !active && admin {
-					@let endpoint = format!("/chapters/{}/vote-duration/-1", chapter.meta.id);
-					(button_link("▼", &endpoint))
-				}
-			}
-			td {
-				@if let Some(minutes_left) = chapter.meta.minutes_left {
-					@if !active && admin {
-						@let endpoint = format!("/chapters/{}/minutes-left/1", chapter.meta.id);
-						(button_link("▲", &endpoint))
-					}
-					(minutes_left)
-					@if !active && admin {
-						@let endpoint = format!("/chapters/{}/minutes-left/-1", chapter.meta.id);
-						(button_link("▼", &endpoint))
-					}
-				}
-			}
-			td {
-				(chapter.questions)
-				@let endpoint = format!("/chapters/{}/questions", chapter.meta.id);
-				(button_link("View", &endpoint))
-			}
-			td { (chapter.meta.fimfic_ch_id.map_or(String::default(), |m| m.to_string())) }
-			td { (chapter.last_data.intro_text.clone().map(|text| count_words(&text)).unwrap_or_default()) }
-			td { (chapter.last_data.outro_text.clone().map(|text| count_words(&text)).unwrap_or_default()) }
-			td {
-				(chapter.revisions)
-				button onclick = (format!("window.location.href='/chapters/{}/revisions';", chapter.meta.id)) { "View" }
-			}
-			td { (chapter.meta.last_edit.format("%d/%m/%Y %H:%M")) }
-			td {
-				(chapter.last_data.date_created.format("%d/%m/%Y %H:%M")) br;
-				@if let Some(pfp_url) = &chapter.last_user.pfp_url {
-					img src = (format!("{pfp_url}-32")) alt = (chapter.last_user.name) {}
-					" - "
-				}
-				(chapter.last_user.name)
-			}
-			td {
-				(chapter.first_data.date_created.format("%d/%m/%Y %H:%M")) br;
-				@if let Some(pfp_url) = &chapter.first_user.pfp_url {
-					img src = (format!("{pfp_url}-32")) alt = (chapter.first_user.name) {}
-					" - "
-				}
-				(chapter.first_user.name)
-			}
-			td { button onclick = (format!("window.location.href='/chapters/{}';", chapter.meta.id)) { "Edit" } }
-		}
-	)
 }
 
 pub fn chapter_history_html(chapter: ChapterData) -> String {
