@@ -64,8 +64,8 @@ fn update_user_html(user: &User) -> PreEscaped<String> {
 	let button_text = "Update User Info";
 	html!(
 		h2 { ("Update Info") }
-		p { "This site pulls user information from Fimfiction.
-			If you update your name or profile picture on Fimfiction,
+		p { "This site pulls user information from Fimfiction. \
+			If you update your name or profile picture on Fimfiction, \
 			we have no idea unless you click the button to re-fetch your data." }
 		span class = "row" {
 			@if let Some(pfp_url) = &user.pfp_url {
