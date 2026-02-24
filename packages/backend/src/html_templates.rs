@@ -366,9 +366,13 @@ pub fn chapter_history_html(user: User, theme: Theme, chapter: ChapterData) -> S
 				h3 { "title:" }
 				(revision.title)
 				h3 { "Intro:" }
-				(revision.intro_text.unwrap_or_default())
+				pre class = "left-text" {
+					(revision.intro_text.unwrap_or_default())
+				}
 				h3 { "outro:" }
-				(revision.outro_text.unwrap_or_default())
+				pre class = "left-text" {
+					(revision.outro_text.unwrap_or_default())
+				}
 			}
 		}
 	};
@@ -397,11 +401,15 @@ pub fn feedback_html(user: User, theme: Theme, users: Vec<User>) -> String {
 				}
 				@if let Some(public) = user.feedback_public {
 					h3 { "Public:" }
-					(line_break_string_html(&public))
+					pre class = "left-text" {
+						(public)
+					}
 				}
 				@if let Some(private) = user.feedback_private {
 					h3 { "Private:" }
-					(line_break_string_html(&private))
+					pre class = "left-text" {
+						(private)
+					}
 				}
 			}
 		}
@@ -412,18 +420,6 @@ pub fn feedback_html(user: User, theme: Theme, users: Vec<User>) -> String {
 		.header(header_html(Some(user_type), Pages::Feedback, &theme))
 		.mane(mane)
 		.call()
-}
-
-fn line_break_string_html(text: &str) -> PreEscaped<String> {
-	html! {
-		@for line in text.lines() {
-			@if !line.is_empty() {
-				p { (line) }
-			} @else {
-				br;
-			}
-		}
-	}
 }
 
 pub fn new_question_html() -> String {

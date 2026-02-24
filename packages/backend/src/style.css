@@ -454,6 +454,16 @@
 		}
 	}
 
+	.left-text {
+		max-width: 900px;
+		font-family: inherit;
+		font-size: inherit;
+		text-align: left;
+		overflow-wrap: break-word;
+		word-break: break-word;
+		white-space: pre-wrap;
+	}
+
 	input:not([type="checkbox"]):not([type="radio"]),
 	textarea,
 	select {
