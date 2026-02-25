@@ -458,8 +458,8 @@ pub async fn set_question_edit(
 
 #[get("/questions/{id}/revisions")]
 pub async fn get_question_revisions(
-	path: Path<i32>, population: ThinData<Arc<RwLock<Population>>>, mut db: ThinData<Db>,
-	_: WriterSessionInfo,
+	path: Path<i32>, theme: Theme, population: ThinData<Arc<RwLock<Population>>>,
+	mut db: ThinData<Db>, session: WriterSessionInfo,
 ) -> actix_web::Result<impl Responder> {
 	let id = path.into_inner();
 	let Ok(ref pop) = population.0.read() else {
@@ -478,7 +478,7 @@ pub async fn get_question_revisions(
 			data: revisions,
 			users,
 		};
-		let page = question_history_html(question_data, population);
+		let page = question_history_html(session.user, theme, question_data, population);
 		Ok(HttpResponse::Ok()
 			.content_type("text/html; charset=utf-8")
 			.body(page))

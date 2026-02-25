@@ -476,7 +476,7 @@ pub fn edit_question_html(
 	let heading = "Edit Question";
 	let title: String = format!("{heading} - {SITE_NAME}");
 	let description = "Edit a question.";
-	let link = format!("{SITE_LINK}/feedback");
+	let link = format!("{SITE_LINK}/questions/{}", question.id);
 	let user_type = user.user_type.clone();
 	let mane = html! {
 		h1 { (heading) }
@@ -486,7 +486,7 @@ pub fn edit_question_html(
 			label for = (name) { "Question:" }
 			(input_text_value_required(name, name, 8, 256, &data.question_text))
 			@let name = "question_type";
-			label for = (name) { "Question Type: " }
+			label for = (name) { "Question Type:" }
 			select name = (name) id = (name) {
 				(question_type_match(data.question_type))
 			}
@@ -509,7 +509,6 @@ pub fn edit_question_html(
 			(textarea_value(name, name, 1_000_000, &data.result_writing.unwrap_or_default()))
 			button type = "submit" { "Save Question" }
 		}
-
 	};
 	html_builder()
 		.theme(&theme)
@@ -541,43 +540,62 @@ fn question_type_match(question_type: QuestionType) -> PreEscaped<String> {
 	)
 }
 
-pub fn question_history_html(question: QuestionData, population: u32) -> String {
-	html! {
-		(DOCTYPE) html lang = "en" {
-			body {
-				h1 { "Question Revisions" }
-				br;
-				@for revision in question.data.into_iter() {
-						details {
-							summary {
-								"Date: " (revision.date_created.format("%d/%m/%Y %H:%M"))
-								" By: "
-								@let user = question.users.get(&revision.id).expect("User will always be present.");
-								@if let Some(pfp_url) = &user.pfp_url {
-									img src = (format!("{pfp_url}-32")) alt = (user.name) {}
-									" - "
-								}
-								(user.name)
-							}
-							"Question: " (revision.question_text) br;
-							"Question Type: " (revision.question_type) br;
-							"Response percent: " (revision.response_percent) br;
-							"Ponies answered: "
-								(format_number_u128((population as f64 * revision.response_percent / 100.0).round() as u128).unwrap())
-								" out of: "
-								(format_number_u128(population as u128).unwrap())
-							br;
-							"Asked By: " (revision.asked_by) br;
-							"Options:" br;
-							(revision.option_writing.unwrap_or_default()) br;
-							"Results:" br;
-							(revision.result_writing.unwrap_or_default())
-						}
+pub fn question_history_html(
+	user: User, theme: Theme, question: QuestionData, population: u32,
+) -> String {
+	let heading = "Question Revision History";
+	let title: String = format!("{heading} - {SITE_NAME}");
+	let description = "All revisions for a given question.";
+	let link = format!("{SITE_LINK}/questions/{}/revisions", question.meta.id);
+	let user_type = user.user_type.clone();
+	let mane = html! {
+		h1 { (heading) }
+		p { (description) }
+		@for revision in question.data.into_iter() {
+			details class = "list-item" name = "revision" {
+				summary {
+					"Date: " (revision.date_created.format("%d/%m/%Y %H:%M"))
+					" By: "
+					@let user = question.users.get(&revision.id).expect("User will always be present.");
+					@if let Some(pfp_url) = &user.pfp_url {
+						img src = (format!("{pfp_url}-32")) alt = (user.name) {}
+						" - "
 					}
-			};
-		};
-	}
-	.into()
+					(user.name)
+				}
+				h3 { "Question:" }
+				(revision.question_text)
+				h3 { "Question Type:" }
+				(revision.question_type)
+				h3 { "Response percent:" }
+				(revision.response_percent)
+				h3 { "Ponies answered:" }
+				(format_number_u128((population as f64 * revision.response_percent / 100.0).round() as u128).unwrap())
+				" out of: "
+				(format_number_u128(population as u128).unwrap())
+				h3 { "Asked By:" }
+				(revision.asked_by)
+				@if let Some(opt) = revision.option_writing {
+					h3 { "Options:" }
+					pre class = "left-text" {
+						(opt)
+					}
+				}
+				@if let Some(res) = revision.result_writing {
+					h3 { "Results:" }
+					pre class = "left-text" {
+						(res)
+					}
+				}
+			}
+		}
+	};
+	html_builder()
+		.theme(&theme)
+		.head(head_html(&title, description, &link))
+		.header(header_html(Some(user_type), Pages::Questions, &theme))
+		.mane(mane)
+		.call()
 }
 
 pub fn chapter_questions_html(
