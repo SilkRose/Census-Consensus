@@ -470,56 +470,53 @@ pub fn new_question_html() -> String {
 	.into()
 }
 
-pub fn edit_question_html(question: Question, data: QuestionRevision, population: u32) -> String {
-	html! {
-		(DOCTYPE) html lang = "en" {
-			body {
-				form method = "post" action = (format!("/questions/{}", question.id)) {
-					h1 { "Edit Question" }
-					br;
-					@let name = "question_text";
-					label for = (name) { "Question:" }
-					br;
-					(input_text_value_required(name, name, 8, 256, &data.question_text))
-					br;
-					@let name = "question_type";
-					label for = (name) { "Question Type: " }
-					select name = (name) id = (name) {
-						(question_type_match(data.question_type))
-					}
-					br;
-					@let name = "response_percent";
-					label for = (name) { "Response Percentage:" }
-					br;
-					(input_text_float_value_required(name, name, data.response_percent))
-					br;
-					"Ponies answered: "
-						(format_number_u128((population as f64 * data.response_percent / 100.0).round() as u128).unwrap())
-						" out of: "
-						(format_number_u128(population as u128).unwrap())
-					" -- Updated on refresh."
-					br;
-					@let name = "asked_by";
-					label for = (name) { "Asked by:" }
-					br;
-					(input_text_value_required(name, name, 8, 256, &data.asked_by))
-					br;
-					@let name = "option_writing";
-					label for = (name) { "Options:" }
-					br;
-					(textarea_value(name, name, 1_000_000, &data.option_writing.unwrap_or_default()))
-					br;
-					@let name = "result_writing";
-					label for = (name) { "Result Writings:" }
-					br;
-					(textarea_value(name, name, 1_000_000, &data.result_writing.unwrap_or_default()))
-					br;
-					button type = "submit" { "Save Question" }
-				}
-			};
-		};
-	}
-	.into()
+pub fn edit_question_html(
+	user: User, theme: Theme, question: Question, data: QuestionRevision, population: u32,
+) -> String {
+	let heading = "Edit Question";
+	let title: String = format!("{heading} - {SITE_NAME}");
+	let description = "Edit a question.";
+	let link = format!("{SITE_LINK}/feedback");
+	let user_type = user.user_type.clone();
+	let mane = html! {
+		h1 { (heading) }
+		p { (description) }
+		form method = "post" action = (format!("/questions/{}", question.id)) {
+			@let name = "question_text";
+			label for = (name) { "Question:" }
+			(input_text_value_required(name, name, 8, 256, &data.question_text))
+			@let name = "question_type";
+			label for = (name) { "Question Type: " }
+			select name = (name) id = (name) {
+				(question_type_match(data.question_type))
+			}
+			@let name = "response_percent";
+			label for = (name) { "Response Percentage:" }
+			(input_text_float_value_required(name, name, data.response_percent))
+			"Ponies answered: "
+				(format_number_u128((population as f64 * data.response_percent / 100.0).round() as u128).unwrap())
+				" out of: "
+				(format_number_u128(population as u128).unwrap())
+			" -- Updated on refresh."
+			@let name = "asked_by";
+			label for = (name) { "Asked by:" }
+			(input_text_value_required(name, name, 8, 256, &data.asked_by))
+			@let name = "option_writing";
+			label for = (name) { "Options:" }
+			(textarea_value(name, name, 1_000_000, &data.option_writing.unwrap_or_default()))
+			@let name = "result_writing";
+			label for = (name) { "Result Writings:" }
+			(textarea_value(name, name, 1_000_000, &data.result_writing.unwrap_or_default()))
+			button type = "submit" { "Save Question" }
+		}
+
+	};
+	html_builder()
+		.theme(&theme)
+		.head(head_html(&title, description, &link))
+		.header(header_html(Some(user_type), Pages::Questions, &theme))
+		.mane(mane)
+		.call()
 }
 
 fn question_type_match(question_type: QuestionType) -> PreEscaped<String> {

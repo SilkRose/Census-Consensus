@@ -421,15 +421,15 @@ pub async fn set_question_new(
 
 #[get("/questions/{id}")]
 pub async fn get_question_edit(
-	path: Path<i32>, population: ThinData<Arc<RwLock<Population>>>, mut db: ThinData<Db>,
-	_: WriterSessionInfo,
+	path: Path<i32>, theme: Theme, population: ThinData<Arc<RwLock<Population>>>,
+	mut db: ThinData<Db>, session: WriterSessionInfo,
 ) -> actix_web::Result<impl Responder> {
 	let id = path.into_inner();
 	let population = population.0.read().unwrap().inner;
 	let question = db.get_question(id).await?;
 	if let Some(question) = question {
 		let data = db.get_latest_question_revision(question.id).await?;
-		let page = edit_question_html(question, data, population);
+		let page = edit_question_html(session.user, theme, question, data, population);
 		Ok(HttpResponse::Ok()
 			.content_type("text/html; charset=utf-8")
 			.body(page))

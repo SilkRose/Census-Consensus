@@ -191,11 +191,13 @@
 		background-color: var(--background);
 	}
 
+	select,
 	textarea,
 	input {
 		accent-color: var(--accent);
 	}
 
+	select,
 	textarea,
 	input[type="text"] {
 		color: var(--text);
