@@ -203,6 +203,9 @@
 		color: var(--text);
 		border: 2px solid var(--table-border);
 		background-color: var(--input-background);
+		&:focus-visible {
+			outline: none;
+		}
 	}
 
 	input[type="checkbox"],
@@ -245,6 +248,15 @@
 			background-color: var(--table-border);
 		}
 
+		select,
+		textarea,
+		input[type="text"] {
+			&:focus-visible {
+				border-color: var(--text);
+				outline: none;
+			}
+		}
+
 		.list-item:nth-of-type(4n + 1),
 		hr:nth-of-type(4n + 1),
 		tr:nth-child(4n + 1) {
@@ -270,6 +282,7 @@
 		}
 	}
 
+	:root:has(#light:checked),
 	.light {
 		color-scheme: light;
 		--text: hsl(278 44% 33%);
@@ -294,6 +307,15 @@
 
 		th {
 			background-color: var(--table-border);
+		}
+
+		select,
+		textarea,
+		input[type="text"] {
+			&:focus-visible {
+				border: solid var(--text);
+				outline: none;
+			}
 		}
 
 		.list-item:nth-of-type(4n + 1),
@@ -349,6 +371,15 @@
 			background-color: var(--table-border);
 		}
 
+		select,
+		textarea,
+		input[type="text"] {
+			&:focus-visible {
+				border-color: var(--accent);
+				outline: none;
+			}
+		}
+
 		.list-item:nth-of-type(3n + 1),
 		hr:nth-of-type(3n + 1),
 		tr:nth-child(3n + 1) {
@@ -368,6 +399,7 @@
 		}
 	}
 
+	:root:has(#dark:checked),
 	.dark {
 		color-scheme: dark;
 		--text: hsl(221 73% 80%);
@@ -391,6 +423,15 @@
 
 		th {
 			background-color: var(--table-border);
+		}
+
+		select,
+		textarea,
+		input[type="text"] {
+			&:focus-visible {
+				border-color: var(--accent);
+				outline: none;
+			}
 		}
 
 		.list-item:nth-of-type(3n + 1),
