@@ -175,8 +175,8 @@ fn session_table_row(session: &Session, num: usize) -> PreEscaped<String> {
 			} @else {
 				td role = "cell" data-cell = "User Agent: " { (session.user_agent) }
 			}
-			td role = "cell" data-cell = "Created: " { (session.date_created.format("%d/%m/%Y %H:%M")) }
-			td role = "cell" data-cell = "Last Seen: " { (session.last_seen.format("%d/%m/%Y %H:%M")) }
+			td role = "cell" data-cell = "Created: " { (session.date_created.format("%y-%m-%d %H:%M")) }
+			td role = "cell" data-cell = "Last Seen: " { (session.last_seen.format("%y-%m-%d %H:%M")) }
 		}
 	)
 }
@@ -554,7 +554,7 @@ pub fn question_history_html(
 		@for revision in question.data.into_iter() {
 			details class = "list-item" name = "revision" {
 				summary {
-					"Date: " (revision.date_created.format("%d/%m/%Y %H:%M"))
+					"Date: " (revision.date_created.format("%y-%m-%d %H:%M"))
 					" By: "
 					@let user = question.users.get(&revision.id).expect("User will always be present.");
 					@if let Some(pfp_url) = &user.pfp_url {
@@ -686,9 +686,9 @@ pub fn chapter_questions_table(
 					(button_link("Claim", &endpoint))
 				}
 			}
-			td { (question.meta.last_edit.format("%d/%m/%Y %H:%M")) }
+			td { (question.meta.last_edit.format("%y-%m-%d %H:%M")) }
 			td {
-				(question.last_data.date_created.format("%d/%m/%Y %H:%M")) br;
+				(question.last_data.date_created.format("%y-%m-%d %H:%M")) br;
 				@if let Some(pfp_url) = &question.last_user.pfp_url {
 					img src = (format!("{pfp_url}-32")) alt = (question.last_user.name) {}
 					" - "
@@ -696,7 +696,7 @@ pub fn chapter_questions_table(
 				(question.last_user.name)
 			}
 			td {
-				(question.first_data.date_created.format("%d/%m/%Y %H:%M")) br;
+				(question.first_data.date_created.format("%y-%m-%d %H:%M")) br;
 				@if let Some(pfp_url) = &question.first_user.pfp_url {
 					img src = (format!("{pfp_url}-32")) alt = (question.first_user.name) {}
 					" - "
@@ -782,9 +782,9 @@ pub fn questions_table(
 					(button_link("Claim", &endpoint))
 				}
 			}
-			td { (question.meta.last_edit.format("%d/%m/%Y %H:%M")) }
+			td { (question.meta.last_edit.format("%y-%m-%d %H:%M")) }
 			td {
-				(question.last_data.date_created.format("%d/%m/%Y %H:%M")) br;
+				(question.last_data.date_created.format("%y-%m-%d %H:%M")) br;
 				@if let Some(pfp_url) = &question.last_user.pfp_url {
 					img src = (format!("{pfp_url}-32")) alt = (question.last_user.name) {}
 					" - "
@@ -792,7 +792,7 @@ pub fn questions_table(
 				(question.last_user.name)
 			}
 			td {
-				(question.first_data.date_created.format("%d/%m/%Y %H:%M")) br;
+				(question.first_data.date_created.format("%y-%m-%d %H:%M")) br;
 				@if let Some(pfp_url) = &question.first_user.pfp_url {
 					img src = (format!("{pfp_url}-32")) alt = (question.first_user.name) {}
 					" - "
