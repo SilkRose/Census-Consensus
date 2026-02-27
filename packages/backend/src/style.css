@@ -201,11 +201,8 @@
 	textarea,
 	input[type="text"] {
 		color: var(--text);
-		border: 2px solid var(--table-border);
+		border: medium solid var(--table-border);
 		background-color: var(--input-background);
-		&:focus-visible {
-			outline: none;
-		}
 	}
 
 	input[type="checkbox"],
@@ -253,7 +250,6 @@
 		input[type="text"] {
 			&:focus-visible {
 				border-color: var(--text);
-				outline: none;
 			}
 		}
 
@@ -313,8 +309,7 @@
 		textarea,
 		input[type="text"] {
 			&:focus-visible {
-				border: solid var(--text);
-				outline: none;
+				border-color: var(--text);
 			}
 		}
 
@@ -376,7 +371,6 @@
 		input[type="text"] {
 			&:focus-visible {
 				border-color: var(--accent);
-				outline: none;
 			}
 		}
 
@@ -430,7 +424,6 @@
 		input[type="text"] {
 			&:focus-visible {
 				border-color: var(--accent);
-				outline: none;
 			}
 		}
 
@@ -514,6 +507,7 @@
 		min-width: 20ch;
 		max-width: 100%;
 		field-sizing: content;
+		outline: none;
 	}
 
 	textarea {
