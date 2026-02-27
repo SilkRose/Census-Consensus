@@ -122,7 +122,6 @@ async fn main() -> Result<()> {
 			.service(set_chapter_vote_duration_move)
 			.service(set_chapter_minutes_left_move)
 			.service(get_chapter_revisions)
-			.service(get_question_new)
 			.service(set_question_new)
 			.service(get_question_edit)
 			.service(set_question_edit)

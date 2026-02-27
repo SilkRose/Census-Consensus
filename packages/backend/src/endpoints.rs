@@ -400,15 +400,7 @@ pub async fn set_population(
 	}
 }
 
-#[get("/questions/new")]
-pub async fn get_question_new(_: WriterSessionInfo) -> actix_web::Result<impl Responder> {
-	let page = new_question_html();
-	Ok(HttpResponse::Ok()
-		.content_type("text/html; charset=utf-8")
-		.body(page))
-}
-
-#[post("/questions/new")]
+#[post("/questions")]
 pub async fn set_question_new(
 	body: String, mut db: ThinData<Db>, session: WriterSessionInfo,
 ) -> actix_web::Result<impl Responder> {
@@ -590,14 +582,15 @@ pub async fn set_chapter_question_order_move(
 
 #[get("/questions")]
 pub async fn get_questions(
-	population: ThinData<Arc<RwLock<Population>>>, mut db: ThinData<Db>, session: WriterSessionInfo,
+	theme: Theme, population: ThinData<Arc<RwLock<Population>>>, mut db: ThinData<Db>,
+	session: WriterSessionInfo,
 ) -> actix_web::Result<impl Responder> {
 	let Ok(ref pop) = population.0.read() else {
 		return Ok(HttpResponse::InternalServerError().finish());
 	};
 	let population = pop.inner;
 	let data = db.get_questions_table().await?;
-	let page = questions_html(data, population, session.user);
+	let page = questions_html(session.user, theme, data, population);
 	Ok(HttpResponse::Ok()
 		.content_type("text/html; charset=utf-8")
 		.body(page))
