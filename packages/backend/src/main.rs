@@ -135,7 +135,7 @@ async fn main() -> Result<()> {
 			.service(set_chapter_question_order_move)
 			.service(get_questions)
 			.service(auth::dev_session)
-			.service(Files::new("/", "./target/site").index_file("index.html"))
+			.service(Files::new("/assets", "./assets"))
 			.app_data(db.clone())
 			.app_data(fimfic.clone())
 			.app_data(http_client.clone())

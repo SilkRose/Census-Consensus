@@ -726,10 +726,12 @@ pub fn head_html(title: &str, description: &str, link: &str, theme: &Theme) -> P
 		meta http-equiv = "X-UA-Compatible" content = "IE=edge";
 		meta name = "viewport" content = "width=device-width,initial-scale=1";
 		link rel = "stylesheet" crossorigin href = "/style.css";
+		(icon_html(theme))
 		(theme_color_html(theme))
 		link rel = "canonical" href = (link);
 		meta property = "og:title" content = (title);
 		meta property = "og:description" content = (description);
+		meta property = "og:image" content = { (format!("{SITE_LINK}/assets/cc-light-512.png")) };
 		meta property = "og:url" content = (link);
 		meta property = "og:type" content = "website";
 		meta property = "og:site_name" content = (SITE_NAME);
@@ -760,12 +762,26 @@ fn encode_url(title: &str) -> String {
 fn theme_color_html(theme: &Theme) -> PreEscaped<String> {
 	html! {
 		@match theme {
-			 Theme::Light => meta name = "theme-color" content = { "#f2d9e8" };
-			 Theme::Dark => meta name = "theme-color" content = { "#aba4f4" };
+			 Theme::Light => meta name = "theme-color" content = "#f2d9e8";
+			 Theme::Dark => meta name = "theme-color" content = "#aba4f4";
 			 Theme::None => {
-				meta name = "theme-color" content = { "#f2d9e8" };
-				meta name = "theme-color" content = { "#f2d9e8" } media = "(prefers-color-scheme: light)";
-				meta name = "theme-color" content = { "#aba4f4" } media = "(prefers-color-scheme: dark)";
+				meta name = "theme-color" content = "#f2d9e8";
+				meta name = "theme-color" content = "#f2d9e8" media = "(prefers-color-scheme: light)";
+				meta name = "theme-color" content = "#aba4f4" media = "(prefers-color-scheme: dark)";
+			 },
+		}
+	}
+}
+
+fn icon_html(theme: &Theme) -> PreEscaped<String> {
+	html! {
+		@match theme {
+			 Theme::Light => link rel = "icon" href = "/assets/cc-light.svg" type = "image/svg+xml";
+			 Theme::Dark => link rel = "icon" href = "/assets/cc-dark.svg" type = "image/svg+xml";
+			 Theme::None => {
+				link rel = "icon" href = "/assets/cc-light.svg" type = "image/svg+xml"
+				link rel = "icon" href = "/assets/cc-light.svg" type = "image/svg+xml" media = "(prefers-color-scheme: light)";
+				link rel = "icon" href = "/assets/cc-dark.svg" type = "image/svg+xml" media = "(prefers-color-scheme: dark)";
 			 },
 		}
 	}
