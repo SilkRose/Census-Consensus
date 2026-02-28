@@ -1,7 +1,7 @@
 // The question is: Is Pinkie Pie cute?
 // The options are: A: yes, B: no, C: absolutely
 
-// If C wins and has over 1/3rd of all votes.
+// If C wins and has over 1/2 of all votes.
 # C > 1/2
 
 Twilight looked at Pinkie Pie. "This first question is about you."
@@ -50,5 +50,20 @@ Twilight looked at Pinkie Pie. "This first question is about you."
 
 "Wow, what came in second?" Pinkie asked.
 
+// This would be replaced with: no and 22.56%
 "%B[name]% with %B[vp.2]% of ponies voting for it."
+
+// If A wins by a landslide.
+# A > 90%
+
+// using the question replacement.
+Twilight said, "The question was *%[question]%*"
+
+Pinkie smiled. "What were the options?"
+
+"They were: %A[name]%, %B[name]%, %C[name]%."
+
+"Which one won?"
+
+"%A[name]% with over 90% of all votes!"
 
