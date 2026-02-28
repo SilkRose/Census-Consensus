@@ -124,6 +124,7 @@ pub fn user_feedback_html(user: User) -> PreEscaped<String> {
 	html! {
 		form method = "post" action = "/user/feedback" {
 			h2 { ("Update User Feedback") }
+			(markdown_preamble())
 			label for = "public" { h3  { "Public Feedback" } }
 			p { "May appear in a future blog post about this event." }
 			(textarea_value("public", "feedback_public", 1_000_000, &user.feedback_public.unwrap_or_default()))
@@ -290,6 +291,7 @@ pub fn new_chapter_html() -> PreEscaped<String> {
 			@let name = "title";
 			label for = (name) { "Title:" }
 			(input_text_required(name, name, 1, 256))
+			(markdown_preamble())
 			@let name = "intro_text";
 			label for = (name) { "Intro:" }
 			(textarea(name, name, 1_000_000))
@@ -316,6 +318,7 @@ pub fn edit_chapter_html(
 			@let name = "title";
 			label for = (name) { "Title:" }
 			(input_text_value_required(name, name, 1, 256, &data.title))
+			(markdown_preamble())
 			@let name = "intro_text";
 			label for = (name) { "Intro:" }
 			(textarea_value(name, name, 1_000_000, &data.intro_text.unwrap_or_default()))
@@ -570,6 +573,7 @@ pub fn new_question_html(chapter: Option<&Chapter>) -> PreEscaped<String> {
 			@let name = "asked_by";
 			label for = (name) { "Asked by:" }
 			(input_text_required(name, name, 1, 256))
+			(markdown_preamble())
 			@let name = "option_writing";
 			label for = (name) { "Options:" }
 			(textarea(name, name, 1_000_000))
@@ -612,6 +616,7 @@ pub fn edit_question_html(
 			@let name = "asked_by";
 			label for = (name) { "Asked by:" }
 			(input_text_value_required(name, name, 1, 256, &data.asked_by))
+			(markdown_preamble())
 			@let name = "option_writing";
 			label for = (name) { "Options:" }
 			(textarea_value(name, name, 1_000_000, &data.option_writing.unwrap_or_default()))
@@ -937,5 +942,15 @@ fn user_inline_html(user: &User) -> PreEscaped<String> {
 			" - "
 		}
 		(user.name)
+	}
+}
+
+fn markdown_preamble() -> PreEscaped<String> {
+	html! {
+		p {
+			"Please use "
+			a href = "https://www.markdownguide.org/cheat-sheet/" { "Markdown" sup { "↗" } }
+			" for any and all text formatting."
+		}
 	}
 }
