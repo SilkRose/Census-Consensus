@@ -553,32 +553,34 @@ pub fn new_question_html(chapter: Option<&Chapter>) -> PreEscaped<String> {
 				"are automatically assigned to that chapter." }
 			}
 			@let name = "question_text";
-			label for = (name) { "Question:" }
+			h3 { label for = (name) { "Question:" } }
 			(input_text_required(name, name, 1, 256))
 			@let name = "question_type";
-			label for = (name) { "Question Type: " }
+			h3 { label for = (name) { "Question Type: " } }
 			select name = (name) id = (name) {
 				option value = (QuestionType::MultipleChoice) { (QuestionType::MultipleChoice) }
 				option value = (QuestionType::Multiselect) { (QuestionType::Multiselect) }
 				option value = (QuestionType::Scale) { (QuestionType::Scale) }
 			}
+			h3 { "Claim:" }
 			span class = "row" {
 				@let name = "claimed";
 				input type = "checkbox" id = (name) name = (name) value = "true" {}
 				label for = (name) { "Claim on creation." }
 			}
 			@let name = "response_percent";
-			label for = (name) { "Response Percentage:" }
+			h3 { label for = (name) { "Response Percentage:" } }
 			(input_text_float_required(name, name))
 			@let name = "asked_by";
-			label for = (name) { "Asked by:" }
+			h3 { label for = (name) { "Asked by:" } }
 			(input_text_required(name, name, 1, 256))
-			(markdown_preamble())
 			@let name = "option_writing";
-			label for = (name) { "Options:" }
+			h3 { label for = (name) { "Options:" } }
+			(option_explanation())
 			(textarea(name, name, 1_000_000))
 			@let name = "result_writing";
-			label for = (name) { "Result Writings:" }
+			h3 { label for = (name) { "Result Writings:" } }
+			(markdown_preamble())
 			(textarea(name, name, 1_000_000))
 			button type = "submit" { "Create Question" }
 		}
@@ -598,15 +600,15 @@ pub fn edit_question_html(
 		p { (description) }
 		form method = "post" action = (format!("/questions/{}", question.id)) {
 			@let name = "question_text";
-			label for = (name) { "Question:" }
+			h3 { label for = (name) { "Question:" } }
 			(input_text_value_required(name, name, 1, 256, &data.question_text))
 			@let name = "question_type";
-			label for = (name) { "Question Type:" }
+			h3 { label for = (name) { "Question Type:" } }
 			select name = (name) id = (name) {
 				(question_type_match(data.question_type))
 			}
 			@let name = "response_percent";
-			label for = (name) { "Response Percentage:" }
+			h3 { label for = (name) { "Response Percentage:" } }
 			(input_text_float_value_required(name, name, data.response_percent))
 			"Ponies answered: "
 				(format_number_u128((population as f64 * data.response_percent / 100.0).round() as u128).unwrap())
@@ -614,14 +616,15 @@ pub fn edit_question_html(
 				(format_number_u128(population as u128).unwrap())
 				" -- Updated on refresh."
 			@let name = "asked_by";
-			label for = (name) { "Asked by:" }
+			h3 { label for = (name) { "Asked by:" } }
 			(input_text_value_required(name, name, 1, 256, &data.asked_by))
-			(markdown_preamble())
 			@let name = "option_writing";
-			label for = (name) { "Options:" }
+			h3 { label for = (name) { "Options:" } }
+			(option_explanation())
 			(textarea_value(name, name, 1_000_000, &data.option_writing.unwrap_or_default()))
 			@let name = "result_writing";
-			label for = (name) { "Result Writings:" }
+			h3 { label for = (name) { "Result Writings:" } }
+			(markdown_preamble())
 			(textarea_value(name, name, 1_000_000, &data.result_writing.unwrap_or_default()))
 			button type = "submit" { "Save Question" }
 		}
@@ -951,6 +954,52 @@ fn markdown_preamble() -> PreEscaped<String> {
 			"Please use "
 			a href = "https://www.markdownguide.org/cheat-sheet/" { "Markdown" sup { "↗" } }
 			" for any and all text formatting."
+		}
+	}
+}
+
+fn option_explanation() -> PreEscaped<String> {
+	html! {
+		p { "All option types support comment lines." br;
+		"To make a comment start the line with: " b { "//" } "." }
+		h4 { "Scale Option Formatting" }
+		p {
+			"A scale question would be like this:" br;
+			"'On a scale from 1 to 10, how much do you love Pinkie Pie?'" br;
+			"Scale options consist of two lines:"
+		}
+		ol {
+			li { b { "[1-10]" } ": the first number is the start of the scale, and the second the end of the scale." }
+			li { b { "Order: 5, 4, 2, 3, 1, 7, 6, 8, 10, 9" } ": An ordering of the options for priority to prevent ties." }
+		}
+		p { "An example of a scale option would be:" }
+		span class = "left-text" {
+			"// the scale options:" br;
+			"[1-5]" br;
+			"// the order in which to break ties:" br;
+			"Order: 3, 2, 1, 5, 4"
+		}
+		h4 { "Multiple Choice/Multi-Select Option Formatting" }
+		p {
+			"These question types share the same option formatting." br;
+			"The only difference is that Multiple Choice can only have one answer selected," br;
+			"while Multi-Select questions can have multiple answers checked." br;
+			"These question types have two option line types:"
+		}
+		ol {
+			li { b { "A: [option text]" } ": The A is the option ID, a colon and a space, then the text of the option." }
+			li { b { "Order: A, C, B, D" } " An ordering of the options for priority to prevent ties." }
+		}
+		p { "An example of these options would be:" }
+		span class = "left-text" {
+			"// The first option:" br;
+			"A: Pinkie Pie" br;
+			"// The second option:" br;
+			"B: Twilight Sparkle" br;
+			"// The third option:" br;
+			"C: Fluttershy" br;
+			"// the order in which to break ties:" br;
+			"Order: A, C, B"
 		}
 	}
 }
