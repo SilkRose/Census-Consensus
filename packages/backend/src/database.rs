@@ -116,9 +116,18 @@ impl Db {
 		tx.commit().await
 	}
 
-	pub async fn insert_question(&mut self, data: QuestionEdit, user: User) -> Result<Question> {
+	pub async fn insert_question(
+		&mut self, data: QuestionEdit, user: User, chapter_id: Option<i32>,
+	) -> Result<Question> {
 		let mut tx = self.transaction().await?;
 		let meta = tx.create_question().await?;
+		if data.claimed {
+			tx.update_question_claimed_by(meta.id, Some(user.id))
+				.await?;
+		}
+		if let Some(chapter_id) = chapter_id {
+			tx.add_question_to_chapter(meta.id, chapter_id).await?;
+		}
 		tx.insert_question_revision(data, meta.id, user.id).await?;
 		tx.commit().await?;
 		Ok(meta)
@@ -1189,6 +1198,14 @@ pub trait DbExecutor {
 		.await
 		.map_err(update_err)?
 		.rows_affected())
+	}
+
+	async fn add_question_to_chapter(&mut self, question_id: i32, chapter_id: i32) -> Result<()> {
+		let questions = self.get_questions_by_chapter(chapter_id).await?;
+		let max = questions.iter().filter_map(|q| q.chapter_order).max();
+		self.update_question_chapter_id_order(question_id, chapter_id, max.map_or(1, |i| i + 1))
+			.await?;
+		Ok(())
 	}
 
 	async fn update_question_chapter_order(&mut self, id: i32, chapter_order: i32) -> Result<u64> {

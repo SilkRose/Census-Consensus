@@ -5,7 +5,7 @@ use crate::structs::*;
 use crate::theme::Theme;
 use crate::utility::redirect;
 use crate::{FimficCfg, HttpClient};
-use actix_web::web::{Path, ThinData};
+use actix_web::web::{Path, Query, ThinData};
 use actix_web::{HttpRequest, HttpResponse, Responder, get, post};
 use chrono::Utc;
 use lightningcss::stylesheet::{MinifyOptions, ParserOptions, PrinterOptions, StyleSheet};
@@ -402,10 +402,14 @@ pub async fn set_population(
 
 #[post("/questions")]
 pub async fn set_question_new(
-	body: String, mut db: ThinData<Db>, session: WriterSessionInfo,
+	params: Query<QuestionChapterId>, body: String, mut db: ThinData<Db>,
+	session: WriterSessionInfo,
 ) -> actix_web::Result<impl Responder> {
+	let chapter_id = params.chapter_id;
 	let question_data = serde_urlencoded::from_str::<QuestionEdit>(&body)?;
-	let question = db.insert_question(question_data, session.user).await?;
+	let question = db
+		.insert_question(question_data, session.user, chapter_id)
+		.await?;
 	Ok(HttpResponse::SeeOther()
 		.append_header(("Location", format!("/questions/{}", question.id)))
 		.finish())
@@ -481,17 +485,17 @@ pub async fn get_question_revisions(
 
 #[get("/chapters/{chapter_id}/questions")]
 pub async fn get_chapter_questions(
-	path: Path<i32>, population: ThinData<Arc<RwLock<Population>>>, mut db: ThinData<Db>,
-	session: WriterSessionInfo,
+	theme: Theme, path: Path<i32>, population: ThinData<Arc<RwLock<Population>>>,
+	mut db: ThinData<Db>, session: WriterSessionInfo,
 ) -> actix_web::Result<impl Responder> {
 	let chapter_id = path.into_inner();
 	let Ok(ref pop) = population.0.read() else {
 		return Ok(HttpResponse::InternalServerError().finish());
 	};
 	let population = pop.inner;
-	if db.get_chapter_exists(chapter_id).await? {
+	if let Some(chapter) = db.get_chapter(chapter_id).await? {
 		let data = db.get_questions_table(Some(chapter_id)).await?;
-		let page = chapter_questions_html(data, chapter_id, population, session.user);
+		let page = chapter_questions_html(session.user, theme, chapter, data, population);
 		Ok(HttpResponse::Ok()
 			.content_type("text/html; charset=utf-8")
 			.body(page))
@@ -541,10 +545,7 @@ pub async fn set_chapter_question_order(
 	path: Path<(i32, i32)>, req: HttpRequest, mut db: ThinData<Db>, _: AdminSessionInfo,
 ) -> actix_web::Result<impl Responder> {
 	let (chapter_id, question_id) = path.into_inner();
-	let questions = db.get_questions_by_chapter(chapter_id).await?;
-	let max = questions.iter().filter_map(|q| q.chapter_order).max();
-	db.update_question_chapter_id_order(question_id, chapter_id, max.map_or(1, |i| i + 1))
-		.await?;
+	db.add_question_to_chapter(question_id, chapter_id).await?;
 	Ok(HttpResponse::SeeOther()
 		.append_header(("Location", redirect(req)))
 		.finish())

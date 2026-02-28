@@ -1,5 +1,6 @@
 use chrono::{DateTime, Utc};
-use pony::{smart_map::SmartMap, structs::option_string};
+use pony::smart_map::SmartMap;
+use pony::structs::{option_bool, option_string};
 use serde::{Deserialize, Serialize};
 use sqlx::Type;
 use std::fmt::{self, Display};
@@ -125,6 +126,8 @@ pub struct ChapterData {
 pub struct QuestionEdit {
 	pub question_text: String,
 	pub question_type: QuestionType,
+	#[serde(default, deserialize_with = "option_bool")]
+	pub claimed: bool,
 	pub asked_by: String,
 	pub response_percent: f64,
 	#[serde(deserialize_with = "option_string")]
@@ -174,6 +177,11 @@ pub struct QuestionData {
 	pub meta: Question,
 	pub data: Vec<QuestionRevision>,
 	pub users: SmartMap<i32, User>,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct QuestionChapterId {
+	pub chapter_id: Option<i32>,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]

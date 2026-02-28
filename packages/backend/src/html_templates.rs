@@ -423,10 +423,37 @@ pub fn questions_html(
 		h2 { "Question List" }
 		@for question in questions.into_iter() {
 			span class = "list-item" {
-				(question_list_item_html(question, population, &user))
+				(question_list_item_html(question, population, &user, None))
 			}
 		}
-		(new_question_html())
+		(new_question_html(None))
+	};
+	html_builder()
+		.theme(&theme)
+		.head(head_html(&title, description, &link))
+		.header(header_html(Some(user_type), Pages::Questions, &theme))
+		.mane(mane)
+		.call()
+}
+
+pub fn chapter_questions_html(
+	user: User, theme: Theme, chapter: Chapter, questions: Vec<QuestionTable>, population: u32,
+) -> String {
+	let heading = "Chapter Questions";
+	let title: String = format!("{heading} - {SITE_NAME}");
+	let description = "Question list and new question page for the selected chapter.";
+	let link = format!("{SITE_LINK}/questions");
+	let user_type = user.user_type.clone();
+	let mane = html! {
+		h1 { (heading) }
+		p { (description) }
+		h2 { "Question List" }
+		@for question in questions.into_iter() {
+			span class = "list-item" {
+				(question_list_item_html(question, population, &user, Some(&chapter)))
+			}
+		}
+		(new_question_html(Some(&chapter)))
 	};
 	html_builder()
 		.theme(&theme)
@@ -437,12 +464,28 @@ pub fn questions_html(
 }
 
 pub fn question_list_item_html(
-	question: QuestionTable, population: u32, user: &User,
+	question: QuestionTable, population: u32, user: &User, chapter: Option<&Chapter>,
 ) -> PreEscaped<String> {
 	html! {
 		h3 { a href = (format!("/questions/{}", question.meta.id)) { (question.newest_data.question_text) sup { "↗" } } }
 		p {
-			@if let Some(chapter_id) = question.meta.chapter_id {
+			@if let Some(chapter) = chapter {
+				b { "Ch Order: " }
+				@if let Some(order) = question.meta.chapter_order {
+					@if order > 1 {
+						@let endpoint = format!("/chapters/{}/questions/{}/ordered/-1", chapter.id, question.meta.id);
+						(button_link("▲", &endpoint))
+					} @else {
+						(button_disabled("▲"))
+					}
+					(order)
+					@let endpoint = format!("/chapters/{}/questions/{}/ordered/1", chapter.id, question.meta.id);
+					(button_link("▼", &endpoint))
+				} @else {
+					@let endpoint = format!("/chapters/{}/questions/{}/ordered", chapter.id, question.meta.id);
+					(button_link("Add", &endpoint))
+				}
+			} @else if let Some(chapter_id) = question.meta.chapter_id {
 				@ if let Some(chapter_order) = question.meta.chapter_order {
 					b { "Ch ID/Order: " }
 					(chapter_id) "/" (chapter_order)
@@ -490,10 +533,18 @@ pub fn question_list_item_html(
 	}
 }
 
-pub fn new_question_html() -> PreEscaped<String> {
+pub fn new_question_html(chapter: Option<&Chapter>) -> PreEscaped<String> {
+	let link = match chapter {
+		Some(chapter) => &format!("/questions?chapter_id={}", chapter.id),
+		None => "/questions",
+	};
 	html! {
-		form method = "post" action = "/questions" {
+		form method = "post" action = (link) {
 			h2 { "New Question" }
+			@if chapter.is_some() {
+				p { "Questions created on a chapter's question page "
+				"are automatically assigned to that chapter." }
+			}
 			@let name = "question_text";
 			label for = (name) { "Question:" }
 			(input_text_required(name, name, 8, 256))
@@ -503,6 +554,11 @@ pub fn new_question_html() -> PreEscaped<String> {
 				option value = (QuestionType::MultipleChoice) { (QuestionType::MultipleChoice) }
 				option value = (QuestionType::Multiselect) { (QuestionType::Multiselect) }
 				option value = (QuestionType::Scale) { (QuestionType::Scale) }
+			}
+			span class = "row" {
+				@let name = "claimed";
+				input type = "checkbox" id = (name) name = (name) value = "true" {}
+				label for = (name) { "Claim on creation." }
 			}
 			@let name = "response_percent";
 			label for = (name) { "Response Percentage:" }
@@ -643,104 +699,6 @@ pub fn question_history_html(
 		.header(header_html(Some(user_type), Pages::Questions, &theme))
 		.mane(mane)
 		.call()
-}
-
-pub fn chapter_questions_html(
-	questions: Vec<QuestionTable>, chapter_id: i32, population: u32, user: User,
-) -> String {
-	html! {
-		(DOCTYPE) html lang = "en" {
-			body {
-				h1 { "Chapter Questions" }
-				br;
-				table {
-					tr {
-						th { "ID" } // done
-						th { "Question" } // done
-						th { "Question" br; "Type" } // done
-						th { "Response Percent" br; "/Ponies" } // done
-						th { "Chapter" br; "Order" } // done
-						th { "Options" } // done?
-						th { "Outcomes" } // done?
-						th { "Revisions" } // done
-						th { "Claiment" } // done
-						th { "Last" br; "Edit" } // done
-						th { "Last" br; "Revision" } // done
-						th { "Created" } // done
-						th { "Edit" } // done
-					}
-					@for question in questions.into_iter() {
-						(chapter_questions_table(question, chapter_id, population, &user))
-					}
-				}
-				(button_link("New Question", "/questions/new"))
-			};
-		};
-	}
-	.into()
-}
-
-pub fn chapter_questions_table(
-	question: QuestionTable, chapter_id: i32, population: u32, user: &User,
-) -> PreEscaped<String> {
-	html! {
-		tr {
-			td { (question.meta.id) }
-			td { (question.newest_data.question_text) }
-			td { (question.newest_data.question_type) }
-			td {
-				(question.newest_data.response_percent) "%" br;
-				(format_number_u128((population as f64 * question.newest_data.response_percent / 100.0).round() as u128).unwrap())
-			}
-			td {
-				@if let Some(order) = question.meta.chapter_order {
-					@if order > 1 {
-						@let endpoint = format!("/chapters/{chapter_id}/questions/{}/ordered/-1", question.meta.id);
-						(button_link("▲", &endpoint))
-					} @else {
-						(button_disabled("▲"))
-					}
-					(order)
-					@let endpoint = format!("/chapters/{chapter_id}/questions/{}/ordered/1", question.meta.id);
-					(button_link("▼", &endpoint))
-				} @else {
-					@let endpoint = format!("/chapters/{chapter_id}/questions/{}/ordered", question.meta.id);
-					(button_link("Add", &endpoint))
-				}
-			}
-			td { (question.options) }
-			td { (question.outcomes) }
-			td {
-				(question.revisions)
-				button onclick = (format!("window.location.href='/questions/{}/revisions';", question.meta.id)) { "View" }
-			}
-			td {
-				@if let Some(claiment) = question.claiment {
-					(user_inline_html(user))
-					@if user.id == claiment.id {
-						@let endpoint = format!("/questions/{}/unclaim", question.meta.id);
-						br; (button_link("Un-Claim", &endpoint))
-					} @else if user.user_type == UserType::Admin {
-						@let endpoint = format!("/questions/{}/unclaim", question.meta.id);
-						br; (button_link("Revoke", &endpoint))
-					}
-				} @ else {
-					@let endpoint = format!("/questions/{}/claim", question.meta.id);
-					(button_link("Claim", &endpoint))
-				}
-			}
-			td { (question.meta.last_edit.format("%y-%m-%d %H:%M")) }
-			td {
-				(question.newest_data.date_created.format("%y-%m-%d %H:%M")) br;
-				(user_inline_html(&question.newest_user))
-			}
-			td {
-				(question.oldest_data.date_created.format("%y-%m-%d %H:%M")) br;
-				(user_inline_html(&question.oldest_user))
-			}
-			td { button onclick = (format!("window.location.href='/questions/{}';", question.meta.id)) { "Edit" } }
-		}
-	}
 }
 
 // HTML components go below this comment:
