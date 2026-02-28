@@ -289,7 +289,7 @@ pub fn new_chapter_html() -> PreEscaped<String> {
 			h2 { "New Chapter" }
 			@let name = "title";
 			label for = (name) { "Title:" }
-			(input_text_required(name, name, 8, 256))
+			(input_text_required(name, name, 1, 256))
 			@let name = "intro_text";
 			label for = (name) { "Intro:" }
 			(textarea(name, name, 1_000_000))
@@ -315,7 +315,7 @@ pub fn edit_chapter_html(
 		form method = "post" action = (format!("/chapters/{}", chapter.id)) {
 			@let name = "title";
 			label for = (name) { "Title:" }
-			(input_text_value_required(name, name, 8, 256, &data.title))
+			(input_text_value_required(name, name, 1, 256, &data.title))
 			@let name = "intro_text";
 			label for = (name) { "Intro:" }
 			(textarea_value(name, name, 1_000_000, &data.intro_text.unwrap_or_default()))
@@ -469,6 +469,10 @@ pub fn question_list_item_html(
 	html! {
 		h3 { a href = (format!("/questions/{}", question.meta.id)) { (question.newest_data.question_text) sup { "↗" } } }
 		p {
+			b { "Asked By: " }
+			(question.newest_data.asked_by)
+		}
+		p {
 			@if let Some(chapter) = chapter {
 				b { "Ch Order: " }
 				@if let Some(order) = question.meta.chapter_order {
@@ -547,7 +551,7 @@ pub fn new_question_html(chapter: Option<&Chapter>) -> PreEscaped<String> {
 			}
 			@let name = "question_text";
 			label for = (name) { "Question:" }
-			(input_text_required(name, name, 8, 256))
+			(input_text_required(name, name, 1, 256))
 			@let name = "question_type";
 			label for = (name) { "Question Type: " }
 			select name = (name) id = (name) {
@@ -565,7 +569,7 @@ pub fn new_question_html(chapter: Option<&Chapter>) -> PreEscaped<String> {
 			(input_text_float_required(name, name))
 			@let name = "asked_by";
 			label for = (name) { "Asked by:" }
-			(input_text_required(name, name, 8, 256))
+			(input_text_required(name, name, 1, 256))
 			@let name = "option_writing";
 			label for = (name) { "Options:" }
 			(textarea(name, name, 1_000_000))
@@ -591,7 +595,7 @@ pub fn edit_question_html(
 		form method = "post" action = (format!("/questions/{}", question.id)) {
 			@let name = "question_text";
 			label for = (name) { "Question:" }
-			(input_text_value_required(name, name, 8, 256, &data.question_text))
+			(input_text_value_required(name, name, 1, 256, &data.question_text))
 			@let name = "question_type";
 			label for = (name) { "Question Type:" }
 			select name = (name) id = (name) {
@@ -607,7 +611,7 @@ pub fn edit_question_html(
 				" -- Updated on refresh."
 			@let name = "asked_by";
 			label for = (name) { "Asked by:" }
-			(input_text_value_required(name, name, 8, 256, &data.asked_by))
+			(input_text_value_required(name, name, 1, 256, &data.asked_by))
 			@let name = "option_writing";
 			label for = (name) { "Options:" }
 			(textarea_value(name, name, 1_000_000, &data.option_writing.unwrap_or_default()))

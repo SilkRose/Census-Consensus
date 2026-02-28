@@ -485,8 +485,12 @@
 		border-radius: 10px;
 		margin-block: 4px;
 		padding-block: 0.5em;
+		width: min(100%, 75ch);
+		margin-inline: auto;
 		> * {
 			padding-inline: 0.5em;
+			max-width: 75ch;
+			margin-inline: auto;
 		}
 	}
 
