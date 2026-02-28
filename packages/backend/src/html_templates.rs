@@ -1,3 +1,5 @@
+use std::fs;
+
 use crate::endpoints::MIN_USER_UPDATE_TIME;
 use crate::structs::*;
 use crate::theme::Theme;
@@ -1078,14 +1080,7 @@ fn result_explanation() -> PreEscaped<String> {
 		}
 		p { "Here is a complete example:" }
 		span class = "left-text" {
-			"// The question is: Is Pinkie Pie cute?" br;
-			"// The options are: A: yes, B: no, C: absolutely" br;
-			"// Our first result is if yes wins." br;
-			"# A > 1/3" br;
-			r#"Twilight looked at Pinkie Pie. "This first question is about you.""# br;
-			br;
-			r#""Oh," Pinkie Pie said."# br;
-			br;
+			(fs::read_to_string("./assets/writing-result-example.md").unwrap())
 		}
 	}
 }
