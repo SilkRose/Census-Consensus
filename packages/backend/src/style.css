@@ -285,7 +285,7 @@
 		--background: hsl(323 80% 98%);
 		--primary: hsl(29 92% 85%);
 		--secondary: hsl(53 95% 85%);
-		--accent: hsl(324 49% 90%);
+		--accent: #f2d9e8;
 		--input-background: hsl(323 80% 95%);
 		--table-border: hsl(326 80% 90%);
 		--table-row-1: hsl(194 58% 85%);
@@ -400,7 +400,7 @@
 		--background: hsl(234 39% 15%);
 		--primary: hsl(170 72% 55%);
 		--secondary: hsl(182 100% 40%);
-		--accent: hsl(245 78% 80%);
+		--accent: #aba4f4;
 		--input-background: hsl(234 39% 18%);
 		--table-border: hsl(235 39% 12%);
 		--table-row-1: hsl(262 67% 20%);

@@ -53,7 +53,7 @@ pub fn user_settings_html(user: User, theme: Theme, sessions: Vec<Session>) -> S
 	};
 	html_builder()
 		.theme(&theme)
-		.head(head_html(&title, description, &link))
+		.head(head_html(&title, description, &link, &theme))
 		.header(header_html(Some(user_type), Pages::User, &theme))
 		.mane(mane)
 		.call()
@@ -198,7 +198,7 @@ pub fn chapters_html(user: User, theme: Theme, chapters: Vec<ChapterTable>) -> S
 	};
 	html_builder()
 		.theme(&theme)
-		.head(head_html(&title, description, &link))
+		.head(head_html(&title, description, &link, &theme))
 		.header(header_html(Some(user_type), Pages::Chapters, &theme))
 		.mane(mane)
 		.call()
@@ -327,7 +327,7 @@ pub fn edit_chapter_html(
 	};
 	html_builder()
 		.theme(&theme)
-		.head(head_html(&title, description, &link))
+		.head(head_html(&title, description, &link, &theme))
 		.header(header_html(Some(user_type), Pages::Chapters, &theme))
 		.mane(mane)
 		.call()
@@ -365,7 +365,7 @@ pub fn chapter_history_html(user: User, theme: Theme, chapter: ChapterData) -> S
 	};
 	html_builder()
 		.theme(&theme)
-		.head(head_html(&title, description, &link))
+		.head(head_html(&title, description, &link, &theme))
 		.header(header_html(Some(user_type), Pages::Chapters, &theme))
 		.mane(mane)
 		.call()
@@ -403,7 +403,7 @@ pub fn feedback_html(user: User, theme: Theme, users: Vec<User>) -> String {
 	};
 	html_builder()
 		.theme(&theme)
-		.head(head_html(&title, description, &link))
+		.head(head_html(&title, description, &link, &theme))
 		.header(header_html(Some(user_type), Pages::Feedback, &theme))
 		.mane(mane)
 		.call()
@@ -430,7 +430,7 @@ pub fn questions_html(
 	};
 	html_builder()
 		.theme(&theme)
-		.head(head_html(&title, description, &link))
+		.head(head_html(&title, description, &link, &theme))
 		.header(header_html(Some(user_type), Pages::Questions, &theme))
 		.mane(mane)
 		.call()
@@ -457,7 +457,7 @@ pub fn chapter_questions_html(
 	};
 	html_builder()
 		.theme(&theme)
-		.head(head_html(&title, description, &link))
+		.head(head_html(&title, description, &link, &theme))
 		.header(header_html(Some(user_type), Pages::Questions, &theme))
 		.mane(mane)
 		.call()
@@ -623,7 +623,7 @@ pub fn edit_question_html(
 	};
 	html_builder()
 		.theme(&theme)
-		.head(head_html(&title, description, &link))
+		.head(head_html(&title, description, &link, &theme))
 		.header(header_html(Some(user_type), Pages::Questions, &theme))
 		.mane(mane)
 		.call()
@@ -699,7 +699,7 @@ pub fn question_history_html(
 	};
 	html_builder()
 		.theme(&theme)
-		.head(head_html(&title, description, &link))
+		.head(head_html(&title, description, &link, &theme))
 		.header(header_html(Some(user_type), Pages::Questions, &theme))
 		.mane(mane)
 		.call()
@@ -707,14 +707,14 @@ pub fn question_history_html(
 
 // HTML components go below this comment:
 
-pub fn head_html(title: &str, description: &str, link: &str) -> PreEscaped<String> {
+pub fn head_html(title: &str, description: &str, link: &str, theme: &Theme) -> PreEscaped<String> {
 	html! {
 		title { (title) };
 		meta charset = "UTF-8";
 		meta http-equiv = "X-UA-Compatible" content = "IE=edge";
 		meta name = "viewport" content = "width=device-width,initial-scale=1";
 		link rel = "stylesheet" crossorigin href = "/style.css";
-		meta name = "theme-color" content = { "#F5B7D0" };
+		(theme_color_html(theme))
 		link rel = "canonical" href = (link);
 		meta property = "og:title" content = (title);
 		meta property = "og:description" content = (description);
@@ -743,6 +743,20 @@ fn encode_url(title: &str) -> String {
 	encode.append_pair("cache_age", "86400");
 	encode.append_pair("html", "");
 	encode.finish()
+}
+
+fn theme_color_html(theme: &Theme) -> PreEscaped<String> {
+	html! {
+		@match theme {
+			 Theme::Light => meta name = "theme-color" content = { "#f2d9e8" };
+			 Theme::Dark => meta name = "theme-color" content = { "#aba4f4" };
+			 Theme::None => {
+				meta name = "theme-color" content = { "#f2d9e8" };
+				meta name = "theme-color" content = { "#f2d9e8" } media = "(prefers-color-scheme: light)";
+				meta name = "theme-color" content = { "#aba4f4" } media = "(prefers-color-scheme: dark)";
+			 },
+		}
+	}
 }
 
 fn header_html(user_type: Option<UserType>, page: Pages, theme: &Theme) -> PreEscaped<String> {
