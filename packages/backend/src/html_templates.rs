@@ -440,7 +440,7 @@ pub fn question_list_item_html(
 	question: QuestionTable, population: u32, user: &User,
 ) -> PreEscaped<String> {
 	html! {
-		h3 { a href = (format!("/questions/{}", question.meta.id)) { (question.last_data.question_text) sup { "↗" } } }
+		h3 { a href = (format!("/questions/{}", question.meta.id)) { (question.newest_data.question_text) sup { "↗" } } }
 		p {
 			@if let Some(chapter_id) = question.meta.chapter_id {
 				@ if let Some(chapter_order) = question.meta.chapter_order {
@@ -452,13 +452,17 @@ pub fn question_list_item_html(
 				}
 			}
 			b { " Type: " }
-			(question.last_data.question_type)
+			(question.newest_data.question_type)
 			b { " Res %/Ponies: " }
-			(question.last_data.response_percent) "%/"
-			(format_number_u128((population as f64 * question.last_data.response_percent / 100.0).round() as u128).unwrap())
+			(question.newest_data.response_percent) "%/"
+			(format_number_u128((population as f64 * question.newest_data.response_percent / 100.0).round() as u128).unwrap())
 		}
 		p {
-			b { "Revisions: " }
+			b { "Options/Results: " }
+			(question.options)
+			"/"
+			(question.outcomes)
+			b { " Revisions: " }
 			a href = (format!("/questions/{}/revisions", question.meta.id)) { (question.revisions) sup { "↗" } }
 			@if let Some(claiment) = question.claiment {
 				b { " Claiment: " }
@@ -479,9 +483,9 @@ pub fn question_list_item_html(
 			b { "Last Edit: " }
 			(question.meta.last_edit.format("%y-%m-%d %H:%M"))
 			b { " Last Revision: " }
-			(question.last_data.date_created.format("%y-%m-%d %H:%M"))
+			(question.newest_data.date_created.format("%y-%m-%d %H:%M"))
 			b { " Created: " }
-			(question.first_data.date_created.format("%y-%m-%d %H:%M"))
+			(question.oldest_data.date_created.format("%y-%m-%d %H:%M"))
 		}
 	}
 }
@@ -682,11 +686,11 @@ pub fn chapter_questions_table(
 	html! {
 		tr {
 			td { (question.meta.id) }
-			td { (question.last_data.question_text) }
-			td { (question.last_data.question_type) }
+			td { (question.newest_data.question_text) }
+			td { (question.newest_data.question_type) }
 			td {
-				(question.last_data.response_percent) "%" br;
-				(format_number_u128((population as f64 * question.last_data.response_percent / 100.0).round() as u128).unwrap())
+				(question.newest_data.response_percent) "%" br;
+				(format_number_u128((population as f64 * question.newest_data.response_percent / 100.0).round() as u128).unwrap())
 			}
 			td {
 				@if let Some(order) = question.meta.chapter_order {
@@ -727,12 +731,12 @@ pub fn chapter_questions_table(
 			}
 			td { (question.meta.last_edit.format("%y-%m-%d %H:%M")) }
 			td {
-				(question.last_data.date_created.format("%y-%m-%d %H:%M")) br;
-				(user_inline_html(&question.last_user))
+				(question.newest_data.date_created.format("%y-%m-%d %H:%M")) br;
+				(user_inline_html(&question.newest_user))
 			}
 			td {
-				(question.first_data.date_created.format("%y-%m-%d %H:%M")) br;
-				(user_inline_html(&question.first_user))
+				(question.oldest_data.date_created.format("%y-%m-%d %H:%M")) br;
+				(user_inline_html(&question.oldest_user))
 			}
 			td { button onclick = (format!("window.location.href='/questions/{}';", question.meta.id)) { "Edit" } }
 		}

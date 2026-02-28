@@ -124,11 +124,14 @@ impl Db {
 		Ok(meta)
 	}
 
-	pub async fn get_chapter_questions_table(
-		&mut self, chapter_id: i32,
+	pub async fn get_questions_table(
+		&mut self, chapter_id: Option<i32>,
 	) -> Result<Vec<QuestionTable>> {
 		let mut tx = self.transaction().await?;
-		let questions = tx.get_questions_for_table(chapter_id).await?;
+		let questions = match chapter_id {
+			Some(chapter_id) => tx.get_questions_for_table(chapter_id).await?,
+			None => tx.get_all_questions().await?,
+		};
 		let mut data = vec![];
 		for question in questions {
 			let id = question.id;
@@ -136,51 +139,20 @@ impl Db {
 				Some(id) => Some(tx.get_user(id).await?),
 				None => None,
 			};
-			let last_data = tx.get_oldest_question_revision(question.id).await?;
-			let first_data = tx.get_latest_question_revision(question.id).await?;
-			let last_user = tx.get_user(last_data.created_by).await?;
-			let first_user = tx.get_user(first_data.created_by).await?;
+			let newest_data = tx.get_latest_question_revision(question.id).await?;
+			let oldest_data = tx.get_oldest_question_revision(question.id).await?;
+			let newest_user = tx.get_user(newest_data.created_by).await?;
+			let oldest_user = tx.get_user(oldest_data.created_by).await?;
 			let table_data = QuestionTable {
 				meta: question,
 				revisions: tx.get_question_revision_count(id).await?,
-				options: count_options(&last_data.option_writing.clone().unwrap_or_default()),
-				outcomes: count_outcomes(&last_data.result_writing.clone().unwrap_or_default()),
+				options: count_options(&newest_data.option_writing.clone().unwrap_or_default()),
+				outcomes: count_outcomes(&newest_data.result_writing.clone().unwrap_or_default()),
 				claiment,
-				first_data,
-				last_data,
-				first_user,
-				last_user,
-			};
-			data.push(table_data);
-		}
-		tx.commit().await?;
-		Ok(data)
-	}
-
-	pub async fn get_questions_table(&mut self) -> Result<Vec<QuestionTable>> {
-		let mut tx = self.transaction().await?;
-		let questions = tx.get_all_questions().await?;
-		let mut data = vec![];
-		for question in questions {
-			let id = question.id;
-			let claiment = match question.claimed_by {
-				Some(id) => Some(tx.get_user(id).await?),
-				None => None,
-			};
-			let last_data = tx.get_oldest_question_revision(question.id).await?;
-			let first_data = tx.get_latest_question_revision(question.id).await?;
-			let last_user = tx.get_user(last_data.created_by).await?;
-			let first_user = tx.get_user(first_data.created_by).await?;
-			let table_data = QuestionTable {
-				meta: question,
-				revisions: tx.get_question_revision_count(id).await?,
-				options: count_options(&last_data.option_writing.clone().unwrap_or_default()),
-				outcomes: count_outcomes(&last_data.result_writing.clone().unwrap_or_default()),
-				claiment,
-				first_data,
-				last_data,
-				first_user,
-				last_user,
+				oldest_data,
+				newest_data,
+				oldest_user,
+				newest_user,
 			};
 			data.push(table_data);
 		}
@@ -975,7 +947,7 @@ pub trait DbExecutor {
 				option_writing, result_writing, question_id, created_by, date_created
 			FROM question_revisions
 			WHERE question_id = $1
-			ORDER BY date_created
+			ORDER BY date_created ASC
 			LIMIT 1;"#,
 			question_id
 		)

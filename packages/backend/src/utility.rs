@@ -30,7 +30,7 @@ pub fn count_options(text: &str) -> u32 {
 pub fn count_outcomes(text: &str) -> u32 {
 	let mut count = 0;
 	for line in text.lines() {
-		if !line.is_empty() && !line.starts_with("# ") {
+		if !line.is_empty() && line.starts_with("# ") {
 			count += 1
 		}
 	}

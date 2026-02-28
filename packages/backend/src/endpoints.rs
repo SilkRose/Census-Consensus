@@ -490,7 +490,7 @@ pub async fn get_chapter_questions(
 	};
 	let population = pop.inner;
 	if db.get_chapter_exists(chapter_id).await? {
-		let data = db.get_chapter_questions_table(chapter_id).await?;
+		let data = db.get_questions_table(Some(chapter_id)).await?;
 		let page = chapter_questions_html(data, chapter_id, population, session.user);
 		Ok(HttpResponse::Ok()
 			.content_type("text/html; charset=utf-8")
@@ -589,7 +589,7 @@ pub async fn get_questions(
 		return Ok(HttpResponse::InternalServerError().finish());
 	};
 	let population = pop.inner;
-	let data = db.get_questions_table().await?;
+	let data = db.get_questions_table(None).await?;
 	let page = questions_html(session.user, theme, data, population);
 	Ok(HttpResponse::Ok()
 		.content_type("text/html; charset=utf-8")

@@ -163,10 +163,10 @@ pub struct QuestionTable {
 	pub options: u32,
 	pub outcomes: u32,
 	pub claiment: Option<User>,
-	pub first_data: QuestionRevision,
-	pub last_data: QuestionRevision,
-	pub first_user: User,
-	pub last_user: User,
+	pub oldest_data: QuestionRevision,
+	pub newest_data: QuestionRevision,
+	pub oldest_user: User,
+	pub newest_user: User,
 }
 
 #[derive(Clone, Debug)]
