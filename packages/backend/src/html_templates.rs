@@ -214,7 +214,7 @@ fn chapter_list_item_html(
 		false => None,
 	};
 	html! (
-		h3 { a href = (format!("/chapters/{}", chapter.meta.id)) { (chapter.last_data.title) sup { "↗" } } }
+		h3 { a href = (format!("/chapters/{}", chapter.meta.id)) { (chapter.newest_data.title) sup { "↗" } } }
 		p {
 			b { " Ch Order: " }
 			@if let Some(order) = chapter.meta.chapter_order {
@@ -268,17 +268,17 @@ fn chapter_list_item_html(
 				a href = (format!("https://www.fimfiction.net/chapter/{id}")) { (id) sup { "↗" } }
 			}
 			b { " Intro/Outro Word Count: " }
-			(chapter.last_data.intro_text.clone().map(|text| count_words(&text)).unwrap_or_default())
+			(chapter.newest_data.intro_text.clone().map(|text| count_words(&text)).unwrap_or_default())
 			"/"
-			(chapter.last_data.outro_text.clone().map(|text| count_words(&text)).unwrap_or_default())
+			(chapter.newest_data.outro_text.clone().map(|text| count_words(&text)).unwrap_or_default())
 		}
 		p {
 			b { "Last Edit: " }
 			(chapter.meta.last_edit.format("%y-%m-%d %H:%M"))
 			b { " Last Revision: " }
-			(chapter.last_data.date_created.format("%y-%m-%d %H:%M"))
+			(chapter.newest_data.date_created.format("%y-%m-%d %H:%M"))
 			b { " Created: " }
-			(chapter.first_data.date_created.format("%y-%m-%d %H:%M"))
+			(chapter.oldest_data.date_created.format("%y-%m-%d %H:%M"))
 		}
 	)
 }

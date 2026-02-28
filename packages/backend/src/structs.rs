@@ -108,10 +108,10 @@ pub struct ChapterTable {
 	pub meta: Chapter,
 	pub revisions: i64,
 	pub questions: i64,
-	pub first_data: ChapterRevision,
-	pub last_data: ChapterRevision,
-	pub first_user: User,
-	pub last_user: User,
+	pub newest_data: ChapterRevision,
+	pub oldest_data: ChapterRevision,
+	pub oldest_user: User,
+	pub newest_user: User,
 }
 
 #[derive(Clone, Debug)]

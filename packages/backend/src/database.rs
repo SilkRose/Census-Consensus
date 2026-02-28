@@ -74,20 +74,20 @@ impl Db {
 		let chapters = tx.get_all_chapters().await?;
 		let mut data = vec![];
 		for chapter in chapters {
-			let last_data = tx.get_oldest_chapter_revision(chapter.id).await?;
-			let first_data = tx.get_latest_chapter_revision(chapter.id).await?;
-			let last_user = tx.get_user(last_data.created_by).await?;
-			let first_user = tx.get_user(first_data.created_by).await?;
+			let oldest_data = tx.get_oldest_chapter_revision(chapter.id).await?;
+			let newest_data = tx.get_latest_chapter_revision(chapter.id).await?;
+			let oldest_user = tx.get_user(oldest_data.created_by).await?;
+			let newest_user = tx.get_user(newest_data.created_by).await?;
 			let revisions = tx.get_chapter_revisions_count_by_id(chapter.id).await?;
 			let questions = tx.get_question_count_by_chapter(chapter.id).await?;
 			let table_data = ChapterTable {
 				meta: chapter,
 				revisions,
 				questions,
-				first_data,
-				last_data,
-				first_user,
-				last_user,
+				oldest_data,
+				newest_data,
+				oldest_user,
+				newest_user,
 			};
 			data.push(table_data);
 		}
@@ -139,10 +139,10 @@ impl Db {
 				Some(id) => Some(tx.get_user(id).await?),
 				None => None,
 			};
-			let newest_data = tx.get_latest_question_revision(question.id).await?;
 			let oldest_data = tx.get_oldest_question_revision(question.id).await?;
-			let newest_user = tx.get_user(newest_data.created_by).await?;
+			let newest_data = tx.get_latest_question_revision(question.id).await?;
 			let oldest_user = tx.get_user(oldest_data.created_by).await?;
+			let newest_user = tx.get_user(newest_data.created_by).await?;
 			let table_data = QuestionTable {
 				meta: question,
 				revisions: tx.get_question_revision_count(id).await?,
