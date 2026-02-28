@@ -1052,6 +1052,7 @@ fn result_explanation() -> PreEscaped<String> {
 			li { b { "vcw" } ": The count using the biggest word. Ex 10 million" }
 			li { b { "p-" } ": Prepended to an identified for result placements where it is unknown." }
 			li { b { "name" } ": The text of an option." }
+			li { b { "question" } ": The text of the question." }
 		}
 		p {
 			"These must be used with the following symbols that get replaced by you when writing:"
@@ -1077,6 +1078,7 @@ fn result_explanation() -> PreEscaped<String> {
 			li { b { "%4[p-vcc]%" } ": 4 is the placement and vcc is the vote count. Ex 21,657,541" }
 			li { b { "%2[p-vcw]%" } ": 2 is the placement and vcw is count in words. Ex 40 million" }
 			li { b { "%2[p-vcw.1]%" } ": .1 is the decimal places. Ex 40.1 million" }
+			li { b { "%[question]%" } ": The text of the question." }
 		}
 		p { "Here is a complete example:" }
 		span class = "left-text" {
