@@ -68,11 +68,7 @@ fn update_user_html(user: &User) -> PreEscaped<String> {
 			If you update your name or profile picture on Fimfiction, \
 			we have no idea unless you click the button to re-fetch your data." }
 		span class = "row" {
-			@if let Some(pfp_url) = &user.pfp_url {
-				img src = (format!("{pfp_url}-32")) alt = (user.name) {}
-				" - "
-			}
-			(user.name)
+			(user_inline_html(user))
 		}
 		@if Utc::now() > next_fetch_time || user.user_type == UserType::Admin {
 			(button_link(button_text, "/user/update"))
@@ -187,10 +183,17 @@ pub fn chapters_html(user: User, theme: Theme, chapters: Vec<ChapterTable>) -> S
 	let description = "Chapter list and new chapter page.";
 	let link = format!("{SITE_LINK}/chapters");
 	let user_type = user.user_type.clone();
+	let admin = user_type == UserType::Admin;
 	let mane = html! {
 		h1 { (heading) }
 		p { (description) }
-		(chapters_list_html(chapters, user_type == UserType::Admin))
+		h2 { "Chapter List" }
+		@let mut prev_published: Option<bool> = None;
+		@for chapter in chapters.iter() {
+			span class = "list-item" {
+				(chapter_list_item_html(chapter, &mut prev_published, admin))
+			}
+		}
 		(new_chapter_html())
 	};
 	html_builder()
@@ -199,18 +202,6 @@ pub fn chapters_html(user: User, theme: Theme, chapters: Vec<ChapterTable>) -> S
 		.header(header_html(Some(user_type), Pages::Chapters, &theme))
 		.mane(mane)
 		.call()
-}
-
-pub fn chapters_list_html(chapters: Vec<ChapterTable>, admin: bool) -> PreEscaped<String> {
-	html! {
-		h2 { "Chapter List" }
-		@let mut prev_published: Option<bool> = None;
-		@for chapter in chapters.iter() {
-			span class = "list-item" {
-				(chapter_list_item_html(chapter, &mut prev_published, admin))
-			}
-		}
-	}
 }
 
 fn chapter_list_item_html(
@@ -357,11 +348,7 @@ pub fn chapter_history_html(user: User, theme: Theme, chapter: ChapterData) -> S
 					"Date: " (revision.date_created.format("%y-%m-%d %H:%M"))
 					" By: "
 					@let user = chapter.users.get(&revision.id).expect("User will always be present.");
-					@if let Some(pfp_url) = &user.pfp_url {
-						img src = (format!("{pfp_url}-32")) alt = (user.name) {}
-						" - "
-					}
-					(user.name)
+					(user_inline_html(user))
 				}
 				h3 { "title:" }
 				(revision.title)
@@ -433,7 +420,12 @@ pub fn questions_html(
 	let mane = html! {
 		h1 { (heading) }
 		p { (description) }
-		(questions_list_html(questions, population, user))
+		h2 { "Question List" }
+		@for question in questions.into_iter() {
+			span class = "list-item" {
+				(question_list_item_html(question, population, &user))
+			}
+		}
 		(new_question_html())
 	};
 	html_builder()
@@ -442,19 +434,6 @@ pub fn questions_html(
 		.header(header_html(Some(user_type), Pages::Questions, &theme))
 		.mane(mane)
 		.call()
-}
-
-pub fn questions_list_html(
-	questions: Vec<QuestionTable>, population: u32, user: User,
-) -> PreEscaped<String> {
-	html! {
-		h2 { "Question List" }
-		@for question in questions.into_iter() {
-			span class = "list-item" {
-				(question_list_item_html(question, population, &user))
-			}
-		}
-	}
 }
 
 pub fn question_list_item_html(
@@ -483,18 +462,14 @@ pub fn question_list_item_html(
 			a href = (format!("/questions/{}/revisions", question.meta.id)) { (question.revisions) sup { "↗" } }
 			@if let Some(claiment) = question.claiment {
 				b { " Claiment: " }
-				@if let Some(pfp_url) = &claiment.pfp_url {
-					img src = (format!("{pfp_url}-32")) alt = (claiment.name) {}
-					" - "
+				(user_inline_html(&claiment))
+				@if user.id == claiment.id {
+					@let endpoint = format!("/questions/{}/unclaim", question.meta.id);
+					(button_link("Un-Claim", &endpoint))
+				} @else if user.user_type == UserType::Admin {
+					@let endpoint = format!("/questions/{}/unclaim", question.meta.id);
+					(button_link("Revoke", &endpoint))
 				}
-			(user.name)
-			@if user.id == claiment.id {
-				@let endpoint = format!("/questions/{}/unclaim", question.meta.id);
-				(button_link("Un-Claim", &endpoint))
-			} @else if user.user_type == UserType::Admin {
-				@let endpoint = format!("/questions/{}/unclaim", question.meta.id);
-				(button_link("Revoke", &endpoint))
-			}
 			} @ else {
 				@let endpoint = format!("/questions/{}/claim", question.meta.id);
 				(button_link("Claim", &endpoint))
@@ -569,7 +544,7 @@ pub fn edit_question_html(
 				(format_number_u128((population as f64 * data.response_percent / 100.0).round() as u128).unwrap())
 				" out of: "
 				(format_number_u128(population as u128).unwrap())
-			" -- Updated on refresh."
+				" -- Updated on refresh."
 			@let name = "asked_by";
 			label for = (name) { "Asked by:" }
 			(input_text_value_required(name, name, 8, 256, &data.asked_by))
@@ -629,11 +604,7 @@ pub fn question_history_html(
 					"Date: " (revision.date_created.format("%y-%m-%d %H:%M"))
 					" By: "
 					@let user = question.users.get(&revision.id).expect("User will always be present.");
-					@if let Some(pfp_url) = &user.pfp_url {
-						img src = (format!("{pfp_url}-32")) alt = (user.name) {}
-						" - "
-					}
-					(user.name)
+					(user_inline_html(user))
 				}
 				h3 { "Question:" }
 				(revision.question_text)
@@ -741,18 +712,14 @@ pub fn chapter_questions_table(
 			}
 			td {
 				@if let Some(claiment) = question.claiment {
-					@if let Some(pfp_url) = &claiment.pfp_url {
-						img src = (format!("{pfp_url}-32")) alt = (claiment.name) {}
-						" - "
+					(user_inline_html(user))
+					@if user.id == claiment.id {
+						@let endpoint = format!("/questions/{}/unclaim", question.meta.id);
+						br; (button_link("Un-Claim", &endpoint))
+					} @else if user.user_type == UserType::Admin {
+						@let endpoint = format!("/questions/{}/unclaim", question.meta.id);
+						br; (button_link("Revoke", &endpoint))
 					}
-				(user.name)
-				@if user.id == claiment.id {
-					@let endpoint = format!("/questions/{}/unclaim", question.meta.id);
-					br; (button_link("Un-Claim", &endpoint))
-				} @else if user.user_type == UserType::Admin {
-					@let endpoint = format!("/questions/{}/unclaim", question.meta.id);
-					br; (button_link("Revoke", &endpoint))
-				}
 				} @ else {
 					@let endpoint = format!("/questions/{}/claim", question.meta.id);
 					(button_link("Claim", &endpoint))
@@ -761,19 +728,11 @@ pub fn chapter_questions_table(
 			td { (question.meta.last_edit.format("%y-%m-%d %H:%M")) }
 			td {
 				(question.last_data.date_created.format("%y-%m-%d %H:%M")) br;
-				@if let Some(pfp_url) = &question.last_user.pfp_url {
-					img src = (format!("{pfp_url}-32")) alt = (question.last_user.name) {}
-					" - "
-				}
-				(question.last_user.name)
+				(user_inline_html(&question.last_user))
 			}
 			td {
 				(question.first_data.date_created.format("%y-%m-%d %H:%M")) br;
-				@if let Some(pfp_url) = &question.first_user.pfp_url {
-					img src = (format!("{pfp_url}-32")) alt = (question.first_user.name) {}
-					" - "
-				}
-				(question.first_user.name)
+				(user_inline_html(&question.first_user))
 			}
 			td { button onclick = (format!("window.location.href='/questions/{}';", question.meta.id)) { "Edit" } }
 		}
@@ -989,4 +948,14 @@ fn button_disabled(text: &str) -> PreEscaped<String> {
 	html! (
 		button disabled { (text) }
 	)
+}
+
+fn user_inline_html(user: &User) -> PreEscaped<String> {
+	html! {
+		@if let Some(pfp_url) = &user.pfp_url {
+			img src = (format!("{pfp_url}-32")) alt = (user.name) {}
+			" - "
+		}
+		(user.name)
+	}
 }
