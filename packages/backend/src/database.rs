@@ -144,7 +144,7 @@ impl Db {
 		let mut data = vec![];
 		for question in questions {
 			let id = question.id;
-			let claiment = match question.claimed_by {
+			let claimant = match question.claimed_by {
 				Some(id) => Some(tx.get_user(id).await?),
 				None => None,
 			};
@@ -157,7 +157,7 @@ impl Db {
 				revisions: tx.get_question_revision_count(id).await?,
 				options: count_options(&newest_data.option_writing.clone().unwrap_or_default()),
 				outcomes: count_outcomes(&newest_data.result_writing.clone().unwrap_or_default()),
-				claiment,
+				claimant,
 				oldest_data,
 				newest_data,
 				oldest_user,
@@ -1099,15 +1099,15 @@ pub trait DbExecutor {
 		.map_err(select_err)?)
 	}
 
-	async fn get_questions_by_claiment(
-		&mut self, claiment_id: Option<i32>,
+	async fn get_questions_by_claimant(
+		&mut self, claimant_id: Option<i32>,
 	) -> Result<Vec<Question>> {
 		Ok(sqlx::query_as!(
 			Question,
 			"SELECT
 				id, claimed_by, chapter_id, chapter_order, last_edit
 			FROM Questions WHERE claimed_by = $1;",
-			claiment_id
+			claimant_id
 		)
 		.fetch_all(self.executor())
 		.await

@@ -165,7 +165,7 @@ pub struct QuestionTable {
 	pub revisions: i64,
 	pub options: u32,
 	pub outcomes: u32,
-	pub claiment: Option<User>,
+	pub claimant: Option<User>,
 	pub oldest_data: QuestionRevision,
 	pub newest_data: QuestionRevision,
 	pub oldest_user: User,

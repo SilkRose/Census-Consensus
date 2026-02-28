@@ -75,7 +75,7 @@ async fn fimfic_auth_redirect(
 			Ok(Some(_session)) => {
 				return HttpResponse::Ok()
 					.content_type("text/plain")
-					.body("already have cooki (validated to be valid session)");
+					.body("already have cookie (validated to be valid session)");
 			}
 			Err(err) => {
 				eprintln!("wah {err}");
@@ -109,7 +109,7 @@ async fn fimfic_auth_return(
 		// todo present an actual error
 		return HttpResponse::Ok()
 			.content_type("text/plain")
-			.body("no cooki found");
+			.body("no cookie found");
 	};
 
 	let state_cookie = state_cookie.value();

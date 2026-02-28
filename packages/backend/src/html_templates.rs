@@ -516,10 +516,10 @@ pub fn question_list_item_html(
 			(question.outcomes)
 			b { " Revisions: " }
 			a href = (format!("/questions/{}/revisions", question.meta.id)) { (question.revisions) sup { "↗" } }
-			@if let Some(claiment) = question.claiment {
-				b { " Claiment: " }
-				(user_inline_html(&claiment))
-				@if user.id == claiment.id {
+			@if let Some(claimant) = question.claimant {
+				b { " Claimant: " }
+				(user_inline_html(&claimant))
+				@if user.id == claimant.id {
 					@let endpoint = format!("/questions/{}/unclaim", question.meta.id);
 					(button_link("Un-Claim", &endpoint))
 				} @else if user.user_type == UserType::Admin {
@@ -1036,20 +1036,20 @@ fn result_explanation() -> PreEscaped<String> {
 		}
 		ol class = "left-text" {
 			li { b { "# A > 50%" } ": The option with id A won more than 50% of the votes." }
-			li { b { "# B > 40%, C > 30%" } ": Option B got over 30% and C got over 30%." }
+			li { b { "# B > 40% AND C > 30%" } ": Option B got over 30% and C got over 30%." }
 			li { b { "# A > 1/3" } ": Option A won with over 1/3 of all votes." }
 			li { b { "# A > B" } ": Option A won with more votes than B." }
 			li { b { "# A" } ": Option A won with the most votes." }
 		}
 		p {
-			"As you can see above, result writtings support both fractions and percentages." br;
-			"Multiple condictions can be used, the first option that matches is the one that gets posted." br;
+			"As you can see above, result writings support both fractions and percentages." br;
+			"Multiple conditions can be used, the first option that matches is the one that gets posted." br;
 			"An example of result writings is as such:"
 		}
 		span class = "left-text" {
 			"// if option A is over 30% this result will be put into the chapter." br;
 			"# A > 30%" br;
-			"Oh, wow! Twilight, I can't beleive you are so cute!" br;
+			"Oh, wow! Twilight, I can't believe you are so cute!" br;
 			"// if A has more votes than B, but didn't pass the first writing condition, this will get posted." br;
 			"# A > B" br;
 			"Oh, wow! Twilight and Pinkie are so cute!"

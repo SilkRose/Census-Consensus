@@ -9,12 +9,12 @@ Twilight looked at Pinkie Pie. "This first question is about you."
 "Oh," Pinkie Pie said.
 
 // this would get replaced with 26 million, as an example.
-"%A[vcw]% ponies voted that you are abosultely cute!" Twilight said.
+"%A[vcw]% ponies voted that you are absolutely cute!" Twilight said.
 
 // This would get replaced with 50.2%
 "Wow, that's %A[vp.1]% of all of Equestria!"
 
-// Since both A and C have similar conotation, we can use the replacements to have them share a result.
+// Since both A and C have similar connotation, we can use the replacements to have them share a result.
 // If A or C wins and both have over 40% vote share.
 # A > 40% OR C > 40%
 

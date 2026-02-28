@@ -301,8 +301,8 @@ pub async fn set_chapter_vote_duration_move(
 		&& chapter.fimfic_ch_id.is_none()
 		&& chapter.vote_duration + movement > 0
 	{
-		let new_duratrion = chapter.vote_duration + movement;
-		db.update_chapter_vote_duration(id, new_duratrion).await?;
+		let new_duration = chapter.vote_duration + movement;
+		db.update_chapter_vote_duration(id, new_duration).await?;
 		Ok(HttpResponse::SeeOther()
 			.append_header(("Location", "/chapters"))
 			.finish())
@@ -340,9 +340,9 @@ pub async fn get_chapter_revisions(
 	if let Some(chapter) = db.get_chapter(id).await? {
 		let revisions = db.get_all_chapter_revisions_by_chapter(id).await?;
 		let mut users = SmartMap::default();
-		for revison in &revisions {
-			let user = db.get_user(revison.created_by).await?;
-			users.insert(revison.id, user);
+		for revision in &revisions {
+			let user = db.get_user(revision.created_by).await?;
+			users.insert(revision.id, user);
 		}
 		let chapter_data = ChapterData {
 			meta: chapter,
@@ -465,9 +465,9 @@ pub async fn get_question_revisions(
 	if let Some(question) = db.get_question(id).await? {
 		let revisions = db.get_all_question_revisions_by_question(id).await?;
 		let mut users = SmartMap::default();
-		for revison in &revisions {
-			let user = db.get_user(revison.created_by).await?;
-			users.insert(revison.id, user);
+		for revision in &revisions {
+			let user = db.get_user(revision.created_by).await?;
+			users.insert(revision.id, user);
 		}
 		let question_data = QuestionData {
 			meta: question,
@@ -528,8 +528,8 @@ pub async fn set_question_unclaim(
 ) -> actix_web::Result<impl Responder> {
 	let id = path.into_inner();
 	if let Some(question) = db.get_question(id).await?
-		&& let Some(claiment) = question.claimed_by
-		&& (claiment == session.user.id || session.user.user_type == UserType::Admin)
+		&& let Some(claimant) = question.claimed_by
+		&& (claimant == session.user.id || session.user.user_type == UserType::Admin)
 	{
 		db.update_question_claimed_by(id, None).await?;
 		Ok(HttpResponse::SeeOther()
