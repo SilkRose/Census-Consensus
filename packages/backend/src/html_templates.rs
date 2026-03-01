@@ -7,6 +7,8 @@ use crate::utility::count_words;
 use bon::builder;
 use chrono::Utc;
 use maud::{DOCTYPE, PreEscaped, html};
+use pony::markdown::WarningType;
+use pony::markdown::html::parse;
 use pony::number_format::format_number_u128;
 use pony::time::format_milliseconds;
 use url::form_urlencoded;
@@ -579,7 +581,7 @@ pub fn new_question_html(chapter: Option<&Chapter>) -> PreEscaped<String> {
 			(input_text_required(name, name, 1, 256))
 			@let name = "option_writing";
 			h3 { label for = (name) { "Options:" } }
-			(option_explanation())
+			(options_explanation())
 			(textarea(name, name, 1_000_000))
 			@let name = "result_writing";
 			h3 { label for = (name) { "Result Writings:" } }
@@ -624,7 +626,7 @@ pub fn edit_question_html(
 			(input_text_value_required(name, name, 1, 256, &data.asked_by))
 			@let name = "option_writing";
 			h3 { label for = (name) { "Options:" } }
-			(option_explanation())
+			(options_explanation())
 			(textarea_value(name, name, 1_000_000, &data.option_writing.unwrap_or_default()))
 			@let name = "result_writing";
 			h3 { label for = (name) { "Result Writings:" } }
@@ -979,49 +981,14 @@ fn markdown_preamble() -> PreEscaped<String> {
 	}
 }
 
-fn option_explanation() -> PreEscaped<String> {
+fn options_explanation() -> PreEscaped<String> {
+	let path = "./assets/options-explanation.md";
+	let text = fs::read_to_string(path).unwrap();
+	let markup = parse(&text, &WarningType::Quiet);
 	html! {
-		p { "All option types support comment lines." br;
-		"To make a comment start the line with: " b { "//" } "." }
-		h4 { "Scale Option Formatting" }
-		p {
-			"A scale question would be like this:" br;
-			"'On a scale from 1 to 10, how much do you love Pinkie Pie?'" br;
-			"Scale options consist of two lines:"
-		}
-		ol class = "left-text" {
-			li { b { "[1-10]" } ": The first number is the start of the scale, and the second the end of the scale." }
-			li { b { "Order: 5, 4, 2, 3, 1, 7, 6, 8, 10, 9" } ": An ordering of the options for priority to prevent ties." }
-		}
-		p { "An example of a scale option would be:" }
 		span class = "left-text" {
-			"// the scale options:" br;
-			"[1-5]" br;
-			"// the order in which to break ties:" br;
-			"Order: 3, 2, 1, 5, 4"
-		}
-		h4 { "Multiple Choice/Multi-Select Option Formatting" }
-		p {
-			"These question types share the same option formatting." br;
-			"The only difference is that Multiple Choice can only have one answer selected," br;
-			"while Multi-Select questions can have multiple answers checked." br;
-			"These question types have two option line types:"
-		}
-		ol class = "left-text" {
-			li { b { "A: [option text]" } ": The A is the option ID, a colon and a space, then the text of the option." }
-			li { b { "Order: A, C, B, D" } " An ordering of the options for priority to prevent ties." }
-		}
-		p { "An example of these options would be:" }
-		span class = "left-text" {
-			"// The first option:" br;
-			"A: Pinkie Pie" br;
-			"// The second option:" br;
-			"B: Twilight Sparkle" br;
-			"// The third option:" br;
-			"C: Fluttershy" br;
-			"// the order in which to break ties:" br;
-			"Order: A, C, B"
-		}
+				(PreEscaped (markup))
+			}
 	}
 }
 
