@@ -216,6 +216,11 @@
 		background: var(--text);
 	}
 
+	blockquote {
+		padding-inline: 1.5rem;
+		border-inline-start: medium solid var(--text);
+	}
+
 	/* Celestia light theme: https://www.realtimecolors.com/?colors=5e2f79-fef6fb-fcd8b6-fdf5b4-f2d9e8 */
 	@media (prefers-color-scheme: light) {
 		:root {

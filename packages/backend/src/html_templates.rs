@@ -585,7 +585,7 @@ pub fn new_question_html(chapter: Option<&Chapter>) -> PreEscaped<String> {
 			(textarea(name, name, 1_000_000))
 			@let name = "result_writing";
 			h3 { label for = (name) { "Result Writings:" } }
-			(result_explanation())
+			(results_explanation())
 			(markdown_preamble())
 			(textarea(name, name, 1_000_000))
 			button type = "submit" { "Create Question" }
@@ -630,7 +630,7 @@ pub fn edit_question_html(
 			(textarea_value(name, name, 1_000_000, &data.option_writing.unwrap_or_default()))
 			@let name = "result_writing";
 			h3 { label for = (name) { "Result Writings:" } }
-			(result_explanation())
+			(results_explanation())
 			(markdown_preamble())
 			(textarea_value(name, name, 1_000_000, &data.result_writing.unwrap_or_default()))
 			button type = "submit" { "Save Question" }
@@ -992,81 +992,13 @@ fn options_explanation() -> PreEscaped<String> {
 	}
 }
 
-fn result_explanation() -> PreEscaped<String> {
+fn results_explanation() -> PreEscaped<String> {
+	let path = "./assets/results-explanation.md";
+	let text = fs::read_to_string(path).unwrap();
+	let markup = parse(&text, &WarningType::Quiet);
 	html! {
-		p { "Result writings support comment lines." br;
-		"To make a comment start the line with: " b { "//" } "." }
-		h4 { "Result Writing Formatting" }
-		p {
-			"Result writings are the text that gets inserted into the chapter when published." br;
-			"A result writing starts with a # followed by the condition for the vote answers." br;
-			"Here are examples with explanations:"
-		}
-		ol class = "left-text" {
-			li { b { "# A > 50%" } ": The option with id A won more than 50% of the votes." }
-			li { b { "# B > 40% AND C > 30%" } ": Option B got over 30% and C got over 30%." }
-			li { b { "# A > 1/3" } ": Option A won with over 1/3 of all votes." }
-			li { b { "# A > B" } ": Option A won with more votes than B." }
-			li { b { "# A" } ": Option A won with the most votes." }
-		}
-		p {
-			"As you can see above, result writings support both fractions and percentages." br;
-			"Multiple conditions can be used, the first option that matches is the one that gets posted." br;
-			"An example of result writings is as such:"
-		}
 		span class = "left-text" {
-			"// if option A is over 30% this result will be put into the chapter." br;
-			"# A > 30%" br;
-			"Oh, wow! Twilight, I can't believe you are so cute!" br;
-			"// if A has more votes than B, but didn't pass the first writing condition, this will get posted." br;
-			"# A > B" br;
-			"Oh, wow! Twilight and Pinkie are so cute!"
-		}
-		p {
-			"Now, while writing your results, you might want "
-			"to directly quote the number or percentage of the votes or winning option."
-			" This is supported with a set of replacement strings explained below:"
-		}
-		p {
-			"Replacements use identifiers to work, the following is a list of all identifiers:"
-		}
-		ol class = "left-text" {
-			li { b { "vp" } ": The vote percent." }
-			li { b { "vcc" } ": The count of votes. Ex: 1,234,567" }
-			li { b { "vcw" } ": The count using the biggest word. Ex 10 million" }
-			li { b { "p-" } ": Prepended to an identified for result placements where it is unknown." }
-			li { b { "name" } ": The text of an option." }
-			li { b { "question" } ": The text of the question." }
-		}
-		p {
-			"These must be used with the following symbols that get replaced by you when writing:"
-		}
-		ol class = "left-text" {
-			li { b { "id" } ": The id for a known option." }
-			li { b { ".d" } ": The number of decimal places to show for numbers/percentages." }
-			li { b { "x" } ": The position for an unknown result." }
-		}
-		p {
-			"Here are some examples of how to use them:" br;
-			"(Each item explains what's new/changes from the previous one.)"
-		}
-		ol class = "left-text" {
-			li { b { "%A[vp]%" } ": A is the option id, vp is vote percent. ex 23%" }
-			li { b { "%A[vp.2]%" } ": .2 is the decimal places. ex 23.23%" }
-			li { b { "%B[vcc]%" } ": B is the option id, vcc is the vote count. Ex: 1,234,567" }
-			li { b { "%C[vcw]%" } ": C is the option, vcw is count in words. Ex 10 million" }
-			li { b { "%C[vcw.1]%" } ": .1 is the decimal places. Ex 10.1 million" }
-			li { b { "%3[p-name]%" } ": 3 is the placement, p- is placement prepend, name is the text." }
-			li { b { "%2[p-vp]%" } ": 2 is the placement, vp is vote percent. Ex 56%" }
-			li { b { "%2[p-vp.2]%" } ": .2 is 2 decimal places. Ex 56.43%" }
-			li { b { "%4[p-vcc]%" } ": 4 is the placement and vcc is the vote count. Ex 21,657,541" }
-			li { b { "%2[p-vcw]%" } ": 2 is the placement and vcw is count in words. Ex 40 million" }
-			li { b { "%2[p-vcw.1]%" } ": .1 is the decimal places. Ex 40.1 million" }
-			li { b { "%[question]%" } ": The text of the question." }
-		}
-		p { "Here is a complete example:" }
-		span class = "left-text" {
-			(fs::read_to_string("./assets/writing-result-example.md").unwrap())
-		}
+				(PreEscaped (markup))
+			}
 	}
 }
