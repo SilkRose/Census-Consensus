@@ -387,7 +387,8 @@ pub fn feedback_html(user: User, theme: Theme, users: Vec<User>) -> String {
 		p { (description) }
 		@for user in users {
 			span class = "list-item" {
-				h2 { (user.name) }
+				h2 { a href = (format!("https://www.fimfiction.net/user/{}/", user.id)) { (user.name) sup { "↗" } } }
+				br;
 				@if let Some(pfp_url) = &user.pfp_url {
 					img src = (format!("{pfp_url}-64")) alt = (user.name) {}
 				}
@@ -964,7 +965,7 @@ fn user_inline_html(user: &User) -> PreEscaped<String> {
 			img src = (format!("{pfp_url}-32")) alt = (user.name) {}
 			" - "
 		}
-		(user.name)
+		a href = (format!("https://www.fimfiction.net/user/{}/", user.id)) { (user.name) sup { "↗" } }
 	}
 }
 
