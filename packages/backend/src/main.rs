@@ -103,6 +103,7 @@ async fn main() -> Result<()> {
 		ActixApp::new()
 			.service(get_css)
 			.service(get_js)
+			.service(get_home)
 			.service(get_about)
 			.service(get_feedback)
 			.service(set_logo_submit)

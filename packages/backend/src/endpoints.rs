@@ -611,3 +611,17 @@ pub async fn get_about(
 		.content_type("text/html; charset=utf-8")
 		.body(page))
 }
+
+#[get("/")]
+pub async fn get_home(
+	theme: Theme, mut db: ThinData<Db>, session: MaybeSessionInfo,
+) -> actix_web::Result<impl Responder> {
+	let user = match session.session_info {
+		Some(user) => db.get_user_opt(user.user_id).await?,
+		None => None,
+	};
+	let page = home_html(user, theme);
+	Ok(HttpResponse::Ok()
+		.content_type("text/html; charset=utf-8")
+		.body(page))
+}

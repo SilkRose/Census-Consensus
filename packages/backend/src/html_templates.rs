@@ -720,6 +720,51 @@ pub fn question_history_html(
 		.call()
 }
 
+pub fn home_html(user: Option<User>, theme: Theme) -> String {
+	let heading = "Home";
+	let title: String = format!("{heading} - {SITE_NAME}");
+	let description = "The Equestrian Census, reimagined.";
+	let link = format!("{SITE_LINK}/about");
+	let mane = html! {
+		h1 { "Census Consensus" }
+		p { (description) }
+		p {
+			"Census Consensus is proud to announce that we have been entrusted"
+			" to run this year's Equestrian Census! Twilight Sparkle has partnered"
+			" with us to improve and revitalize the census for generations to come."
+			" If you'd like to help with the census, please reach out to this year's"
+			" event manager: "
+			a href = ("https://www.fimfiction.net/user/237915/Silk+Rose") { "Silk Rose" sup { "↗" } }
+			". She will help you get started and explain any questions you may have."
+		}
+		@if let Some(ref user) = user {
+			@if user.user_type == UserType::Voter {
+				p {
+					"This year's census is still in the works, please check back later."
+				}
+			} @else {
+				p {
+					"Feel free to explore the site. New chapters and questions can be made from"
+					" their respective pages in the navigation bar. If you have any questions,"
+					" feel free to talk with Silk Rose for an explanation."
+				}
+			}
+		} @else {
+			p {
+				"To sign up for this year's census, please click the button below."
+			}
+			(button_link("Sign Up", "/login/fimfic"))
+		}
+	};
+	let user_type = user.map(|user| user.user_type);
+	html_builder()
+		.theme(&theme)
+		.head(head_html(&title, description, &link, &theme))
+		.header(header_html(user_type, Pages::Home, &theme))
+		.mane(mane)
+		.call()
+}
+
 pub fn about_html(user: Option<User>, theme: Theme, contributors: Vec<User>) -> String {
 	let heading = "About";
 	let title: String = format!("{heading} - {SITE_NAME}");
