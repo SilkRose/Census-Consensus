@@ -109,14 +109,14 @@ async fn fimfic_auth_return(
 		// todo present an actual error
 		return HttpResponse::Ok()
 			.content_type("text/plain")
-			.body("no cookie found");
+			.body("login failed: no cookie found");
 	};
 
 	let state_cookie = state_cookie.value();
 	if state_cookie != &*state {
 		// todo present an actual error
 		return HttpResponse::Ok().content_type("text/plain").body(format!(
-			"state mismatch\n\nstate param: {state}\nstate cookie: {state_cookie}"
+			"login failed: state mismatch\n\nstate param: {state}\nstate cookie: {state_cookie}"
 		));
 	}
 
@@ -131,7 +131,7 @@ async fn fimfic_auth_return(
 			// todo present an actual error
 			return HttpResponse::Ok()
 				.content_type("text/plain")
-				.body("fimfic didn't like your code for some reason");
+				.body("login failed: fimfic code exchange error");
 		}
 	};
 
@@ -142,7 +142,7 @@ async fn fimfic_auth_return(
 			// todo present an actual error
 			return HttpResponse::Ok()
 				.content_type("text/plain")
-				.body("fimfic didn't like the request for pfp");
+				.body("login failed: error fetching profile picture");
 		}
 	};
 
@@ -155,7 +155,7 @@ async fn fimfic_auth_return(
 		// todo present an actual error
 		return HttpResponse::Ok()
 			.content_type("text/plain")
-			.body("db broke");
+			.body("login failed: error storing user");
 	}
 
 	let token = gen_auth_token();
