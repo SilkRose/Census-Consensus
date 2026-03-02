@@ -146,7 +146,8 @@ async fn main() -> Result<()> {
 			.wrap(Compress::default())
 	});
 
-	server.bind("localhost:3000")?.run().await?;
+	//                      mane
+	server.bind(("0.0.0.0", 6263))?.run().await?;
 
 	Ok(())
 }
