@@ -14,7 +14,7 @@ use pony::time::format_milliseconds;
 use url::form_urlencoded;
 
 const SITE_NAME: &str = "Census Consensus";
-const SITE_LINK: &str = "https://survey.silkrose.dev";
+const SITE_LINK: &str = "https://census.silkrose.dev";
 
 #[builder]
 fn html_builder(
