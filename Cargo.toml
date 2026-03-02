@@ -7,10 +7,10 @@ version = "0.1.0"
 edition = "2024"
 
 [workspace.dependencies]
-anyhow = "1.0.101"
+anyhow = "1.0.102"
 actix-files = "0.6.10"
-actix-web = { version = "4.12.1", features = ["macros"] }
-bon = "3.8.2"
+actix-web = { version = "4.13.0", features = ["macros"] }
+bon = "3.9.0"
 base64ct = { version = "1.8.3", features = ["std"] }
 chrono = { version = "0.4.44", features = ["serde"] }
 console-error-panic-hook = { package = "console_error_panic_hook", version = "0.1.7" }
@@ -23,7 +23,7 @@ leptos-router = { package = "leptos_router", version = "0.8.11", features = [
 ] }
 lightningcss = "1.0.0-alpha.70"
 maud = "0.27.0"
-pony = { git = "https://github.com/SilkRose/Pony", rev = "9fb64354723ee5adc2cb004223c789ae82108b1a" }
+pony = { git = "https://github.com/SilkRose/Pony", rev = "8443bd10e99954471ad0d80c01bb8b7da463781c" }
 rand = { version = "0.10.0", default-features = false, features = [
 	"chacha",
 	"sys_rng",
@@ -40,7 +40,7 @@ sqlx = { version = "0.8.6", default-features = false, features = [
 	"runtime-tokio",
 	"tls-rustls",
 ] }
-url = { version = "2.5.7" }
+url = { version = "2.5.8" }
 wasm-bindgen = "=0.2.108"
 
 [profile.dev.package."*"]
