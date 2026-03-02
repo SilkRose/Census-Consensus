@@ -94,7 +94,7 @@ async fn fimfic_auth_redirect(
 		login_url = &*fimfic_cfg.login_url
 	);
 
-	HttpResponse::Found()
+	HttpResponse::SeeOther()
 		.append_header(("location", login_url))
 		.cookie(cookie::create_state_cookie(&state))
 		.finish()
@@ -181,14 +181,12 @@ async fn fimfic_auth_return(
 		.trim_end_matches("-256");
 
 	// todo redirect to home page or something
-	HttpResponse::Ok()
+	HttpResponse::SeeOther()
 		.cookie(cookie::create_unset_state_cookie())
 		.cookie(cookie::create_session_cookie(&token))
 		.cookie(cookie::create_session_info_cookie(user_id, pfp_url))
-		.content_type("text/plain")
-		.body(format!(
-			r#"the return!! code is "{code}" and state (verified) is "{state}" and token is "{token}""#
-		))
+		.insert_header(("location", "/"))
+		.finish()
 }
 
 /// Session info extractor
