@@ -263,7 +263,7 @@ pub struct LogoStat {
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct OEmbed {
 	pub r#type: String,
-	pub version: u32,
+	pub version: f32,
 	pub provider_name: String,
 	pub provider_url: String,
 	pub title: String,
