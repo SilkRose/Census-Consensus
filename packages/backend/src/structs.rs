@@ -274,3 +274,8 @@ pub struct OEmbed {
 	pub cache_age: u32,
 	pub html: String,
 }
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct FimficAuthErr {
+	pub error: Option<String>,
+}

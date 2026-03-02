@@ -720,7 +720,7 @@ pub fn question_history_html(
 		.call()
 }
 
-pub fn home_html(user: Option<User>, theme: Theme) -> String {
+pub fn home_html(user: Option<User>, theme: Theme, error: &Option<String>) -> String {
 	let heading = "Home";
 	let title: String = format!("{heading} - {SITE_NAME}");
 	let description = "The Equestrian Census, reimagined.";
@@ -752,6 +752,11 @@ pub fn home_html(user: Option<User>, theme: Theme) -> String {
 		} @else {
 			p {
 				"To sign up for this year's census, please click the button below."
+			}
+			blockquote {
+				@if let Some(message) = error {
+					(message)
+				}
 			}
 			(button_link("Sign Up", "/login/fimfic"))
 		}
