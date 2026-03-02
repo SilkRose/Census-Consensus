@@ -273,6 +273,23 @@ pub trait DbExecutor {
 		Ok(self.get_user_opt(id).await?.ok_or_else(db_expect)?)
 	}
 
+	async fn get_all_contributors(&mut self) -> Result<Vec<User>> {
+		Ok(sqlx::query_as!(
+			User,
+			r#"SELECT
+				id, name, pfp_url, type AS "user_type: UserType", feedback_private,
+				feedback_public, date_last_fetch, date_joined
+			FROM Users
+			WHERE type = $1 OR type = $2
+			ORDER BY date_joined;"#,
+			UserType::Writer as _,
+			UserType::Admin as _
+		)
+		.fetch_all(self.executor())
+		.await
+		.map_err(select_err)?)
+	}
+
 	async fn get_all_users(&mut self) -> Result<Vec<User>> {
 		Ok(sqlx::query_as!(
 			User,

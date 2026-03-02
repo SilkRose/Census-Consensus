@@ -596,3 +596,18 @@ pub async fn get_questions(
 		.content_type("text/html; charset=utf-8")
 		.body(page))
 }
+
+#[get("/about")]
+pub async fn get_about(
+	theme: Theme, mut db: ThinData<Db>, session: MaybeSessionInfo,
+) -> actix_web::Result<impl Responder> {
+	let contributors = db.get_all_contributors().await?;
+	let user = match session.session_info {
+		Some(user) => db.get_user_opt(user.user_id).await?,
+		None => None,
+	};
+	let page = about_html(user, theme, contributors);
+	Ok(HttpResponse::Ok()
+		.content_type("text/html; charset=utf-8")
+		.body(page))
+}

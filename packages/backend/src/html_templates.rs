@@ -720,6 +720,36 @@ pub fn question_history_html(
 		.call()
 }
 
+pub fn about_html(user: Option<User>, theme: Theme, contributors: Vec<User>) -> String {
+	let heading = "About";
+	let title: String = format!("{heading} - {SITE_NAME}");
+	let description = "About this site and a contributor list.";
+	let link = format!("{SITE_LINK}/about");
+	let user_type = user.map(|user| user.user_type);
+	let mane = html! {
+		h1 { (heading) }
+		p { (description) }
+		h2 { "Contributor List" }
+		@for contributor in contributors.iter() {
+			span class = "list-item" {
+				span class = "row" {
+					@if let Some(pfp_url) = &contributor.pfp_url {
+						img src = (format!("{pfp_url}-64")) alt = (contributor.name) {}
+						" - "
+					}
+				a href = (format!("https://www.fimfiction.net/user/{}/", contributor.id)) { (contributor.name) sup { "↗" } }
+				}
+			}
+		}
+	};
+	html_builder()
+		.theme(&theme)
+		.head(head_html(&title, description, &link, &theme))
+		.header(header_html(user_type, Pages::About, &theme))
+		.mane(mane)
+		.call()
+}
+
 // HTML components go below this comment:
 
 pub fn head_html(title: &str, description: &str, link: &str, theme: &Theme) -> PreEscaped<String> {
