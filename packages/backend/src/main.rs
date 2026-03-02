@@ -101,6 +101,7 @@ async fn main() -> Result<()> {
 
 	let server = HttpServer::new(move || {
 		ActixApp::new()
+			.service(oembed)
 			.service(get_css)
 			.service(get_js)
 			.service(get_home)
