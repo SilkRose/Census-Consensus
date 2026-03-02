@@ -234,7 +234,6 @@ pub trait DbExecutor {
 			ON CONFLICT(id) DO UPDATE SET
 				name = EXCLUDED.name,
 				pfp_url = EXCLUDED.pfp_url,
-				type = EXCLUDED.type,
 				date_last_fetch = now()
 			RETURNING
 				id, name, pfp_url, type AS "user_type: UserType", feedback_private,
