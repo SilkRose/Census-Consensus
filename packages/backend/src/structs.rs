@@ -259,3 +259,18 @@ pub struct LogoStat {
 	pub ip_addr: Option<String>,
 	pub date_created: DateTime<Utc>,
 }
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct OEmbed {
+	pub r#type: String,
+	pub version: u32,
+	pub provider_name: String,
+	pub provider_url: String,
+	pub title: String,
+	#[serde(skip_serializing_if = "Option::is_none")]
+	pub author_name: Option<String>,
+	#[serde(skip_serializing_if = "Option::is_none")]
+	pub author_url: Option<String>,
+	pub cache_age: u32,
+	pub html: String,
+}

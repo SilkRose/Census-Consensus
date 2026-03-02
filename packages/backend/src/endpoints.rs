@@ -625,3 +625,11 @@ pub async fn get_home(
 		.content_type("text/html; charset=utf-8")
 		.body(page))
 }
+
+#[get("/oembed")]
+async fn oembed(query: Query<OEmbed>) -> actix_web::Result<impl Responder> {
+	let embed = query.into_inner();
+	Ok(HttpResponse::Ok()
+		.content_type("application/json+oembed")
+		.json(embed))
+}

@@ -818,7 +818,7 @@ pub fn head_html(title: &str, description: &str, link: &str, theme: &Theme) -> P
 			crossorigin
 			rel = "alternate"
 			type = "application/json+oembed"
-			href = { "https://www.fixfiction.net/oembed?" (encode) }
+			href = { "https://census.silkrose.dev/oembed?" (encode) }
 			title = (title);
 		script crossorigin src = "/mane.js" {}
 
