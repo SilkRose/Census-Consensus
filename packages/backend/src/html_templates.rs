@@ -754,7 +754,7 @@ pub fn home_html(user: Option<User>, theme: Theme) -> String {
 				"To sign up for this year's census, please click the button below."
 			}
 			blockquote {
-				// Insert preamble here.
+				"We do not store email addresses or API access tokens."
 			}
 			(button_link("Sign Up", "/login/fimfic"))
 		}
