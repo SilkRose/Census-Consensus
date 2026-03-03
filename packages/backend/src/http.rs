@@ -71,6 +71,7 @@ impl HttpClient {
 			.bytes()
 			.await?;
 
+		println!("{}", String::from_utf8_lossy(&res));
 		let res = serde_json::from_slice::<Res>(&res)?;
 
 		Ok(FimficTokenExchangeResponse {
