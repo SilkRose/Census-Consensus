@@ -47,6 +47,6 @@ impl Deref for FimficCfg {
 /// Makes a login url, purposefully without scope so we can reuse this and
 /// clients can generate their own scope to put on it
 pub fn make_login_url(client_id: &str, oauth_redirect_url: &str) -> Box<str> {
-	format!("https://www.fimfiction.net/authorize-app?client_id={client_id}&response_type=code&scope=&redirect_uri={oauth_redirect_url}")
+	format!("https://www.fimfiction.net/authorize-app?client_id={client_id}&response_type=code&scope=read_user&redirect_uri={oauth_redirect_url}")
 		.into_boxed_str()
 }
