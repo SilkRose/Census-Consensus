@@ -83,13 +83,13 @@ async fn main() -> Result<()> {
 	});
 	let dev_session = Data(dev_session);
 
-	println!("listening on localhost:3000");
+	println!("listening at http://localhost:6263");
 
 	if create_dev_session {
 		println!();
 		println!("You should unset the `CREATE_DEV_SESSION` environment variable in production.");
 		println!(
-			"to set a development session, open this link in your browser: http://localhost:3000/dev-session/{token}"
+			"to set a development session, open this link in your browser: http://localhost:6263/dev-session/{token}"
 		);
 	}
 
