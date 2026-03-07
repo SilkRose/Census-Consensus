@@ -245,7 +245,7 @@ pub enum Pages {
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, Type, Eq, Hash, PartialEq)]
-#[sqlx(type_name = "user_type", rename_all = "snake_case")]
+#[sqlx(type_name = "logo", rename_all = "snake_case")]
 pub enum Logo {
 	Census,
 	Consensus,
