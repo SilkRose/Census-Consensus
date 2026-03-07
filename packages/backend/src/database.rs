@@ -1532,20 +1532,17 @@ pub trait DbExecutor {
 			.rows_affected())
 	}
 
-	async fn insert_logo_stat(
-		&mut self, logo: Logo, user_id: Option<i32>, ip_addr: Option<String>,
-	) -> Result<LogoStat> {
+	async fn insert_logo_stat(&mut self, logo: Logo, user_id: i32) -> Result<LogoStat> {
 		Ok(sqlx::query_as!(
 			LogoStat,
 			r#"INSERT INTO Logo_stats
-				(logo, user_id, ip_addr)
+				(logo, user_id)
 			VALUES
-				($1, $2, $3)
+				($1, $2)
 			RETURNING
-				id, logo AS "logo: Logo", user_id, ip_addr, date_created;"#,
+				id, logo AS "logo: Logo", user_id, date_created;"#,
 			logo as _,
 			user_id,
-			ip_addr
 		)
 		.fetch_one(self.executor())
 		.await
@@ -1556,7 +1553,7 @@ pub trait DbExecutor {
 		Ok(sqlx::query_as!(
 			LogoStat,
 			r#"SELECT
-				id, logo AS "logo: Logo", user_id, ip_addr, date_created
+				id, logo AS "logo: Logo", user_id, date_created
 			FROM Logo_stats
 			WHERE user_id = $1;"#,
 			user_id
@@ -1572,7 +1569,7 @@ pub trait DbExecutor {
 		Ok(sqlx::query_as!(
 			LogoStat,
 			r#"SELECT
-				id, logo AS "logo: Logo", user_id, ip_addr, date_created
+				id, logo AS "logo: Logo", user_id, date_created
 			FROM Logo_stats
 			WHERE date_created > $1 AND date_created < $2;"#,
 			start,
@@ -1587,7 +1584,7 @@ pub trait DbExecutor {
 		Ok(sqlx::query_as!(
 			LogoStat,
 			r#"SELECT
-				id, logo AS "logo: Logo", user_id, ip_addr, date_created
+				id, logo AS "logo: Logo", user_id, date_created
 			FROM Logo_stats;"#,
 		)
 		.fetch_all(self.executor())

@@ -255,8 +255,7 @@ pub enum Logo {
 pub struct LogoStat {
 	pub id: i32,
 	pub logo: Logo,
-	pub user_id: Option<i32>,
-	pub ip_addr: Option<String>,
+	pub user_id: i32,
 	pub date_created: DateTime<Utc>,
 }
 
