@@ -152,10 +152,14 @@ impl Db {
 			let newest_data = tx.get_latest_question_revision(question.id).await?;
 			let oldest_user = tx.get_user(oldest_data.created_by).await?;
 			let newest_user = tx.get_user(newest_data.created_by).await?;
+			let question_type = newest_data.question_type.clone();
 			let table_data = QuestionTable {
 				meta: question,
 				revisions: tx.get_question_revision_count(id).await?,
-				options: count_options(&newest_data.option_writing.clone().unwrap_or_default()),
+				options: count_options(
+					&newest_data.option_writing.clone().unwrap_or_default(),
+					question_type,
+				),
 				outcomes: count_outcomes(&newest_data.result_writing.clone().unwrap_or_default()),
 				claimant,
 				oldest_data,
