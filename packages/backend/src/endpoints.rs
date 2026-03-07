@@ -243,7 +243,7 @@ pub async fn set_chapter_edit(
 
 #[get("/chapters/{id}/ordered")]
 pub async fn set_chapter_order(
-	path: Path<i32>, mut db: ThinData<Db>, _: AdminSessionInfo,
+	path: Path<i32>, mut db: ThinData<Db>, _: WriterSessionInfo,
 ) -> actix_web::Result<impl Responder> {
 	let id = path.into_inner();
 	if let Some(chapter) = db.get_chapter(id).await?
@@ -265,7 +265,7 @@ pub async fn set_chapter_order(
 
 #[get("/chapters/{id}/ordered/{movement}")]
 pub async fn set_chapter_order_move(
-	path: Path<(i32, i32)>, mut db: ThinData<Db>, _: AdminSessionInfo,
+	path: Path<(i32, i32)>, mut db: ThinData<Db>, _: WriterSessionInfo,
 ) -> actix_web::Result<impl Responder> {
 	let (id, movement) = path.into_inner();
 	if movement.abs() == 1
