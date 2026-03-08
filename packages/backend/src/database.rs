@@ -1592,6 +1592,32 @@ pub trait DbExecutor {
 		.map_err(select_err)?)
 	}
 
+	async fn get_logo_stats_census_count_by_user(&mut self, user_id: i32) -> Result<i64> {
+		Ok(sqlx::query!(
+			"SELECT count(*) FROM Logo_stats WHERE logo = $1 AND user_id = $2;",
+			Logo::Census as _,
+			user_id
+		)
+		.fetch_one(self.executor())
+		.await
+		.map_err(select_err)?
+		.count
+		.ok_or_else(count_err)?)
+	}
+
+	async fn get_logo_stats_consensus_count_by_user(&mut self, user_id: i32) -> Result<i64> {
+		Ok(sqlx::query!(
+			"SELECT count(*) FROM Logo_stats WHERE logo = $1 AND user_id = $2;",
+			Logo::Consensus as _,
+			user_id
+		)
+		.fetch_one(self.executor())
+		.await
+		.map_err(select_err)?
+		.count
+		.ok_or_else(count_err)?)
+	}
+
 	async fn get_logo_stats_census_count(&mut self) -> Result<i64> {
 		Ok(sqlx::query!(
 			"SELECT count(*) FROM Logo_stats WHERE logo = $1;",

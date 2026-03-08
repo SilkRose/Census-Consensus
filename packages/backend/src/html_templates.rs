@@ -378,7 +378,7 @@ pub fn chapter_history_html(user: User, theme: Theme, chapter: ChapterData) -> S
 		.call()
 }
 
-pub fn feedback_html(user: User, theme: Theme, users: Vec<User>) -> String {
+pub fn feedback_html(user: User, theme: Theme, users: Vec<UserData>) -> String {
 	let heading = "User Feedback";
 	let title: String = format!("{heading} - {SITE_NAME}");
 	let description = "Public and private feedback from every user.";
@@ -389,18 +389,27 @@ pub fn feedback_html(user: User, theme: Theme, users: Vec<User>) -> String {
 		p { (description) }
 		@for user in users {
 			span class = "list-item" {
-				h2 { a href = (format!("https://www.fimfiction.net/user/{}/", user.id)) { (user.name) sup { "↗" } } }
+				h2 { a href = (format!("https://www.fimfiction.net/user/{}/", user.meta.id)) { (user.meta.name) sup { "↗" } } }
 				br;
-				@if let Some(pfp_url) = &user.pfp_url {
-					img src = (format!("{pfp_url}-64")) alt = (user.name) {}
+				@if let Some(pfp_url) = &user.meta.pfp_url {
+					img src = (format!("{pfp_url}-64")) alt = (user.meta.name) {}
 				}
-				@if let Some(public) = user.feedback_public {
+				h3 { "Logo Stats:" }
+				p {
+					b { "Census Clicks: " }
+					(format_number_u128(user.logo_census as u128).unwrap())
+					b { " Consensus Clicks: " }
+					(format_number_u128(user.logo_consensus as u128).unwrap())
+					b { " Total Clicks: " }
+					(format_number_u128((user.logo_census + user.logo_consensus) as u128).unwrap())
+				}
+				@if let Some(public) = user.meta.feedback_public {
 					h3 { "Public:" }
 					pre class = "left-text" {
 						(public)
 					}
 				}
-				@if let Some(private) = user.feedback_private {
+				@if let Some(private) = user.meta.feedback_private {
 					h3 { "Private:" }
 					pre class = "left-text" {
 						(private)

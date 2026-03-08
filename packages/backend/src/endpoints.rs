@@ -358,7 +358,18 @@ pub async fn get_feedback(
 	theme: Theme, mut db: ThinData<Db>, session: WriterSessionInfo,
 ) -> actix_web::Result<impl Responder> {
 	if let Ok(users) = db.get_all_users().await {
-		let page = feedback_html(session.user, theme, users);
+		let mut user_data = Vec::with_capacity(users.len());
+		for user in users {
+			let census = db.get_logo_stats_census_count_by_user(user.id).await?;
+			let consensus = db.get_logo_stats_consensus_count_by_user(user.id).await?;
+			let data = UserData {
+				meta: user,
+				logo_census: census,
+				logo_consensus: consensus,
+			};
+			user_data.push(data);
+		}
+		let page = feedback_html(session.user, theme, user_data);
 		Ok(HttpResponse::Ok()
 			.content_type("text/html; charset=utf-8")
 			.body(page))

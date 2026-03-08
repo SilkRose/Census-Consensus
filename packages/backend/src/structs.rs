@@ -58,6 +58,13 @@ pub struct User {
 	pub date_joined: DateTime<Utc>,
 }
 
+#[derive(Clone, Debug, Deserialize, Serialize, Eq, Hash, PartialEq)]
+pub struct UserData {
+	pub meta: User,
+	pub logo_census: i64,
+	pub logo_consensus: i64,
+}
+
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Session {
 	pub token: String,
