@@ -1094,9 +1094,12 @@ fn options_explanation() -> PreEscaped<String> {
 	let text = fs::read_to_string(path).unwrap();
 	let markup = parse(&text, &WarningType::Quiet);
 	html! {
-		span class = "left-text" {
+		details open {
+			summary { "Explanation: (Click to hide/show.)" }
+			span class = "left-text" {
 				(PreEscaped (markup))
 			}
+		}
 	}
 }
 
@@ -1105,8 +1108,11 @@ fn results_explanation() -> PreEscaped<String> {
 	let text = fs::read_to_string(path).unwrap();
 	let markup = parse(&text, &WarningType::Quiet);
 	html! {
-		span class = "left-text" {
+		details open {
+			summary { "Explanation: (Click to hide/show.)" }
+			span class = "left-text" {
 				(PreEscaped (markup))
 			}
+		}
 	}
 }
