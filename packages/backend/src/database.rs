@@ -4,6 +4,7 @@ use crate::utility::{count_options, count_outcomes};
 use chrono::{DateTime, Utc};
 use pony::fimfiction_api::story::StoryData;
 use pony::fimfiction_api::user::UserData;
+use pony::smart_map::SmartMap;
 use sqlx::postgres::PgPoolOptions;
 use sqlx::{Pool, Postgres};
 
@@ -135,19 +136,30 @@ impl Db {
 
 	pub async fn get_questions_table(
 		&mut self, chapter_id: Option<i32>,
-	) -> Result<Vec<QuestionTable>> {
+	) -> Result<(
+		Vec<QuestionTable>,
+		SmartMap<i32, (Chapter, ChapterRevision)>,
+	)> {
 		let mut tx = self.transaction().await?;
 		let questions = match chapter_id {
 			Some(chapter_id) => tx.get_questions_for_table(chapter_id).await?,
 			None => tx.get_all_questions().await?,
 		};
 		let mut data = vec![];
+		let mut chapters = SmartMap::default();
 		for question in questions {
 			let id = question.id;
 			let claimant = match question.claimed_by {
 				Some(id) => Some(tx.get_user(id).await?),
 				None => None,
 			};
+			if chapter_id.is_none()
+				&& let Some(chapter_id) = question.chapter_id
+			{
+				let chapter = tx.get_chapter(chapter_id).await?.expect("Always present.");
+				let rev = tx.get_latest_chapter_revision(chapter_id).await?;
+				chapters.insert(chapter_id, (chapter, rev));
+			}
 			let oldest_data = tx.get_oldest_question_revision(question.id).await?;
 			let newest_data = tx.get_latest_question_revision(question.id).await?;
 			let oldest_user = tx.get_user(oldest_data.created_by).await?;
@@ -170,7 +182,7 @@ impl Db {
 			data.push(table_data);
 		}
 		tx.commit().await?;
-		Ok(data)
+		Ok((data, chapters))
 	}
 
 	pub async fn swap_questions_by_order(

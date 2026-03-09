@@ -10,6 +10,7 @@ use maud::{DOCTYPE, PreEscaped, html};
 use pony::markdown::WarningType;
 use pony::markdown::html::parse;
 use pony::number_format::format_number_u128;
+use pony::smart_map::SmartMap;
 use pony::time::format_milliseconds;
 use url::form_urlencoded;
 
@@ -427,7 +428,8 @@ pub fn feedback_html(user: User, theme: Theme, users: Vec<UserData>) -> String {
 }
 
 pub fn questions_html(
-	user: User, theme: Theme, questions: Vec<QuestionTable>, population: u32,
+	user: User, theme: Theme, questions: Vec<QuestionTable>,
+	chapters: SmartMap<i32, (Chapter, ChapterRevision)>, population: u32,
 ) -> String {
 	let heading = "Questions";
 	let title: String = format!("{heading} - {SITE_NAME}");
@@ -439,8 +441,13 @@ pub fn questions_html(
 		p { (description) }
 		h2 { "Question List" }
 		@for question in questions.into_iter() {
+			@let chapter = QuestionChapter::Questions(
+				question.meta.chapter_id
+					.and_then(|id| chapters.get(&id))
+					.map(|c| (**c).clone())
+			);
 			span class = "list-item" {
-				(question_list_item_html(question, population, &user, None))
+				(question_list_item_html(question, population, &user, chapter))
 			}
 		}
 		(new_question_html(None))
@@ -467,7 +474,7 @@ pub fn chapter_questions_html(
 		h2 { "Question List" }
 		@for question in questions.into_iter() {
 			span class = "list-item" {
-				(question_list_item_html(question, population, &user, Some(&chapter)))
+				(question_list_item_html(question, population, &user, QuestionChapter::ChapterQuestions(chapter.clone())))
 			}
 		}
 		(new_question_html(Some(&chapter)))
@@ -481,16 +488,21 @@ pub fn chapter_questions_html(
 }
 
 pub fn question_list_item_html(
-	question: QuestionTable, population: u32, user: &User, chapter: Option<&Chapter>,
+	question: QuestionTable, population: u32, user: &User, chapter: QuestionChapter,
 ) -> PreEscaped<String> {
 	html! {
 		h3 { a href = (format!("/questions/{}", question.meta.id)) { (question.newest_data.question_text) sup { "↗" } } }
 		p {
 			b { "Asked By: " }
 			(question.newest_data.asked_by)
+			@if let QuestionChapter::Questions(ref chapter) = chapter
+			&& let Some((chapter, revision)) = chapter {
+				b { " Chapter: " }
+				a href = (format!("/chapters/{}", chapter.id)) { (revision.title) sup { "↗" } }
+			}
 		}
 		p {
-			@if let Some(chapter) = chapter {
+			@if let QuestionChapter::ChapterQuestions(ref chapter) = chapter {
 				b { "Ch Order: " }
 				@if let Some(order) = question.meta.chapter_order {
 					@if order > 1 {
@@ -506,13 +518,12 @@ pub fn question_list_item_html(
 					@let endpoint = format!("/chapters/{}/questions/{}/ordered", chapter.id, question.meta.id);
 					(button_link("Add", &endpoint))
 				}
-			} @else if let Some(chapter_id) = question.meta.chapter_id {
-				@ if let Some(chapter_order) = question.meta.chapter_order {
-					b { "Ch ID/Order: " }
-					(chapter_id) "/" (chapter_order)
-				} @ else {
-					b { "Ch ID: " }
-					(chapter_id)
+			} @else if let QuestionChapter::Questions(ref chapter) = chapter {
+				@if let Some((chapter, _)) = chapter
+					&& let Some(chapter_order) = chapter.chapter_order
+					&& let Some(question_order) = question.meta.chapter_order {
+					b { "Ch Num/Order: " }
+					(chapter_order) "/" (question_order)
 				}
 			}
 			b { " Type: " }

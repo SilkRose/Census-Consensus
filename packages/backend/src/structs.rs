@@ -90,7 +90,7 @@ pub struct ChapterEdit {
 	pub outro_text: Option<String>,
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize, Eq, Hash, PartialEq)]
 pub struct Chapter {
 	pub id: i32,
 	pub vote_duration: i32,
@@ -100,7 +100,7 @@ pub struct Chapter {
 	pub last_edit: DateTime<Utc>,
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize, Eq, Hash, PartialEq)]
 pub struct ChapterRevision {
 	pub id: i32,
 	pub title: String,
@@ -127,6 +127,12 @@ pub struct ChapterData {
 	pub meta: Chapter,
 	pub data: Vec<ChapterRevision>,
 	pub users: SmartMap<i32, User>,
+}
+
+#[derive(Clone, Debug)]
+pub enum QuestionChapter {
+	Questions(Option<(Chapter, ChapterRevision)>),
+	ChapterQuestions(Chapter),
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
