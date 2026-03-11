@@ -197,6 +197,11 @@
 		accent-color: var(--accent);
 	}
 
+	input,
+	textarea {
+		caret-color: var(--text);
+	}
+
 	select,
 	textarea,
 	input[type="text"] {
