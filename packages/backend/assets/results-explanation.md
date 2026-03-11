@@ -2,8 +2,7 @@ Result code supports comment lines. To make a comment, start the line with: **//
 
 #### Result Code Formatting
 
-The result code determines the text that gets inserted into the chapter when it is
-published.  The result code consists of **conditions** and **text**.  When voting is finished, the conditions are checked top-to-bottom.  The first condition to succeed determines what is published.
+The result code determines the text that gets inserted into the chapter when it is published.  The result code consists of **conditions** and **text**.  When voting is finished, the conditions are checked top-to-bottom.  The first condition to succeed determines what is published.
 
 A condition line is a # followed by a condition.  Here are examples with explanations:
 
@@ -12,6 +11,8 @@ A condition line is a # followed by a condition.  Here are examples with explana
 - **# B > 40% AND C > 30%**: Option B got over 30% and C got over 30%.
 - **# A > 1/3**: Option A got over 1/3 of all votes.
 - **# A > B**: Option A got more votes than B.
+- **# START**: A special condition meaning that the following text will always be included at the start of the result text.
+- **# END**: A special condition meaning that the following text will always be included at the end of the result text.
 
 After each condition line is the result text.  This is the text substituted into the chapter.  For example:
 
@@ -54,12 +55,18 @@ Here are some examples of how to use them. (Read these in order, since most exam
 
 Here is a complete example.  The question was 'Is Pinkie Pie cute?' and the options were 'A: yes', 'B: no', and 'C: absolutely'.
 
-> // If 'absolutely' has over 1/2 of all votes:
-> # C > 1/2
-> 
+> // Always start this way
+> # START
 > Twilight looked at Pinkie Pie. "This first question is about you."
 > 
 > "Oh," Pinkie Pie said.
+>
+> // And always end this way
+> # END
+> "Okay, okay, enough of that," said Rainbow Dash.  "Let's move on."
+>
+> // If 'absolutely' has over 1/2 of all votes:
+> # C > 1/2
 > 
 > // this would get replaced with 26 million, as an example.
 > "%A[vcw]% ponies voted that you are absolutely cute!" Twilight said.
@@ -87,10 +94,6 @@ Here is a complete example.  The question was 'Is Pinkie Pie cute?' and the opti
 > // For example, we will use it if A, B, and C get 41%, 46%, and 13%, respectively.
 > # A > 40% OR C > 40%
 > 
-> Twilight looked at Pinkie Pie. "This first question is about you."
-> 
-> "Oh," Pinkie Pie said.
-> 
 > // The first replacement would be replaced by 'yes' or 'absolutely', and the second would be the percentage, such as 43%.
 > "%1[p-name]% won with %1[p-vcw]% ponies voting that you are cute!" Twilight said.
 > 
@@ -99,10 +102,6 @@ Here is a complete example.  The question was 'Is Pinkie Pie cute?' and the opti
 > // If none of those happen, and if B is the winner, then we use the following text.
 > // For example, if A, B, and C get 34%, 45%, and 21%, respectively, we will use the following text.
 > # B
-> 
-> Twilight looked at Pinkie Pie. "This first question is about you."
-> 
-> "Oh," Pinkie Pie said.
 > 
 > // this would get replaced with 26 million, as an example.
 > "%B[vcw]% ponies voted that you aren't cute!" Twilight said, shocked.
@@ -114,10 +113,6 @@ Here is a complete example.  The question was 'Is Pinkie Pie cute?' and the opti
 > // If none of those happen, then we use the following replacement text if C has more votes than B and B has more votes than A.
 > // For example, we use this if A, B, and C get 29%, 32%, and 39%, respectively.
 > # C > B AND B > A
-> 
-> Twilight looked at Pinkie Pie. "This first question is about you."
-> 
-> "Oh," Pinkie Pie said.
 > 
 > // this would get replaced with 26 million, as an example.
 > "%A[vcw]% ponies voted that you are absolutely cute!" Twilight said.
@@ -133,17 +128,9 @@ Here is a complete example.  The question was 'Is Pinkie Pie cute?' and the opti
 > // One way to be careful and make sure every possibility is covered is to have a condition for every winner.
 > # A
 > 
-> Twilight looked at Pinkie Pie. "This first question is about you."
-> 
-> "Oh," Pinkie Pie said.
-> 
 > "%A[vcw]% ponies think you're cute!" Twilight said.
 > 
 > // This last condition wraps up our possibilities
 > # C
-> 
-> Twilight looked at Pinkie Pie. "This first question is about you."
-> 
-> "Oh," Pinkie Pie said.
 > 
 > "%A[vcw]% ponies think you're absolutely cute!" Twilight said.
