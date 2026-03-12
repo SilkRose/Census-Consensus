@@ -194,7 +194,7 @@ pub fn chapters_html(user: User, theme: Theme, chapters: Vec<ChapterTable>) -> S
 		h1 { (heading) }
 		p { (description) }
 		h2 { "Chapter List" }
-		@let mut prev_published: Option<bool> = None;
+		@let mut prev_published = false;
 		@for chapter in chapters.iter() {
 			span class = "list-item" {
 				(chapter_list_item_html(chapter, &mut prev_published, admin))
@@ -211,14 +211,11 @@ pub fn chapters_html(user: User, theme: Theme, chapters: Vec<ChapterTable>) -> S
 }
 
 fn chapter_list_item_html(
-	chapter: &ChapterTable, prev_published: &mut Option<bool>, admin: bool,
+	chapter: &ChapterTable, prev_published: &mut bool, admin: bool,
 ) -> PreEscaped<String> {
 	let active = chapter.meta.fimfic_ch_id.is_some() || chapter.meta.minutes_left.is_some();
-	let first_number = !active && chapter.meta.chapter_order.is_some() && prev_published.is_none();
-	*prev_published = match first_number {
-		true => Some(chapter.meta.fimfic_ch_id.is_some()),
-		false => None,
-	};
+	let first_number = !active && chapter.meta.chapter_order.is_some() && !*prev_published;
+	*prev_published = *prev_published || first_number;
 	html! (
 		h3 { a href = (format!("/chapters/{}", chapter.meta.id)) { (chapter.newest_data.title) sup { "↗" } } }
 		p {
