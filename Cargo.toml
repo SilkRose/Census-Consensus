@@ -1,17 +1,15 @@
-[workspace]
-resolver = "3"
-members = ["packages/backend"]
-
-[workspace.package]
+[package]
+name = "april-fools-2026-backend"
 version = "0.1.0"
 edition = "2024"
+publish = false
 
-[workspace.dependencies]
-anyhow = "1.0.102"
+[dependencies]
 actix-files = "0.6.10"
 actix-web = { version = "4.13.0", features = ["macros"] }
-bon = "3.9.0"
+anyhow = "1.0.102"
 base64ct = { version = "1.8.3", features = ["std"] }
+bon = "3.9.0"
 chrono = { version = "0.4.44", features = ["serde"] }
 dotenvy = "0.15.7"
 lightningcss = "1.0.0-alpha.70"
@@ -34,14 +32,6 @@ sqlx = { version = "0.8.6", default-features = false, features = [
 	"tls-rustls",
 ] }
 url = { version = "2.5.8" }
-wasm-bindgen = "=0.2.108"
 
 [profile.dev.package."*"]
 opt-level = 3
-
-[profile.wasm-release]
-inherits = "release"
-opt-level = "z"
-lto = true
-codegen-units = 1
-panic = "abort"
