@@ -1,6 +1,6 @@
 [workspace]
 resolver = "3"
-members = ["packages/backend", "packages/frontend"]
+members = ["packages/backend"]
 
 [workspace.package]
 version = "0.1.0"
@@ -13,14 +13,7 @@ actix-web = { version = "4.13.0", features = ["macros"] }
 bon = "3.9.0"
 base64ct = { version = "1.8.3", features = ["std"] }
 chrono = { version = "0.4.44", features = ["serde"] }
-console-error-panic-hook = { package = "console_error_panic_hook", version = "0.1.7" }
 dotenvy = "0.15.7"
-leptos = { version = "0.8.15", features = ["csr", "nightly"] }
-leptos-meta = { package = "leptos_meta", version = "0.8.5" }
-leptos-mview = { version = "0.4.4", features = ["nightly"] }
-leptos-router = { package = "leptos_router", version = "0.8.11", features = [
-	"nightly",
-] }
 lightningcss = "1.0.0-alpha.70"
 maud = "0.27.0"
 pony = { git = "https://github.com/SilkRose/Pony", rev = "8443bd10e99954471ad0d80c01bb8b7da463781c" }
