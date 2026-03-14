@@ -1,9 +1,0 @@
-trunk-version = "0.21.14"
-
-[build]
-target = "packages/frontend/src/main.html"
-dist = "target/site"
-minify = "on_release"
-
-[serve]
-port = 3000
