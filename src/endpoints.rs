@@ -548,7 +548,7 @@ pub async fn set_question_unclaim(
 
 #[get("/chapters/{chapter_id}/questions/{question_id}/ordered")]
 pub async fn set_chapter_question_order(
-	path: Path<(i32, i32)>, req: HttpRequest, mut db: ThinData<Db>, _: AdminSessionInfo,
+	path: Path<(i32, i32)>, req: HttpRequest, mut db: ThinData<Db>, _: WriterSessionInfo,
 ) -> actix_web::Result<impl Responder> {
 	let (chapter_id, question_id) = path.into_inner();
 	db.add_question_to_chapter(question_id, chapter_id).await?;
@@ -559,7 +559,7 @@ pub async fn set_chapter_question_order(
 
 #[get("/chapters/{chapter_id}/questions/{question_id}/ordered/{movement}")]
 pub async fn set_chapter_question_order_move(
-	path: Path<(i32, i32, i32)>, req: HttpRequest, mut db: ThinData<Db>, _: AdminSessionInfo,
+	path: Path<(i32, i32, i32)>, req: HttpRequest, mut db: ThinData<Db>, _: WriterSessionInfo,
 ) -> actix_web::Result<impl Responder> {
 	let (chapter_id, question_id, movement) = path.into_inner();
 	if movement.abs() == 1
