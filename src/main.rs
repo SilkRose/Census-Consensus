@@ -24,6 +24,7 @@ mod fimfic_cfg;
 mod html_templates;
 mod http;
 mod rand;
+mod result_formatter;
 mod structs;
 mod theme;
 mod utility;
