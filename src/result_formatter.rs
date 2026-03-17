@@ -302,9 +302,11 @@ mod result_code_parser {
 		float_precision = { ASCII_DIGIT }
 		float_precision_wrap = _{ "." ~ float_precision }
 
-		vote_percent = { "vp" ~ float_precision_wrap? }
+		vote_percent = { "vp" }
+		vote_percent_wrap = _{ vote_percent ~ float_precision_wrap? }
 		vote_count = { "vcc" }
-		vote_count_formatted = { "vcw" ~ float_precision_wrap? }
+		vote_count_formatted = { "vcw" }
+		vote_count_formatted_wrap = _{ vote_count_formatted ~ float_precision_wrap? }
 		vote_place_indicator = { "p-" }
 		name = { "name" }
 
@@ -314,10 +316,10 @@ mod result_code_parser {
 		option_number = { ASCII_DIGIT }
 		option = _{ option_letter | option_number }
 
-		inners = _{ vote_place_indicator? ~ (vote_percent | vote_count | vote_count_formatted | name) }
+		inners = _{ vote_place_indicator? ~ (vote_percent_wrap | vote_count | vote_count_formatted_wrap | name) }
 
 		options = _{ "%" ~ option? ~ "[" ~ inners ~ "]%" }
-		parse = { option_question | options }
+		parse = _{ SOI ~ (option_question | options) ~ EOI }
 	"#]
 	pub struct ResultCodeParser;
 }
