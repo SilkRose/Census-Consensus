@@ -1324,7 +1324,7 @@ pub trait DbExecutor {
 	}
 
 	async fn insert_vote(
-		&mut self, user_id: i32, question_id: i32, option_id: i32,
+		&mut self, user_id: i32, question_id: i32, option_id: &str,
 	) -> Result<Vote> {
 		Ok(sqlx::query_as!(
 			Vote,
@@ -1371,7 +1371,7 @@ pub trait DbExecutor {
 		.map_err(select_err)?)
 	}
 
-	async fn get_all_votes_by_option(&mut self, option_id: i32) -> Result<Vec<Vote>> {
+	async fn get_all_votes_by_option(&mut self, option_id: &str) -> Result<Vec<Vote>> {
 		Ok(sqlx::query_as!(
 			Vote,
 			"SELECT
@@ -1424,7 +1424,7 @@ pub trait DbExecutor {
 		)
 	}
 
-	async fn delete_votes_by_question(&mut self, option_id: i32) -> Result<u64> {
+	async fn delete_votes_by_question(&mut self, option_id: &str) -> Result<u64> {
 		Ok(
 			sqlx::query!("DELETE FROM Votes WHERE option_id = $1;", option_id)
 				.execute(self.executor())

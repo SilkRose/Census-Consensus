@@ -201,7 +201,7 @@ pub struct QuestionChapterId {
 pub struct Vote {
 	pub voter_id: i32,
 	pub question_id: i32,
-	pub option_id: i32,
+	pub option_id: String,
 	pub date_created: DateTime<Utc>,
 }
 
