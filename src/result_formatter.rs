@@ -1,7 +1,6 @@
 #![allow(unused, reason = "todo remove me")]
 
 use pest::Parser;
-use pest_derive::Parser;
 
 pub struct Vote<'h> {
 	count: u64,
@@ -276,7 +275,7 @@ fn map_option_to_array_index(option: char) -> Option<usize> {
 mod condition_parser {
 	use super::*;
 
-	#[derive(Parser)]
+	#[derive(pest_derive::Parser)]
 	#[grammar_inline = r#"
 		and = { " AND " }
 		comparison_gt = { " > " }
@@ -286,9 +285,9 @@ mod condition_parser {
 		percentage = { ASCII_DIGIT{,2} ~ "%" }
 		fraction = { ASCII_DIGIT+ ~ "/" ~ ASCII_DIGIT+ }
 
-		other = _{ option | percentage | fraction }
+		option_ext = _{ option | percentage | fraction }
 
-		condition = _{ option ~ (comparison ~ other)? ~ (and ~ condition)? }
+		condition = _{ option ~ (comparison ~ option_ext)? ~ (and ~ condition)? }
 		parse = _{ SOI ~ condition ~ EOI }
 	"#]
 	pub struct ConditionParser;
@@ -297,7 +296,7 @@ mod condition_parser {
 mod result_code_parser {
 	use super::*;
 
-	#[derive(Parser)]
+	#[derive(pest_derive::Parser)]
 	#[grammar_inline = r#"
 		normal_text_char = _{ !"%" ~ ANY }
 		normal_text = { normal_text_char* }
@@ -326,4 +325,94 @@ mod result_code_parser {
 		parse = _{ SOI ~ (normal_text ~ (option_question | options))* ~ normal_text? ~ EOI }
 	"#]
 	pub struct ResultCodeParser;
+}
+
+mod result_parser {
+	use super::*;
+
+	#[derive(pest_derive::Parser)]
+	#[grammar_inline = r##"
+		nl_char = _{ "\r" | "\n" }
+		not_nl_char = _{ !nl_char ~ ANY }
+		eat_ws_and_nl = _{ (nl_char | " ")* }
+
+
+		// condition
+		cond_start = { "START" }
+		cond_end = { "END" }
+
+		cond_and = { " AND " }
+		cond_comparison_gt = { " > " }
+		cond_comparison = _{ cond_comparison_gt }
+
+		cond_option = { ASCII_ALPHA_UPPER }
+		cond_percentage = { ASCII_DIGIT{,2} ~ "%" }
+		cond_fraction = { ASCII_DIGIT+ ~ "/" ~ ASCII_DIGIT+ }
+
+		cond_option_ext = _{ cond_option | cond_percentage | cond_fraction }
+
+		cond_condition = _{ cond_option ~ (cond_comparison ~ cond_option_ext)? ~ (cond_and ~ cond_condition)? }
+		cond_partial = _{ cond_start | cond_end | cond_condition }
+		cond = _{ SOI ~ cond_partial ~ EOI }
+		cond_line = _{ "# " ~ cond_partial }
+
+
+		// text (result text)
+		text_normal_text_char = _{ !"%" ~ !nl_char ~ ANY }
+		text_normal_text = { text_normal_text_char* }
+
+		text_float_precision = { ASCII_DIGIT }
+		text_float_precision_wrap = _{ "." ~ text_float_precision }
+
+		text_vote_percent = { "vp" }
+		text_vote_percent_wrap = _{ text_vote_percent ~ text_float_precision_wrap? }
+		text_vote_count = { "vcc" }
+		text_vote_count_formatted = { "vcw" }
+		text_vote_count_formatted_wrap = _{ text_vote_count_formatted ~ text_float_precision_wrap? }
+		text_vote_place_indicator = { "p-" }
+		text_name = { "name" }
+
+		text_option_question = { "%[question]%" }
+
+		text_option_letter = { ASCII_ALPHA }
+		text_option_number = { ASCII_DIGIT }
+		text_option = _{ text_option_letter | text_option_number }
+
+		text_inners = _{ text_vote_place_indicator? ~ (text_vote_percent_wrap | text_vote_count | text_vote_count_formatted_wrap | text_name) }
+
+		text_options = _{ "%" ~ text_option? ~ "[" ~ text_inners ~ text_options_end }
+		text_options_end = { "]%" }
+		text_all_options = _{ text_option_question | text_options }
+		text_partial = _{ text_normal_text? ~ (text_all_options ~ text_normal_text?)* }
+		text = _{ SOI ~ text_partial ~ EOI }
+
+		// t_options_end = { "]%" }
+		// t_parse_partial = _{ !"#" ~ t_normal_text_char ~(t_normal_text ~ (t_option_question | t_options))* ~ t_normal_text? }
+		// t_parse = _{ SOI ~ t_parse_partial ~ EOI }
+
+
+		// comment
+		comment_text = { not_nl_char* }
+		comment_line = { "//" ~ comment_text }
+
+
+		// result
+		result_is_comment = _{ &"//" }
+		result_is_condition = _{ &"# " }
+		result_is_text = _{ !(result_is_comment | result_is_condition) ~ &ANY }
+
+		result_next_comment = _{ result_is_comment ~ comment_line ~ eat_ws_and_nl }
+		result_next_condition = _{ result_is_condition ~ cond_line ~ eat_ws_and_nl }
+		result_next_text = _{ result_is_text ~ text_partial ~ eat_ws_and_nl }
+
+		result_parse_partial = _{
+			result_next_comment*
+			~ (
+				result_next_condition ~ result_next_comment*
+				~ (result_next_text ~ result_next_comment*)+
+			)+
+		}
+		result_parse = _{ SOI ~ result_parse_partial ~ EOI }
+	"##]
+	pub struct ResultParser;
 }
