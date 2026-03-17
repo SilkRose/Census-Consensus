@@ -127,27 +127,24 @@ fn parse_condition(
 	// todo remove
 	println!("input: {condition}");
 
-	let condition = match ConditionParser::parse(Rule::parse, condition) {
+	let mut condition = match ConditionParser::parse(Rule::parse, condition) {
 		Ok(result) => { result }
 		Err(err) => {
 			errors.push(err.to_string());
 			return false;
 		}
 	};
-
-	let condition = condition.into_iter().next().unwrap();
-	let mut pairs = condition.into_inner();
 	let mut result = true;
 
 	loop {
-		let option = pairs.next().unwrap();
+		let option = condition.next().unwrap();
 		if matches!(option.as_rule(), Rule::EOI) { break }
 
 		let Some((option_index, option_data)) = process_option(option, votes, errors) else {
 			return false;
 		};
 
-		let next = pairs.next().unwrap();
+		let next = condition.next().unwrap();
 
 		match next.as_rule() {
 			Rule::EOI => {
@@ -164,7 +161,7 @@ fn parse_condition(
 			_ => { unreachable!() }
 		}
 
-		// let other = pairs.next().unwrap();
+		// let other = condition.next().unwrap();
 
 		// let Some(percentage) = process_option(option, votes, errors) else {
 		// 	return false;
@@ -187,16 +184,16 @@ fn parse_condition(
 		// }
 	}
 
-	println!("{:?}", pairs.next().unwrap());
-	println!("{:?}", pairs.next().unwrap());
-	println!("{:?}", pairs.next().unwrap());
-	println!("{:?}", pairs.next().unwrap());
-	println!("{:?}", pairs.next().unwrap());
-	println!("{:?}", pairs.next().unwrap());
-	println!("{:?}", pairs.next().unwrap());
-	println!("{:?}", pairs.next().unwrap());
-	println!("{:?}", pairs.next().unwrap());
-	println!("{:?}", pairs.next().unwrap());
+	println!("{:?}", condition.next().unwrap());
+	println!("{:?}", condition.next().unwrap());
+	println!("{:?}", condition.next().unwrap());
+	println!("{:?}", condition.next().unwrap());
+	println!("{:?}", condition.next().unwrap());
+	println!("{:?}", condition.next().unwrap());
+	println!("{:?}", condition.next().unwrap());
+	println!("{:?}", condition.next().unwrap());
+	println!("{:?}", condition.next().unwrap());
+	println!("{:?}", condition.next().unwrap());
 
 	// todo fix this
 	true
@@ -292,7 +289,7 @@ mod condition_parser {
 		other = _{ option | percentage | fraction }
 
 		condition = _{ option ~ (comparison ~ other)? ~ (and ~ condition)? }
-		parse = { SOI ~ condition ~ EOI }
+		parse = _{ SOI ~ condition ~ EOI }
 	"#]
 	pub struct ConditionParser;
 }
