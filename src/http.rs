@@ -71,7 +71,13 @@ impl HttpClient {
 			.bytes()
 			.await?;
 
-		let res = serde_json::from_slice::<Res>(&res)?;
+		let res = match serde_json::from_slice::<Res>(&res) {
+			Ok(v) => v,
+			Err(e) => {
+				println!("Failed to parse JSON: {e}");
+				return Err(Box::new(e));
+			}
+		};
 
 		Ok(FimficTokenExchangeResponse {
 			user_id: res.user.id.parse()?,
