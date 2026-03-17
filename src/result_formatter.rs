@@ -299,6 +299,9 @@ mod result_code_parser {
 
 	#[derive(Parser)]
 	#[grammar_inline = r#"
+		normal_text_char = _{ !"%" ~ ANY }
+		normal_text = { normal_text_char* }
+
 		float_precision = { ASCII_DIGIT }
 		float_precision_wrap = _{ "." ~ float_precision }
 
@@ -318,8 +321,9 @@ mod result_code_parser {
 
 		inners = _{ vote_place_indicator? ~ (vote_percent_wrap | vote_count | vote_count_formatted_wrap | name) }
 
-		options = _{ "%" ~ option? ~ "[" ~ inners ~ "]%" }
-		parse = _{ SOI ~ (option_question | options) ~ EOI }
+		options = _{ "%" ~ option? ~ "[" ~ inners ~ options_end }
+		options_end = { "]%" }
+		parse = _{ SOI ~ (normal_text ~ (option_question | options))* ~ normal_text? ~ EOI }
 	"#]
 	pub struct ResultCodeParser;
 }
