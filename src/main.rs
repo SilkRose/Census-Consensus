@@ -130,6 +130,7 @@ async fn main() -> Result<()> {
 			.service(get_question_edit)
 			.service(set_question_edit)
 			.service(get_question_revisions)
+			.service(get_question_preview)
 			.service(get_population)
 			.service(set_population)
 			.service(get_chapter_questions)

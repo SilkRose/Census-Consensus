@@ -639,3 +639,21 @@ async fn oembed(query: Query<OEmbed>) -> actix_web::Result<impl Responder> {
 		.content_type("application/json+oembed")
 		.json(embed))
 }
+
+#[get("/questions/{id}/preview")]
+pub async fn get_question_preview(
+	theme: Theme, path: Path<i32>, query: Query<HashMap<String, f64>>, mut db: ThinData<Db>,
+	session: WriterSessionInfo,
+) -> actix_web::Result<impl Responder> {
+	let id = path.into_inner();
+	let options = query.into_inner();
+	if let Some(question) = db.get_question(id).await? {
+		let data = db.get_latest_question_revision(question.id).await?;
+		let page = question_preview_html(session.user, theme, question, data, options);
+		Ok(HttpResponse::Ok()
+			.content_type("text/html; charset=utf-8")
+			.body(page))
+	} else {
+		Ok(HttpResponse::BadRequest().finish())
+	}
+}

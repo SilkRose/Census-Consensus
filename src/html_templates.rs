@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::fs;
 
 use crate::endpoints::MIN_USER_UPDATE_TIME;
@@ -811,6 +812,38 @@ pub fn about_html(user: Option<User>, theme: Theme, contributors: Vec<User>) -> 
 		.theme(&theme)
 		.head(head_html(&title, description, &link, &theme))
 		.header(header_html(user_type, Pages::About, &theme))
+		.mane(mane)
+		.call()
+}
+
+pub fn question_preview_html(
+	user: User, theme: Theme, question: Question, data: QuestionRevision,
+	options: HashMap<String, f64>,
+) -> String {
+	let heading = "Question Preview";
+	let title: String = format!("{heading} - {SITE_NAME}");
+	let description = "Preview a question's outcomes.";
+	let link = format!("{SITE_LINK}/questions/{}/preview", question.id);
+	let mane = html! {
+		h1 { (heading) }
+		p { (description) }
+		h2 { "Preview Selector" }
+		h3 { (data.question_text) }
+		form method = "post" action = (format!("/questions/{}/preview", question.id)) {
+			// Option percent input here
+			button type = "submit" { "Preview Outcome" }
+		}
+		@if !options.is_empty() {
+			h2 { "Selected Preview" }
+			// Specified outcome preview here
+		}
+		h2 { "All Outcomes Preview" }
+		// All outcomes preview here
+	};
+	html_builder()
+		.theme(&theme)
+		.head(head_html(&title, description, &link, &theme))
+		.header(header_html(Some(user.user_type), Pages::Questions, &theme))
 		.mane(mane)
 		.call()
 }
