@@ -1168,7 +1168,7 @@ pub trait DbExecutor {
             q.id, q.claimed_by, q.chapter_id, q.chapter_order, q.last_edit
         FROM Questions AS q
         LEFT JOIN Chapters AS c ON q.chapter_id = c.id
-        ORDER BY c.chapter_order NULLS LAST, q.chapter_order, q.id;"
+        ORDER BY c.chapter_order NULLS LAST, c.id, q.chapter_order, q.id;"
 		)
 		.fetch_all(self.executor())
 		.await
