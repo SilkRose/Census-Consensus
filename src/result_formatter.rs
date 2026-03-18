@@ -413,3 +413,103 @@ mod result_parser {
 	"##]
 	pub struct ResultParser;
 }
+
+// todo remove me lol
+pub fn test_fn() {
+	let lol = r#"
+// Always start this way
+# START
+Twilight looked at Pinkie Pie. "This first question is about you."
+
+"Oh," Pinkie Pie said.
+
+// And always end this way
+# END
+"Okay, okay, enough of that," said Rainbow Dash.  "Let's move on."
+
+// If 'absolutely' has over 1/2 of all votes:
+# C > 1/2
+
+// this would get replaced with 26 million, as an example.
+"%A[vcw]% ponies voted that you are absolutely cute!" Twilight said.
+
+// This would get replaced with a percentage, such as 50.2%.
+"Wow, that's %A[vp.1]% of all of Equestria!"
+
+// On the other hand, if A wins by a landslide, then we use the following.
+# A > 90%
+
+// This uses the question replacement.
+Twilight said, "The question was *%[question]%*"
+
+Pinkie smiled. "What were the options?"
+
+"They were: %A[name]%, %B[name]%, %C[name]%."
+
+"Which one won?"
+
+"%A[name]% with over 90% of all votes!"
+//                     ^ this little bitch is causing issues
+
+// Since both A and C have similar connotation, we can use the replacements to have them share a result.
+// If C has more than half the votes or A has more than 90% of the votes, we will use the replacement text above and not consider this possibility.
+// If either A has over 40% of the votes or C has over 40% of the votes, we use the following text.
+// For example, we will use it if A, B, and C get 41%, 46%, and 13%, respectively.
+# A > 40% OR C > 40%
+
+// The first replacement would be replaced by 'yes' or 'absolutely', and the second would be the percentage, such as 43%.
+"%1[p-name]% won with %1[p-vcw]% ponies voting that you are cute!" Twilight said.
+
+// If all we care about is an option winning, we just list that option.
+// This condition will not be considered if C has more than half the votes, A has more than 90% of the votes, or either A or C has more than 40% of the votes.
+// If none of those happen, and if B is the winner, then we use the following text.
+// For example, if A, B, and C get 34%, 45%, and 21%, respectively, we will use the following text.
+# B
+
+// this would get replaced with 26 million, as an example.
+"%B[vcw]% ponies voted that you aren't cute!" Twilight said, shocked.
+
+Pinkie frowned.
+
+// We can also compare options directly.
+// We will not consider this possibility if C has more than half the votes; A has more than 90% of the votes; either A or C has more than 40% of the votes; or B is the winner.
+// If none of those happen, then we use the following replacement text if C has more votes than B and B has more votes than A.
+// For example, we use this if A, B, and C get 29%, 32%, and 39%, respectively.
+# C > B AND B > A
+
+// this would get replaced with 26 million, as an example.
+"%A[vcw]% ponies voted that you are absolutely cute!" Twilight said.
+
+"Wow, what came in second?" Pinkie asked.
+
+// This would be replaced with: no and 22.56%
+"%B[name]% with %B[vp.2]% of ponies voting for it."
+
+// Every outcome needs a result text.
+// So far, we have text for the following possibilities: C has more than half the votes; A has more than 90% of the votes; either A or C has more than 40% of the votes; B is the winner; or C got more votes than B and B got more votes than A.
+// It is still possible that none of those happened.  For example, if A, B, and C got 36%, 26%, and 38%, respectively; or if they got 35%, 33%, and 32%.
+// One way to be careful and make sure every possibility is covered is to have a condition for every winner.
+# A
+
+"%A[vcw]% ponies think you're cute!" Twilight said.
+
+// This last condition wraps up our possibilities
+# C
+
+"%A[vcw]% ponies think you're absolutely cute!" Twilight said.
+
+	"#.trim();
+
+	use result_parser::*;
+
+	let result = ResultParser::parse(Rule::result_parse_partial, lol).unwrap_or_else(|err| panic!("{err}"));
+	let max_len = result.clone().fold(0, |acc, curr| curr.as_str().len().max(acc));
+	result.for_each(|thing| {
+		let mut padded = String::from(thing.as_str());
+		let amount = max_len - padded.len();
+		padded.push_str("\":");
+		std::iter::repeat_n(" ", amount)
+			.for_each(|space| padded.push_str(space));
+		println!("\"{padded} {thing:?}");
+	});
+}
