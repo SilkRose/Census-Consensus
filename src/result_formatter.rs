@@ -401,15 +401,18 @@ mod result_parser {
 		result_is_condition = _{ &"# " }
 		result_is_text = _{ !result_is_comment ~ !result_is_condition ~ &not_nl_char }
 
-		result_next_comment = _{ result_is_comment ~ comment_line ~ eat_ws_and_nl }
-		result_next_condition = _{ result_is_condition ~ cond_line ~ eat_ws_and_nl }
-		result_next_text = _{ result_is_text ~ text_partial ~ eat_ws_and_nl }
+		result_next_comment = { result_is_comment ~ comment_line }
+		result_next_comment_wrap = _{ result_next_comment ~ eat_ws_and_nl }
+		result_next_condition = { result_is_condition ~ cond_line }
+		result_next_condition_wrap = _{ result_next_condition ~ eat_ws_and_nl }
+		result_next_text = { result_is_text ~ text_partial }
+		result_next_text_wrap = _{ result_next_text ~ eat_ws_and_nl }
 
 		result_parse_partial = _{
-			result_next_comment*
+			result_next_comment_wrap*
 			~ (
-				result_next_condition ~ result_next_comment*
-				~ (result_next_text ~ result_next_comment*)+
+				result_next_condition_wrap ~ result_next_comment_wrap*
+				~ (result_next_text_wrap ~ result_next_comment_wrap*)+
 			)+
 		}
 		result_parse = _{ SOI ~ result_parse_partial ~ EOI }
