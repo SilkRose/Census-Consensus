@@ -359,7 +359,7 @@ mod result_parser {
 
 		// text (result text)
 		text_normal_text_char = _{ !"%" ~ !nl_char ~ ANY }
-		text_normal_text = { text_normal_text_char* }
+		text_normal_text = { text_normal_text_char+ }
 
 		text_float_precision = { ASCII_DIGIT }
 		text_float_precision_wrap = _{ "." ~ text_float_precision }
@@ -380,15 +380,12 @@ mod result_parser {
 
 		text_inners = _{ text_vote_place_indicator? ~ (text_vote_percent_wrap | text_vote_count | text_vote_count_formatted_wrap | text_name) }
 
-		text_options = _{ "%" ~ text_option? ~ "[" ~ text_inners ~ text_options_end }
-		text_options_end = { "]%" }
+		text_options = _{ "%" ~ text_option? ~ "[" ~ text_inners ~ "]%" }
 		text_all_options = _{ text_option_question | text_options }
-		text_partial = _{ text_normal_text? ~ (text_all_options ~ text_normal_text?)* }
+		text_partial_1 = _{ text_all_options ~ (text_normal_text ~ text_all_options?)* }
+		text_partial_2 = _{ text_normal_text ~ (text_all_options ~ text_normal_text?)* }
+		text_partial = _{ text_partial_1 | text_partial_2 }
 		text = _{ SOI ~ text_partial ~ EOI }
-
-		// t_options_end = { "]%" }
-		// t_parse_partial = _{ !"#" ~ t_normal_text_char ~(t_normal_text ~ (t_option_question | t_options))* ~ t_normal_text? }
-		// t_parse = _{ SOI ~ t_parse_partial ~ EOI }
 
 
 		// comment
@@ -399,7 +396,7 @@ mod result_parser {
 		// result
 		result_is_comment = _{ &"//" }
 		result_is_condition = _{ &"# " }
-		result_is_text = _{ !(result_is_comment | result_is_condition) ~ &ANY }
+		result_is_text = _{ !result_is_comment ~ !result_is_condition ~ &not_nl_char }
 
 		result_next_comment = _{ result_is_comment ~ comment_line ~ eat_ws_and_nl }
 		result_next_condition = _{ result_is_condition ~ cond_line ~ eat_ws_and_nl }
