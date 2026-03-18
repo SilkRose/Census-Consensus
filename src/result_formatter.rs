@@ -342,16 +342,19 @@ mod result_parser {
 		cond_end = { "END" }
 
 		cond_and = { " AND " }
+		cond_or = { " OR " }
+		cond_booleans = _{ cond_and | cond_or }
 		cond_comparison_gt = { " > " }
 		cond_comparison = _{ cond_comparison_gt }
 
 		cond_option = { ASCII_ALPHA_UPPER }
-		cond_percentage = { ASCII_DIGIT{,2} ~ "%" }
+		cond_percentage = { ASCII_DIGIT{,2} }
+		cond_percentage_wrap = _{ cond_percentage ~ "%" }
 		cond_fraction = { ASCII_DIGIT+ ~ "/" ~ ASCII_DIGIT+ }
 
-		cond_option_ext = _{ cond_option | cond_percentage | cond_fraction }
+		cond_option_ext = _{ cond_option | cond_percentage_wrap | cond_fraction }
 
-		cond_condition = _{ cond_option ~ (cond_comparison ~ cond_option_ext)? ~ (cond_and ~ cond_condition)? }
+		cond_condition = _{ cond_option ~ (cond_comparison ~ cond_option_ext)? ~ (cond_booleans ~ cond_condition)? }
 		cond_partial = _{ cond_start | cond_end | cond_condition }
 		cond = _{ SOI ~ cond_partial ~ EOI }
 		cond_line = _{ "# " ~ cond_partial }
@@ -448,7 +451,8 @@ Pinkie smiled. "What were the options?"
 
 "Which one won?"
 
-"%A[name]% with over 90% of all votes!"
+"%A[name]% with over 90 of all votes!"
+//                     %
 //                     ^ this little bitch is causing issues
 
 // Since both A and C have similar connotation, we can use the replacements to have them share a result.
@@ -502,14 +506,17 @@ Pinkie frowned.
 
 	use result_parser::*;
 
-	let result = ResultParser::parse(Rule::result_parse_partial, lol).unwrap_or_else(|err| panic!("{err}"));
-	let max_len = result.clone().fold(0, |acc, curr| curr.as_str().len().max(acc));
-	result.for_each(|thing| {
-		let mut padded = String::from(thing.as_str());
-		let amount = max_len - padded.len();
-		padded.push_str("\":");
-		std::iter::repeat_n(" ", amount)
-			.for_each(|space| padded.push_str(space));
-		println!("\"{padded} {thing:?}");
-	});
+	let result = ResultParser::parse(Rule::result_parse, lol).unwrap_or_else(|err| panic!("{err}"));
+
+	// let max_len = result.clone().fold(0, |acc, curr| curr.as_str().len().max(acc));
+	// result.for_each(|thing| {
+	// 	let mut padded = String::from(thing.as_str());
+	// 	let amount = max_len - padded.len();
+	// 	padded.push_str("\":");
+	// 	std::iter::repeat_n(" ", amount)
+	// 		.for_each(|space| padded.push_str(space));
+	// 	println!("\"{padded} {thing:?}");
+	// });
+
+	result.for_each(|thing| println!("{:?}: {thing}", thing.as_rule()));
 }
