@@ -851,10 +851,12 @@ pub fn question_preview_html(
 }
 
 pub fn question_html(question: &Question, data: &QuestionRevision) -> PreEscaped<String> {
-	let options = parse_options(
+	let binding = parse_options(
 		&data.option_writing.clone().unwrap_or_default(),
 		&data.question_type,
 	);
+	let mut options = binding.iter().collect::<Vec<_>>();
+	options.sort_by_key(|o| o.0);
 	html! {
 		p {
 			(question.chapter_order.unwrap_or_default())
@@ -867,10 +869,10 @@ pub fn question_html(question: &Question, data: &QuestionRevision) -> PreEscaped
 			span class = (data.question_type) {
 				@for (id, opt) in options {
 					@if QuestionType::Multiselect == data.question_type {
-						input id = (id) type = "checkbox" value = (id) {}
+						input id = (id) type = "checkbox" name = (question.id) value = (id) {}
 						label for = (id) { (opt) }
 					} @else {
-						input id = (id) type = "radio" value = (id) {}
+						input id = (id) type = "radio" name = (question.id) value = (id) {}
 						label for = (id) { (opt) }
 					}
 				}

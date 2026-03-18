@@ -74,7 +74,7 @@ pub fn parse_options(text: &str, question_type: &QuestionType) -> HashMap<String
 		} else if !line.is_empty()
 			&& !line.starts_with("//")
 			&& !line.starts_with("Order:")
-			&& let Some((id, opt)) = line.split_once("-")
+			&& let Some((id, opt)) = line.split_once(": ")
 		{
 			options.insert(id.to_string(), opt.to_string());
 		}
