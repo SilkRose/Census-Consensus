@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use crate::structs::QuestionType;
 use actix_web::HttpRequest;
 use pony::word_stats::word_count;
@@ -49,4 +51,33 @@ pub fn count_outcomes(text: &str) -> u32 {
 		}
 	}
 	count
+}
+
+pub fn parse_options(text: &str, question_type: &QuestionType) -> HashMap<String, String> {
+	let mut options = HashMap::new();
+	for line in text.lines() {
+		if *question_type == QuestionType::Scale {
+			if line.starts_with("[") {
+				let line = line.replace("[", "").replace("]", "");
+				let numbers = line.split_once("-");
+				if let Some((start, end)) = numbers
+					&& let Ok(start) = start.parse::<u32>()
+					&& let Ok(end) = end.parse::<u32>()
+				{
+					for i in start..=end {
+						options.insert(i.to_string(), i.to_string());
+					}
+				} else {
+					return options;
+				}
+			}
+		} else if !line.is_empty()
+			&& !line.starts_with("//")
+			&& !line.starts_with("Order:")
+			&& let Some((id, opt)) = line.split_once("-")
+		{
+			options.insert(id.to_string(), opt.to_string());
+		}
+	}
+	options
 }

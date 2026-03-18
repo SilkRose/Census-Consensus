@@ -4,7 +4,7 @@ use std::fs;
 use crate::endpoints::MIN_USER_UPDATE_TIME;
 use crate::structs::*;
 use crate::theme::Theme;
-use crate::utility::count_words;
+use crate::utility::{count_words, parse_options};
 use bon::builder;
 use chrono::Utc;
 use maud::{DOCTYPE, PreEscaped, html};
@@ -827,6 +827,8 @@ pub fn question_preview_html(
 	let mane = html! {
 		h1 { (heading) }
 		p { (description) }
+		h2 { "Question Preview" }
+		(question_html(&question, &data))
 		h2 { "Preview Selector" }
 		h3 { (data.question_text) }
 		form method = "post" action = (format!("/questions/{}/preview", question.id)) {
@@ -846,6 +848,35 @@ pub fn question_preview_html(
 		.header(header_html(Some(user.user_type), Pages::Questions, &theme))
 		.mane(mane)
 		.call()
+}
+
+pub fn question_html(question: &Question, data: &QuestionRevision) -> PreEscaped<String> {
+	let options = parse_options(
+		&data.option_writing.clone().unwrap_or_default(),
+		&data.question_type,
+	);
+	html! {
+		p {
+			(question.chapter_order.unwrap_or_default())
+			". "
+			(data.question_text)
+		}
+		@if options.is_empty() {
+			p { "No options found." }
+		} @else {
+			span class = (data.question_type) {
+				@for (id, opt) in options {
+					@if QuestionType::Multiselect == data.question_type {
+						input id = (id) type = "checkbox" value = (id) {}
+						label for = (id) { (opt) }
+					} @else {
+						input id = (id) type = "radio" value = (id) {}
+						label for = (id) { (opt) }
+					}
+				}
+			}
+		}
+	}
 }
 
 // HTML components go below this comment:
