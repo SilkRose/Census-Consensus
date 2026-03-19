@@ -43,10 +43,7 @@ pub fn format(
 			percentage: (v.count as f64 / total_count_f64) * 100.0
 		}).collect::<Vec<_>>();
 	let votes_sorted = {
-		let mut votes_sorted = votes
-			.iter()
-			.cloned()
-			.collect::<Vec<_>>();
+		let mut votes_sorted = votes.clone();
 		votes_sorted.sort_by_key(|v| v.count);
 		votes_sorted
 	};
