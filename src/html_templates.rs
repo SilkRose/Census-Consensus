@@ -500,8 +500,9 @@ pub fn question_list_item_html(
 			}
 		}
 		p {
+			a href = (format!("/questions/{}/preview", question.meta.id)) { b { "Preview" } sup { "↗" } }
 			@if let QuestionChapter::ChapterQuestions(ref chapter) = chapter {
-				b { "Ch Order: " }
+				b { " Ch Order: " }
 				@if let Some(order) = question.meta.chapter_order {
 					@if order > 1 {
 						@let endpoint = format!("/chapters/{}/questions/{}/ordered/-1", chapter.id, question.meta.id);
@@ -520,7 +521,7 @@ pub fn question_list_item_html(
 				@if let Some((chapter, _)) = chapter
 					&& let Some(chapter_order) = chapter.chapter_order
 					&& let Some(question_order) = question.meta.chapter_order {
-					b { "Ch Num/Order: " }
+					b { " Ch Num/Order: " }
 					(chapter_order) "/" (question_order)
 				}
 			}
