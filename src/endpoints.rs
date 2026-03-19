@@ -627,3 +627,47 @@ pub async fn get_question_preview(
 		Ok(HttpResponse::BadRequest().finish())
 	}
 }
+
+#[get("/dashboard")]
+pub async fn get_dashboard(
+	theme: Theme, mut db: ThinData<Db>, session: AdminSessionInfo,
+) -> actix_web::Result<impl Responder> {
+	if let Ok(settings) = db.get_settings().await {
+		let page = dashboard_html(session.user, theme, settings);
+		Ok(HttpResponse::Ok()
+			.content_type("text/html; charset=utf-8")
+			.body(page))
+	} else {
+		Ok(HttpResponse::InternalServerError().finish())
+	}
+}
+
+#[post("/story-id")]
+pub async fn set_story_id(
+	body: String, mut db: ThinData<Db>, _: AdminSessionInfo,
+) -> actix_web::Result<impl Responder> {
+	let data = serde_urlencoded::from_str::<HashMap<String, i32>>(&body)?;
+	if let Some(story_id) = data.get("story-id") {
+		db.update_story_id(*story_id).await?;
+		Ok(HttpResponse::SeeOther()
+			.append_header(("Location", "/dashboard"))
+			.finish())
+	} else {
+		Ok(HttpResponse::BadRequest().finish())
+	}
+}
+
+#[post("/population")]
+pub async fn set_population(
+	body: String, mut db: ThinData<Db>, _: AdminSessionInfo,
+) -> actix_web::Result<impl Responder> {
+	let data = serde_urlencoded::from_str::<HashMap<String, i32>>(&body)?;
+	if let Some(population) = data.get("population") {
+		db.update_population(*population).await?;
+		Ok(HttpResponse::SeeOther()
+			.append_header(("Location", "/dashboard"))
+			.finish())
+	} else {
+		Ok(HttpResponse::BadRequest().finish())
+	}
+}

@@ -861,6 +861,33 @@ pub fn question_preview_html(
 		.call()
 }
 
+pub fn dashboard_html(user: User, theme: Theme, settings: Settings) -> String {
+	let heading = "Event Dashboard";
+	let title: String = format!("{heading} - {SITE_NAME}");
+	let description = "Event control dashboard.";
+	let link = format!("{SITE_LINK}/dashboard");
+	let mane = html! {
+		h1 { (heading) }
+		p { (description) }
+		form method = "post" action = "/story-id" class = "row" {
+			label for = "story-id" { "Story ID: " }
+			(input_text_numeric_value_required("story-id", "story-id", 1, 8, settings.story_id))
+			button type = "submit" { "Update" }
+		}
+		form method = "post" action = "/population" class = "row" {
+			label for = "population" { "Population: " }
+			(input_text_numeric_value_required("population", "population", 1, 8, settings.population))
+			button type = "submit" { "Update" }
+		}
+	};
+	html_builder()
+		.theme(&theme)
+		.head(head_html(&title, description, &link, &theme))
+		.header(header_html(Some(user.user_type), Pages::Dashboard, &theme))
+		.mane(mane)
+		.call()
+}
+
 pub fn question_html(
 	question: &Question, data: &QuestionRevision, options: &Vec<(String, String)>,
 ) -> PreEscaped<String> {
@@ -980,6 +1007,11 @@ fn header_html(user_type: Option<UserType>, page: Pages, theme: &Theme) -> PreEs
 					(header_link_html("/questions", "Questions", page == Pages::Questions))
 					(header_link_html("/feedback", "Feedback", page == Pages::Feedback))
 				}
+				@if user_type == UserType::Admin {
+					span class = "nav" {
+						(header_link_html("/dashboard", "Dashboard", page == Pages::Dashboard))
+					}
+				}
 			}
 		}
 		fieldset class = "theme" {
@@ -1092,6 +1124,23 @@ fn input_text_numeric_required(id: &str, name: &str, min: u32, max: u32) -> PreE
 			minlength = (min)
 			maxlength = (max)
 			required {}
+	)
+}
+
+fn input_text_numeric_value_required(
+	id: &str, name: &str, min: u32, max: u32, value: i32,
+) -> PreEscaped<String> {
+	html!	(
+		input
+			id = (id)
+			type = "text"
+			name = (name)
+			inputmode = "numeric"
+			pattern = r"\d*"
+			minlength = (min)
+			maxlength = (max)
+			required
+			value = (value) {}
 	)
 }
 

@@ -1692,4 +1692,22 @@ pub trait DbExecutor {
 		.await
 		.map_err(select_err)?)
 	}
+
+	async fn update_story_id(&mut self, story_id: i32) -> Result<u64> {
+		Ok(sqlx::query!("UPDATE Settings SET story_id = $1;", story_id)
+			.execute(self.executor())
+			.await
+			.map_err(update_err)?
+			.rows_affected())
+	}
+
+	async fn update_population(&mut self, population: i32) -> Result<u64> {
+		Ok(
+			sqlx::query!("UPDATE Settings SET population = $1;", population)
+				.execute(self.executor())
+				.await
+				.map_err(update_err)?
+				.rows_affected(),
+		)
+	}
 }

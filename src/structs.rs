@@ -249,6 +249,7 @@ pub enum Pages {
 	Chapters,
 	Questions,
 	Feedback,
+	Dashboard,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, Type, Eq, Hash, PartialEq)]
