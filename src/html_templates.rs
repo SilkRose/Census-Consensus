@@ -835,7 +835,7 @@ pub fn question_preview_html(
 		(question_html(&question, &data, &opts))
 		h2 { "Preview Selector" }
 		h3 { (data.question_text) }
-		form method = "post" action = (format!("/questions/{}/preview", question.id)) {
+		form method = "get" action = (format!("/questions/{}/preview", question.id)) {
 			@for (id, option) in opts {
 				span class = "row" {
 					label for = (id) { (option) }
