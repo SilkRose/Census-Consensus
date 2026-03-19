@@ -856,7 +856,11 @@ pub fn question_html(question: &Question, data: &QuestionRevision) -> PreEscaped
 		&data.question_type,
 	);
 	let mut options = binding.iter().collect::<Vec<_>>();
-	options.sort_by_key(|o| o.0);
+	if QuestionType::Scale == data.question_type {
+		options.sort_by_key(|o| o.0.parse::<i32>().unwrap());
+	} else {
+		options.sort_by_key(|o| o.0);
+	}
 	html! {
 		p {
 			(question.chapter_order.unwrap_or_default())
