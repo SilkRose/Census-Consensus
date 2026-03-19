@@ -643,13 +643,14 @@ async fn oembed(query: Query<OEmbed>) -> actix_web::Result<impl Responder> {
 #[get("/questions/{id}/preview")]
 pub async fn get_question_preview(
 	theme: Theme, path: Path<i32>, query: Query<HashMap<String, f64>>, mut db: ThinData<Db>,
-	session: WriterSessionInfo,
+	population: ThinData<Arc<RwLock<Population>>>, session: WriterSessionInfo,
 ) -> actix_web::Result<impl Responder> {
 	let id = path.into_inner();
 	let options = query.into_inner();
+	let population = population.0.read().unwrap().inner;
 	if let Some(question) = db.get_question(id).await? {
 		let data = db.get_latest_question_revision(question.id).await?;
-		let page = question_preview_html(session.user, theme, question, data, options);
+		let page = question_preview_html(session.user, theme, question, data, options, population);
 		Ok(HttpResponse::Ok()
 			.content_type("text/html; charset=utf-8")
 			.body(page))

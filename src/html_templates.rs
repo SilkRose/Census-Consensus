@@ -4,7 +4,7 @@ use std::fs;
 use crate::endpoints::MIN_USER_UPDATE_TIME;
 use crate::structs::*;
 use crate::theme::Theme;
-use crate::utility::{count_words, parse_options};
+use crate::utility::{construct_question_data, count_words, parse_options};
 use bon::builder;
 use chrono::Utc;
 use maud::{DOCTYPE, PreEscaped, html};
@@ -819,7 +819,7 @@ pub fn about_html(user: Option<User>, theme: Theme, contributors: Vec<User>) -> 
 
 pub fn question_preview_html(
 	user: User, theme: Theme, question: Question, data: QuestionRevision,
-	options: HashMap<String, f64>,
+	options: HashMap<String, f64>, population: u32,
 ) -> String {
 	let heading = "Question Preview";
 	let title: String = format!("{heading} - {SITE_NAME}");
@@ -847,7 +847,8 @@ pub fn question_preview_html(
 		}
 		@if !options.is_empty() {
 			h2 { "Selected Preview" }
-			// Specified outcome preview here
+			@let question_data = construct_question_data(question, data, options, population);
+			(format!("{:?}", question_data))
 		}
 		h2 { "All Outcomes Preview" }
 		// All outcomes preview here

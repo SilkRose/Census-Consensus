@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::structs::QuestionType;
+use crate::structs::{OptionData, Question, QuestionDataOption, QuestionRevision, QuestionType};
 use actix_web::HttpRequest;
 use pony::word_stats::word_count;
 
@@ -86,4 +86,24 @@ pub fn parse_options(text: &str, question_type: &QuestionType) -> Vec<(String, S
 		options.sort_by_key(|o| o.0.clone());
 	}
 	options
+}
+
+pub fn construct_question_data(
+	meta: Question, data: QuestionRevision, option_data: HashMap<String, f64>, population: u32,
+) -> QuestionDataOption {
+	let mut total_count = 0;
+	let mut options = Vec::new();
+	for (id, percent) in option_data {
+		let count =
+			((population as f64 * data.response_percent / 100.0) * percent / 100.0).round() as u32;
+		let data = OptionData { id, percent, count };
+		options.push(data);
+		total_count += count;
+	}
+	QuestionDataOption {
+		meta,
+		total_count,
+		data,
+		options,
+	}
 }

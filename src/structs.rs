@@ -286,3 +286,18 @@ pub struct OEmbed {
 	pub cache_age: u32,
 	pub html: String,
 }
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct QuestionDataOption {
+	pub meta: Question,
+	pub total_count: u32,
+	pub data: QuestionRevision,
+	pub options: Vec<OptionData>,
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct OptionData {
+	pub id: String,
+	pub percent: f64,
+	pub count: u32,
+}
