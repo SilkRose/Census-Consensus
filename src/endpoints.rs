@@ -9,12 +9,10 @@ use actix_web::web::{Path, Query, ThinData};
 use actix_web::{HttpRequest, HttpResponse, Responder, get, post};
 use chrono::Utc;
 use lightningcss::stylesheet::{MinifyOptions, ParserOptions, PrinterOptions, StyleSheet};
-use pony::number_format::format_number_u128;
 use pony::smart_map::SmartMap;
 use pony::time::format_milliseconds;
 use std::collections::{HashMap, HashSet};
 use std::fs;
-use std::sync::{Arc, RwLock};
 use std::time::Duration;
 
 pub const MIN_USER_UPDATE_TIME: Duration = Duration::from_hours(1);
@@ -378,34 +376,6 @@ pub async fn get_feedback(
 	}
 }
 
-#[get("/population")]
-pub async fn get_population(
-	_: WriterSessionInfo, population: ThinData<Arc<RwLock<Population>>>,
-) -> actix_web::Result<impl Responder> {
-	if let Ok(pop) = population.read() {
-		Ok(HttpResponse::Ok()
-			.content_type("text/html; charset=utf-8")
-			.body(format_number_u128(pop.inner as u128)?))
-	} else {
-		Ok(HttpResponse::InternalServerError().finish())
-	}
-}
-
-#[get("/population/{pop}")]
-pub async fn set_population(
-	path: Path<u32>, _: AdminSessionInfo, population: ThinData<Arc<RwLock<Population>>>,
-) -> actix_web::Result<impl Responder> {
-	let new_pop = path.into_inner();
-	if let Ok(mut pop) = population.write() {
-		pop.inner = new_pop;
-		Ok(HttpResponse::SeeOther()
-			.append_header(("Location", "/population"))
-			.finish())
-	} else {
-		Ok(HttpResponse::InternalServerError().finish())
-	}
-}
-
 #[post("/questions")]
 pub async fn set_question_new(
 	params: Query<QuestionChapterId>, body: String, mut db: ThinData<Db>,
@@ -423,13 +393,13 @@ pub async fn set_question_new(
 
 #[get("/questions/{id}")]
 pub async fn get_question_edit(
-	path: Path<i32>, theme: Theme, population: ThinData<Arc<RwLock<Population>>>,
-	mut db: ThinData<Db>, session: WriterSessionInfo,
+	path: Path<i32>, theme: Theme, mut db: ThinData<Db>, session: WriterSessionInfo,
 ) -> actix_web::Result<impl Responder> {
 	let id = path.into_inner();
-	let population = population.0.read().unwrap().inner;
-	let question = db.get_question(id).await?;
-	if let Some(question) = question {
+	if let Some(question) = db.get_question(id).await?
+		&& let Ok(settings) = db.get_settings().await
+	{
+		let population = settings.population;
 		let data = db.get_latest_question_revision(question.id).await?;
 		let page = edit_question_html(session.user, theme, question, data, population);
 		Ok(HttpResponse::Ok()
@@ -460,15 +430,13 @@ pub async fn set_question_edit(
 
 #[get("/questions/{id}/revisions")]
 pub async fn get_question_revisions(
-	path: Path<i32>, theme: Theme, population: ThinData<Arc<RwLock<Population>>>,
-	mut db: ThinData<Db>, session: WriterSessionInfo,
+	path: Path<i32>, theme: Theme, mut db: ThinData<Db>, session: WriterSessionInfo,
 ) -> actix_web::Result<impl Responder> {
 	let id = path.into_inner();
-	let Ok(ref pop) = population.0.read() else {
-		return Ok(HttpResponse::InternalServerError().finish());
-	};
-	let population = pop.inner;
-	if let Some(question) = db.get_question(id).await? {
+	if let Some(question) = db.get_question(id).await?
+		&& let Ok(settings) = db.get_settings().await
+	{
+		let population = settings.population;
 		let revisions = db.get_all_question_revisions_by_question(id).await?;
 		let mut users = SmartMap::default();
 		for revision in &revisions {
@@ -491,15 +459,13 @@ pub async fn get_question_revisions(
 
 #[get("/chapters/{chapter_id}/questions")]
 pub async fn get_chapter_questions(
-	theme: Theme, path: Path<i32>, population: ThinData<Arc<RwLock<Population>>>,
-	mut db: ThinData<Db>, session: WriterSessionInfo,
+	theme: Theme, path: Path<i32>, mut db: ThinData<Db>, session: WriterSessionInfo,
 ) -> actix_web::Result<impl Responder> {
 	let chapter_id = path.into_inner();
-	let Ok(ref pop) = population.0.read() else {
-		return Ok(HttpResponse::InternalServerError().finish());
-	};
-	let population = pop.inner;
-	if let Some(chapter) = db.get_chapter(chapter_id).await? {
+	if let Some(chapter) = db.get_chapter(chapter_id).await?
+		&& let Ok(settings) = db.get_settings().await
+	{
+		let population = settings.population;
 		let (data, _) = db.get_questions_table(Some(chapter_id)).await?;
 		let page = chapter_questions_html(session.user, theme, chapter, data, population);
 		Ok(HttpResponse::Ok()
@@ -589,18 +555,19 @@ pub async fn set_chapter_question_order_move(
 
 #[get("/questions")]
 pub async fn get_questions(
-	theme: Theme, population: ThinData<Arc<RwLock<Population>>>, mut db: ThinData<Db>,
-	session: WriterSessionInfo,
+	theme: Theme, mut db: ThinData<Db>, session: WriterSessionInfo,
 ) -> actix_web::Result<impl Responder> {
-	let Ok(ref pop) = population.0.read() else {
-		return Ok(HttpResponse::InternalServerError().finish());
-	};
-	let population = pop.inner;
-	let (data, chapters) = db.get_questions_table(None).await?;
-	let page = questions_html(session.user, theme, data, chapters, population);
-	Ok(HttpResponse::Ok()
-		.content_type("text/html; charset=utf-8")
-		.body(page))
+	if let Ok((data, chapters)) = db.get_questions_table(None).await
+		&& let Ok(settings) = db.get_settings().await
+	{
+		let population = settings.population;
+		let page = questions_html(session.user, theme, data, chapters, population);
+		Ok(HttpResponse::Ok()
+			.content_type("text/html; charset=utf-8")
+			.body(page))
+	} else {
+		Ok(HttpResponse::InternalServerError().finish())
+	}
 }
 
 #[get("/about")]
@@ -643,13 +610,15 @@ async fn oembed(query: Query<OEmbed>) -> actix_web::Result<impl Responder> {
 #[get("/questions/{id}/preview")]
 pub async fn get_question_preview(
 	theme: Theme, path: Path<i32>, query: Query<HashMap<String, f64>>, mut db: ThinData<Db>,
-	population: ThinData<Arc<RwLock<Population>>>, session: WriterSessionInfo,
+	session: WriterSessionInfo,
 ) -> actix_web::Result<impl Responder> {
 	let id = path.into_inner();
 	let options = query.into_inner();
-	let population = population.0.read().unwrap().inner;
-	if let Some(question) = db.get_question(id).await? {
+	if let Some(question) = db.get_question(id).await?
+		&& let Ok(settings) = db.get_settings().await
+	{
 		let data = db.get_latest_question_revision(question.id).await?;
+		let population = settings.population;
 		let page = question_preview_html(session.user, theme, question, data, options, population);
 		Ok(HttpResponse::Ok()
 			.content_type("text/html; charset=utf-8")

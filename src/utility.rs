@@ -89,7 +89,7 @@ pub fn parse_options(text: &str, question_type: &QuestionType) -> Vec<(String, S
 }
 
 pub fn construct_question_data(
-	meta: Question, data: QuestionRevision, option_data: HashMap<String, f64>, population: u32,
+	meta: Question, data: QuestionRevision, option_data: HashMap<String, f64>, population: i32,
 ) -> QuestionDataOption {
 	let mut total_count = 0;
 	let mut options = Vec::new();

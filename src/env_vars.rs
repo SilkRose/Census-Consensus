@@ -82,7 +82,4 @@ declare_env_fn! {
 	///
 	/// This should not be set in production environments for security reasons
 	(optional) create_dev_session() -> "CREATE_DEV_SESSION"
-
-	/// The population of Equestria. Set to a default value if none.
-	(optional) population() -> "POPULATION"
 }

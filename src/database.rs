@@ -1678,4 +1678,18 @@ pub trait DbExecutor {
 			.map_err(delete_err)?
 			.rows_affected())
 	}
+
+	async fn get_settings(&mut self) -> Result<Settings> {
+		Ok(sqlx::query_as!(
+			Settings,
+			"SELECT
+				story_id, population, test_run, start_time
+			FROM
+				Settings
+			LIMIT 1;"
+		)
+		.fetch_one(self.executor())
+		.await
+		.map_err(select_err)?)
+	}
 }

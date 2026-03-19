@@ -1,9 +1,7 @@
 #![feature(impl_trait_in_assoc_type)]
 
-use std::sync::{Arc, RwLock};
-
 use crate::endpoints::*;
-use crate::structs::{Population, UserType};
+use crate::structs::UserType;
 
 pub use self::database::*;
 pub use self::error::Result;
@@ -94,12 +92,6 @@ async fn main() -> Result<()> {
 		);
 	}
 
-	let population = env_vars::population()
-		.and_then(|pop| pop.parse().ok())
-		.unwrap_or(50_240_000);
-	let population = Population { inner: population };
-	let population = Data(Arc::new(RwLock::new(population)));
-
 	let server = HttpServer::new(move || {
 		ActixApp::new()
 			.service(oembed)
@@ -131,8 +123,6 @@ async fn main() -> Result<()> {
 			.service(set_question_edit)
 			.service(get_question_revisions)
 			.service(get_question_preview)
-			.service(get_population)
-			.service(set_population)
 			.service(get_chapter_questions)
 			.service(set_question_claim)
 			.service(set_question_unclaim)
@@ -145,7 +135,6 @@ async fn main() -> Result<()> {
 			.app_data(fimfic.clone())
 			.app_data(http_client.clone())
 			.app_data(dev_session.clone())
-			.app_data(population.clone())
 			.wrap(Compress::default())
 	});
 

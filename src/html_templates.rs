@@ -427,7 +427,7 @@ pub fn feedback_html(user: User, theme: Theme, users: Vec<UserData>) -> String {
 
 pub fn questions_html(
 	user: User, theme: Theme, questions: Vec<QuestionTable>,
-	chapters: SmartMap<i32, (Chapter, ChapterRevision)>, population: u32,
+	chapters: SmartMap<i32, (Chapter, ChapterRevision)>, population: i32,
 ) -> String {
 	let heading = "Questions";
 	let title: String = format!("{heading} - {SITE_NAME}");
@@ -459,7 +459,7 @@ pub fn questions_html(
 }
 
 pub fn chapter_questions_html(
-	user: User, theme: Theme, chapter: Chapter, questions: Vec<QuestionTable>, population: u32,
+	user: User, theme: Theme, chapter: Chapter, questions: Vec<QuestionTable>, population: i32,
 ) -> String {
 	let heading = "Chapter Questions";
 	let title: String = format!("{heading} - {SITE_NAME}");
@@ -486,7 +486,7 @@ pub fn chapter_questions_html(
 }
 
 pub fn question_list_item_html(
-	question: QuestionTable, population: u32, user: &User, chapter: QuestionChapter,
+	question: QuestionTable, population: i32, user: &User, chapter: QuestionChapter,
 ) -> PreEscaped<String> {
 	html! {
 		h3 { a href = (format!("/questions/{}", question.meta.id)) { (question.newest_data.question_text) sup { "↗" } } }
@@ -613,7 +613,7 @@ pub fn new_question_html(chapter: Option<&Chapter>) -> PreEscaped<String> {
 }
 
 pub fn edit_question_html(
-	user: User, theme: Theme, question: Question, data: QuestionRevision, population: u32,
+	user: User, theme: Theme, question: Question, data: QuestionRevision, population: i32,
 ) -> String {
 	let heading = "Edit Question";
 	let title: String = format!("{heading} - {SITE_NAME}");
@@ -686,7 +686,7 @@ fn question_type_match(question_type: QuestionType) -> PreEscaped<String> {
 }
 
 pub fn question_history_html(
-	user: User, theme: Theme, question: QuestionData, population: u32,
+	user: User, theme: Theme, question: QuestionData, population: i32,
 ) -> String {
 	let heading = "Question Revision History";
 	let title: String = format!("{heading} - {SITE_NAME}");
@@ -819,7 +819,7 @@ pub fn about_html(user: Option<User>, theme: Theme, contributors: Vec<User>) -> 
 
 pub fn question_preview_html(
 	user: User, theme: Theme, question: Question, data: QuestionRevision,
-	options: HashMap<String, f64>, population: u32,
+	options: HashMap<String, f64>, population: i32,
 ) -> String {
 	let heading = "Question Preview";
 	let title: String = format!("{heading} - {SITE_NAME}");

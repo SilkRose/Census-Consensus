@@ -221,12 +221,6 @@ pub struct StoryUpdate {
 	pub date_cached: DateTime<Utc>,
 }
 
-#[repr(transparent)]
-#[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct Population {
-	pub inner: u32,
-}
-
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct UserRoleUpdate {
 	pub id: i32,
@@ -300,4 +294,12 @@ pub struct OptionData {
 	pub id: String,
 	pub percent: f64,
 	pub count: u32,
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct Settings {
+	pub story_id: i32,
+	pub population: i32,
+	pub test_run: bool,
+	pub start_time: Option<DateTime<Utc>>,
 }
