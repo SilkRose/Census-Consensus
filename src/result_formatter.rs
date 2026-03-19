@@ -7,6 +7,7 @@ pub struct Vote<'h> {
 	text: &'h str
 }
 
+#[derive(Clone)]
 struct VoteWithPercentage<'h> {
 	count: u64,
 	text: &'h str,
@@ -15,8 +16,8 @@ struct VoteWithPercentage<'h> {
 
 enum SpecifiedOption {
 	OptionLetter(char),
-	OptionNumber(u32),
-	Ordinal(u32)
+	OptionNumber(usize),
+	Ordinal(usize)
 }
 
 pub fn format(
@@ -41,6 +42,15 @@ pub fn format(
 			text: v.text,
 			percentage: (v.count as f64 / total_count_f64) * 100.0
 		}).collect::<Vec<_>>();
+	let votes_sorted = {
+		let mut votes_sorted = votes
+			.iter()
+			.cloned()
+			.collect::<Vec<_>>();
+		votes_sorted.sort_by_key(|v| v.count);
+		votes_sorted
+	};
+
 	let mut state = ParseState::None;
 	let mut matched = false;
 	let mut start = None;
@@ -186,6 +196,18 @@ pub fn format(
 						}
 					}
 
+					let Some(option) = (match option {
+						SpecifiedOption::OptionLetter(option) => {
+							get_count_from_char(option, &votes, &mut errors)
+						}
+						SpecifiedOption::OptionNumber(option) => {
+							get_count_from_index(option, &votes, &mut errors)
+						}
+						SpecifiedOption::Ordinal(option) => {
+							get_count_from_index(option, &votes_sorted, &mut errors)
+						}
+					}) else { continue };
+
 					let next = pairs.next().unwrap();
 					if matches!(next.as_rule(), Rule::text_vote_count) {
 						current_match_mut!().push_str(&format!("{total_count}"));
@@ -206,6 +228,11 @@ pub fn format(
 						Rule::text_vote_count_formatted => {
 							current_match_mut!()
 								.push_str(&format_count_words(total_count, precision));
+						}
+
+						Rule::text_vote_count => {
+							current_match_mut!()
+								.push_str(&option.count.to_string());
 						}
 
 						_ => { unreachable!() }
@@ -251,11 +278,36 @@ fn get_count_from_str<'h>(
 	votes: &'h [VoteWithPercentage<'h>],
 	errors: &'_ mut Vec<String>
 ) -> Option<&'h VoteWithPercentage<'h>> {
-	let index = map_option_to_array_index(str.chars().next().unwrap()).unwrap();
+	get_count_from_char(str.chars().next().unwrap(), votes, errors)
+}
+
+fn get_count_from_char<'h>(
+	char: char,
+	votes: &'h [VoteWithPercentage<'h>],
+	errors: &'_ mut Vec<String>
+) -> Option<&'h VoteWithPercentage<'h>> {
+	let index = map_option_to_array_index(char).unwrap();
+	get_count_from_impl(&char.to_string(), index, votes, errors)
+}
+
+fn get_count_from_index<'h>(
+	index: usize,
+	votes: &'h [VoteWithPercentage<'h>],
+	errors: &'_ mut Vec<String>
+) -> Option<&'h VoteWithPercentage<'h>> {
+	get_count_from_impl(&index.to_string(), index, votes, errors)
+}
+
+fn get_count_from_impl<'h>(
+	orig: &'_ str,
+	index: usize,
+	votes: &'h [VoteWithPercentage<'h>],
+	errors: &'_ mut Vec<String>
+) -> Option<&'h VoteWithPercentage<'h>> {
 	let vote = votes.get(index);
 
 	if vote.is_none() {
-		errors.push(format!("{str} is not a valid option"));
+		errors.push(format!("{orig} is not a valid option"));
 	}
 
 	vote
