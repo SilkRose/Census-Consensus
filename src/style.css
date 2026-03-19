@@ -632,6 +632,24 @@
 		filter: brightness(0.5);
 	}
 
+	.Multi-Select,
+	.Multiple.Choice {
+		display: flex;
+		flex-direction: column;
+		gap: 0.5em;
+		align-items: start;
+	}
+
+	.Scale {
+		display: flex;
+		flex-direction: row;
+		gap: 0.5em;
+	}
+
+	.question-option > label {
+		margin-left: 0.25em;
+	}
+
 	@media (max-width: 775px) {
 		header {
 			flex-direction: column;

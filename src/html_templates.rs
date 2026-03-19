@@ -872,12 +872,14 @@ pub fn question_html(question: &Question, data: &QuestionRevision) -> PreEscaped
 		} @else {
 			span class = (data.question_type) {
 				@for (id, opt) in options {
-					@if QuestionType::Multiselect == data.question_type {
-						input id = (id) type = "checkbox" name = (question.id) value = (id) {}
-						label for = (id) { (opt) }
-					} @else {
-						input id = (id) type = "radio" name = (question.id) value = (id) {}
-						label for = (id) { (opt) }
+					span class = "question-option" {
+						@if QuestionType::Multiselect == data.question_type {
+							input id = (id) type = "checkbox" name = (question.id) value = (id) {}
+							label for = (id) { (opt) }
+						} @else {
+							input id = (id) type = "radio" name = (question.id) value = (id) {}
+							label for = (id) { (opt) }
+						}
 					}
 				}
 			}
