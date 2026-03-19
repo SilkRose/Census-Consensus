@@ -53,7 +53,7 @@ pub fn count_outcomes(text: &str) -> u32 {
 	count
 }
 
-pub fn parse_options(text: &str, question_type: &QuestionType) -> HashMap<String, String> {
+pub fn parse_options(text: &str, question_type: &QuestionType) -> Vec<(String, String)> {
 	let mut options = HashMap::new();
 	for line in text.lines() {
 		if *question_type == QuestionType::Scale {
@@ -68,7 +68,7 @@ pub fn parse_options(text: &str, question_type: &QuestionType) -> HashMap<String
 						options.insert(i.to_string(), i.to_string());
 					}
 				} else {
-					return options;
+					return Vec::new();
 				}
 			}
 		} else if !line.is_empty()
@@ -78,6 +78,12 @@ pub fn parse_options(text: &str, question_type: &QuestionType) -> HashMap<String
 		{
 			options.insert(id.to_string(), opt.to_string());
 		}
+	}
+	let mut options = options.into_iter().collect::<Vec<_>>();
+	if QuestionType::Scale == *question_type {
+		options.sort_by_key(|o| o.0.parse::<i32>().unwrap());
+	} else {
+		options.sort_by_key(|o| o.0.clone());
 	}
 	options
 }

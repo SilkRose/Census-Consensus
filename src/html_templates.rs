@@ -824,15 +824,24 @@ pub fn question_preview_html(
 	let title: String = format!("{heading} - {SITE_NAME}");
 	let description = "Preview a question's outcomes.";
 	let link = format!("{SITE_LINK}/questions/{}/preview", question.id);
+	let opts = parse_options(
+		&data.option_writing.clone().unwrap_or_default(),
+		&data.question_type,
+	);
 	let mane = html! {
 		h1 { (heading) }
 		p { (description) }
 		h2 { "Question Preview" }
-		(question_html(&question, &data))
+		(question_html(&question, &data, &opts))
 		h2 { "Preview Selector" }
 		h3 { (data.question_text) }
 		form method = "post" action = (format!("/questions/{}/preview", question.id)) {
-			// Option percent input here
+			@for (id, option) in opts {
+				span class = "row" {
+					label for = (id) { (option) }
+					(input_text_float_value_required(&id, &id, *options.get(&id).unwrap_or(&0.0)))
+				}
+			}
 			button type = "submit" { "Preview Outcome" }
 		}
 		@if !options.is_empty() {
@@ -850,17 +859,9 @@ pub fn question_preview_html(
 		.call()
 }
 
-pub fn question_html(question: &Question, data: &QuestionRevision) -> PreEscaped<String> {
-	let binding = parse_options(
-		&data.option_writing.clone().unwrap_or_default(),
-		&data.question_type,
-	);
-	let mut options = binding.iter().collect::<Vec<_>>();
-	if QuestionType::Scale == data.question_type {
-		options.sort_by_key(|o| o.0.parse::<i32>().unwrap());
-	} else {
-		options.sort_by_key(|o| o.0);
-	}
+pub fn question_html(
+	question: &Question, data: &QuestionRevision, options: &Vec<(String, String)>,
+) -> PreEscaped<String> {
 	html! {
 		p {
 			(question.chapter_order.unwrap_or_default())
