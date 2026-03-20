@@ -129,6 +129,7 @@ async fn main() -> Result<()> {
 			.service(set_question_unclaim)
 			.service(set_chapter_question_order)
 			.service(set_chapter_question_order_move)
+			.service(set_vote_duration)
 			.service(set_population)
 			.service(set_story_id)
 			.service(get_questions)

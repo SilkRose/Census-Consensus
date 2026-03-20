@@ -671,3 +671,18 @@ pub async fn set_population(
 		Ok(HttpResponse::BadRequest().finish())
 	}
 }
+
+#[post("/vote-duration")]
+pub async fn set_vote_duration(
+	body: String, mut db: ThinData<Db>, _: AdminSessionInfo,
+) -> actix_web::Result<impl Responder> {
+	let data = serde_urlencoded::from_str::<HashMap<String, i32>>(&body)?;
+	if let Some(vote_duration) = data.get("vote-duration") {
+		db.update_chapter_vote_durations(*vote_duration).await?;
+		Ok(HttpResponse::SeeOther()
+			.append_header(("Location", "/dashboard"))
+			.finish())
+	} else {
+		Ok(HttpResponse::BadRequest().finish())
+	}
+}

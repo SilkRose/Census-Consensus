@@ -879,6 +879,11 @@ pub fn dashboard_html(user: User, theme: Theme, settings: Settings) -> String {
 			(input_text_numeric_value_required("population", "population", 1, 8, settings.population))
 			button type = "submit" { "Update" }
 		}
+		form method = "post" action = "/vote-duration" class = "row" {
+			label for = "vote-duration" { "Vote Durations: " }
+			(input_text_numeric_required("vote-duration", "vote-duration", 1, 8))
+			button type = "submit" { "Update" }
+		}
 	};
 	html_builder()
 		.theme(&theme)

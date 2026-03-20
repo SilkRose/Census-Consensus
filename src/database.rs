@@ -832,6 +832,20 @@ pub trait DbExecutor {
 		.rows_affected())
 	}
 
+	async fn update_chapter_vote_durations(&mut self, vote_duration: i32) -> Result<u64> {
+		Ok(sqlx::query!(
+			"UPDATE Chapters
+			SET
+				vote_duration = $1,
+				last_edit = now();",
+			vote_duration
+		)
+		.execute(self.executor())
+		.await
+		.map_err(update_err)?
+		.rows_affected())
+	}
+
 	async fn update_chapter_minutes_left(&mut self, id: i32, minutes: i32) -> Result<u64> {
 		Ok(sqlx::query!(
 			"UPDATE Chapters
