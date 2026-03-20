@@ -692,7 +692,8 @@ pub async fn set_reset(
 	body: String, mut db: ThinData<Db>, _: AdminSessionInfo,
 ) -> actix_web::Result<impl Responder> {
 	let data = serde_urlencoded::from_str::<HashMap<String, String>>(&body)?;
-	if data.contains_key("reset-1") && data.contains_key("reset-2") {
+	if data.contains_key("reset-1") && data.contains_key("reset-2") && data.contains_key("reset-3")
+	{
 		if db.update_start_time(None).await.is_ok()
 			&& db.delete_all_votes().await.is_ok()
 			&& let Ok(chapters) = db.get_all_chapters().await

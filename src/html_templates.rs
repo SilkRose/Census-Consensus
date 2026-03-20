@@ -893,7 +893,11 @@ pub fn dashboard_html(user: User, theme: Theme, settings: Settings) -> String {
 				}
 				span class = "row" {
 					input type = "checkbox" id = "reset-2" name = "reset-2" value = "true" {}
-					label for = "reset-2" { "Are you super-duper sure?" }
+					label for = "reset-2" { "Are you super sure?" }
+				}
+				span class = "row" {
+					input type = "checkbox" id = "reset-3" name = "reset-3" value = "true" {}
+					label for = "reset-3" { "Are you super-duper sure?" }
 				}
 			}
 			button type = "submit" { "Reset" }
