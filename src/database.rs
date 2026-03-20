@@ -1683,7 +1683,7 @@ pub trait DbExecutor {
 		Ok(sqlx::query_as!(
 			Settings,
 			"SELECT
-				story_id, population, test_run, start_time
+				story_id, population, start_time
 			FROM
 				Settings
 			LIMIT 1;"

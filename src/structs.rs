@@ -301,6 +301,5 @@ pub struct OptionData {
 pub struct Settings {
 	pub story_id: i32,
 	pub population: i32,
-	pub test_run: bool,
 	pub start_time: Option<DateTime<Utc>>,
 }
