@@ -898,6 +898,20 @@ pub fn dashboard_html(user: User, theme: Theme, settings: Settings) -> String {
 			}
 			button type = "submit" { "Reset" }
 		}
+		form method = "post" action = "/start-time" class = "row" {
+			label { "Event Date/Time: " }
+			@if let Some(start_time) = settings.start_time {
+				@let date = start_time.format("%Y-%m-%d");
+				@let time = start_time.format("%H:%M");
+				input type = "date" id = "date" name = "date" value = (date) required {}
+				input type = "time" id = "time" name = "time" value = (time) required {}
+			} @else {
+				input type = "date" id = "date" name = "date" required {}
+				input type = "time" id = "time" name = "time" required {}
+			}
+			button type = "submit" { "Update" }
+			(button_link("Reset", "/start-time/reset"))
+		}
 	};
 	html_builder()
 		.theme(&theme)
@@ -1199,7 +1213,7 @@ fn textarea_required(id: &str, name: &str, min: u32, max: u32) -> PreEscaped<Str
 
 fn button_link(text: &str, endpoint: &str) -> PreEscaped<String> {
 	html! (
-		button onclick = (format!("window.location.href='{endpoint}';")) { (text) }
+		button type = "button" onclick = (format!("window.location.href='{endpoint}';")) { (text) }
 	)
 }
 

@@ -7,7 +7,7 @@ use crate::utility::redirect;
 use crate::{FimficCfg, HttpClient};
 use actix_web::web::{Path, Query, ThinData};
 use actix_web::{HttpRequest, HttpResponse, Responder, get, post};
-use chrono::Utc;
+use chrono::{NaiveDate, NaiveDateTime, NaiveTime, Utc};
 use lightningcss::stylesheet::{MinifyOptions, ParserOptions, PrinterOptions, StyleSheet};
 use pony::smart_map::SmartMap;
 use pony::time::format_milliseconds;
@@ -710,5 +710,41 @@ pub async fn set_reset(
 		}
 	} else {
 		Ok(HttpResponse::BadRequest().finish())
+	}
+}
+
+#[post("/start-time")]
+pub async fn set_start_time(
+	body: String, mut db: ThinData<Db>, _: AdminSessionInfo,
+) -> actix_web::Result<impl Responder> {
+	let data = serde_urlencoded::from_str::<HashMap<String, String>>(&body)?;
+	if let Some(date) = data.get("date")
+		&& let Some(time) = data.get("time")
+		&& let Ok(date) = NaiveDate::parse_from_str(date, "%Y-%m-%d")
+		&& let Ok(time) = NaiveTime::parse_from_str(time, "%H:%M")
+	{
+		let date_time = NaiveDateTime::new(date, time).and_utc();
+		if db.update_start_time(Some(date_time)).await.is_ok() {
+			Ok(HttpResponse::SeeOther()
+				.append_header(("Location", "/dashboard"))
+				.finish())
+		} else {
+			Ok(HttpResponse::InternalServerError().finish())
+		}
+	} else {
+		Ok(HttpResponse::BadRequest().finish())
+	}
+}
+
+#[get("/start-time/reset")]
+pub async fn set_start_time_reset(
+	mut db: ThinData<Db>, _: AdminSessionInfo,
+) -> actix_web::Result<impl Responder> {
+	if db.update_start_time(None).await.is_ok() {
+		Ok(HttpResponse::SeeOther()
+			.append_header(("Location", "/dashboard"))
+			.finish())
+	} else {
+		Ok(HttpResponse::InternalServerError().finish())
 	}
 }

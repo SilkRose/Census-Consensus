@@ -133,6 +133,8 @@ async fn main() -> Result<()> {
 			.service(set_population)
 			.service(set_story_id)
 			.service(set_reset)
+			.service(set_start_time)
+			.service(set_start_time_reset)
 			.service(get_questions)
 			.service(auth::dev_session)
 			.service(Files::new("/assets", "./assets"))
