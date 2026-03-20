@@ -52,3 +52,32 @@ function submitLogo(logo) {
 	}
 	fetch(`/logo/${logo}`, { method: 'POST' });
 }
+
+function countDown(seconds, message) {
+	let span = document.getElementById("countdown");
+	let int = setInterval(function () {
+		let days = Math.round(seconds / 86_400);
+		let hours = Math.round((seconds % 86_400) / 3_600);
+		let minutes = Math.round((seconds % 3_600) / 60);
+		let seconds_ = seconds % 60;
+		let countdown = "";
+		if (days > 0) {
+			countdown += `${days} days, `
+		}
+		if (hours > 0) {
+			countdown += `${hours} hours, `
+		}
+		if (minutes > 0) {
+			countdown += `${minutes} minutes, `
+		}
+		if (seconds_ > 0) {
+			countdown += `${seconds_} seconds`
+		}
+		span.innerHTML = countdown;
+		seconds--;
+		if (seconds < 0) {
+			clearInterval(int);
+			span.innerHTML = message;
+		}
+	}, 1000)
+}
