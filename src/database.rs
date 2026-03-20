@@ -846,7 +846,7 @@ pub trait DbExecutor {
 		.rows_affected())
 	}
 
-	async fn update_chapter_minutes_left(&mut self, id: i32, minutes: i32) -> Result<u64> {
+	async fn update_chapter_minutes_left(&mut self, id: i32, minutes: Option<i32>) -> Result<u64> {
 		Ok(sqlx::query!(
 			"UPDATE Chapters
 			SET
@@ -862,7 +862,7 @@ pub trait DbExecutor {
 		.rows_affected())
 	}
 
-	async fn update_chapter_fimfic_id(&mut self, id: i32, fimfic_id: i32) -> Result<u64> {
+	async fn update_chapter_fimfic_id(&mut self, id: i32, fimfic_id: Option<i32>) -> Result<u64> {
 		Ok(sqlx::query!(
 			"UPDATE Chapters
 			SET
@@ -1718,6 +1718,16 @@ pub trait DbExecutor {
 	async fn update_population(&mut self, population: i32) -> Result<u64> {
 		Ok(
 			sqlx::query!("UPDATE Settings SET population = $1;", population)
+				.execute(self.executor())
+				.await
+				.map_err(update_err)?
+				.rows_affected(),
+		)
+	}
+
+	async fn update_start_time(&mut self, start_time: Option<DateTime<Utc>>) -> Result<u64> {
+		Ok(
+			sqlx::query!("UPDATE Settings SET start_time = $1;", start_time)
 				.execute(self.executor())
 				.await
 				.map_err(update_err)?

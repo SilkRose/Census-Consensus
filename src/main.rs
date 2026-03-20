@@ -132,6 +132,7 @@ async fn main() -> Result<()> {
 			.service(set_vote_duration)
 			.service(set_population)
 			.service(set_story_id)
+			.service(set_reset)
 			.service(get_questions)
 			.service(auth::dev_session)
 			.service(Files::new("/assets", "./assets"))

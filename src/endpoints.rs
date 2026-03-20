@@ -316,7 +316,7 @@ pub async fn set_chapter_minutes_left_move(
 		&& minutes_left + movement > 0
 	{
 		let new_left = minutes_left + movement;
-		db.update_chapter_minutes_left(id, new_left).await?;
+		db.update_chapter_minutes_left(id, Some(new_left)).await?;
 		Ok(HttpResponse::SeeOther()
 			.append_header(("Location", "/chapters"))
 			.finish())
@@ -682,6 +682,32 @@ pub async fn set_vote_duration(
 		Ok(HttpResponse::SeeOther()
 			.append_header(("Location", "/dashboard"))
 			.finish())
+	} else {
+		Ok(HttpResponse::BadRequest().finish())
+	}
+}
+
+#[post("/reset")]
+pub async fn set_reset(
+	body: String, mut db: ThinData<Db>, _: AdminSessionInfo,
+) -> actix_web::Result<impl Responder> {
+	let data = serde_urlencoded::from_str::<HashMap<String, String>>(&body)?;
+	if data.contains_key("reset-1") && data.contains_key("reset-2") {
+		if db.update_start_time(None).await.is_ok()
+			&& db.delete_all_votes().await.is_ok()
+			&& let Ok(chapters) = db.get_all_chapters().await
+		{
+			for chapter in chapters {
+				db.update_chapter_minutes_left(chapter.id, None).await?;
+				// Todo: Unpublish or delete fimfic chapters using id from chapter.
+				db.update_chapter_fimfic_id(chapter.id, None).await?;
+			}
+			Ok(HttpResponse::SeeOther()
+				.append_header(("Location", "/dashboard"))
+				.finish())
+		} else {
+			Ok(HttpResponse::InternalServerError().finish())
+		}
 	} else {
 		Ok(HttpResponse::BadRequest().finish())
 	}

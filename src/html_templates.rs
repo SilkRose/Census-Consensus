@@ -884,6 +884,20 @@ pub fn dashboard_html(user: User, theme: Theme, settings: Settings) -> String {
 			(input_text_numeric_required("vote-duration", "vote-duration", 1, 8))
 			button type = "submit" { "Update" }
 		}
+		form method = "post" action = "/reset" class = "row" {
+			label { "Reset Event: " }
+			span class = "column" {
+				span class = "row" {
+					input type = "checkbox" id = "reset-1" name = "reset-1" value = "true" {}
+					label for = "reset-1" { "Are you sure?" }
+				}
+				span class = "row" {
+					input type = "checkbox" id = "reset-2" name = "reset-2" value = "true" {}
+					label for = "reset-2" { "Are you super-duper sure?" }
+				}
+			}
+			button type = "submit" { "Reset" }
+		}
 	};
 	html_builder()
 		.theme(&theme)
