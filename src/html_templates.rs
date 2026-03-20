@@ -899,7 +899,7 @@ pub fn dashboard_html(user: User, theme: Theme, settings: Settings) -> String {
 			button type = "submit" { "Reset" }
 		}
 		form method = "post" action = "/start-time" class = "row" {
-			label { "Event Date/Time: " }
+			label { "Event Date/Time (UTC): " }
 			@if let Some(start_time) = settings.start_time {
 				@let date = start_time.format("%Y-%m-%d");
 				@let time = start_time.format("%H:%M");
@@ -911,6 +911,14 @@ pub fn dashboard_html(user: User, theme: Theme, settings: Settings) -> String {
 			}
 			button type = "submit" { "Update" }
 			(button_link("Reset", "/start-time/reset"))
+		}
+		@if let Some(start_time) = settings.start_time {
+			h2 { "Event Start Countdown" }
+			span id = "countdown" { "Countdown loading…" }
+			script defer {
+				(format!("countDown('{}', 'Event is now live!')",
+				(start_time - Utc::now()).num_seconds().max(0)))
+			}
 		}
 	};
 	html_builder()
