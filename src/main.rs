@@ -1,7 +1,10 @@
 #![feature(impl_trait_in_assoc_type)]
 
+use chrono::Utc;
+use std::time::Duration;
+
 use crate::endpoints::*;
-use crate::structs::UserType;
+use crate::structs::{Chapter, UserType};
 
 pub use self::database::*;
 pub use self::error::Result;
@@ -34,6 +37,7 @@ async fn main() -> Result<()> {
 
 	let db = Db::new(&env_vars::database_url()).await?;
 	let mut db = Data(db);
+	let mut db_clone = db.clone();
 
 	let admin_id = env_vars::admin_id().parse::<i32>()?;
 	let bearer_token = env_vars::bearer_token();
@@ -143,6 +147,41 @@ async fn main() -> Result<()> {
 			.app_data(http_client.clone())
 			.app_data(dev_session.clone())
 			.wrap(Compress::default())
+	});
+
+	tokio::task::spawn_local(async move {
+		loop {
+			if let Ok(settings) = db_clone.get_settings().await
+				&& let Some(start_time) = settings.start_time
+				&& start_time <= Utc::now()
+				&& let Ok(chapters) = db_clone.get_all_chapters().await
+			{
+				let mut active_chapter: Option<Chapter> = None;
+				for chapter in chapters {
+					if chapter.chapter_order.is_some() && chapter.fimfic_ch_id.is_none() {
+						active_chapter = Some(chapter);
+						break;
+					}
+				}
+				if let Some(chapter) = active_chapter {
+					let minutes_left = chapter
+						.minutes_left
+						.map_or(chapter.vote_duration, |m| m - 1);
+					if let Err(e) = db_clone
+						.update_chapter_minutes_left(chapter.id, Some(minutes_left))
+						.await
+					{
+						eprintln!("Error occurred during event loop: {e}");
+					};
+					if minutes_left <= 0 {
+						// publish chapter
+					}
+					// update story
+				}
+			};
+			// Todo: Make this so it ticks on the minute exactly.
+			tokio::time::sleep(Duration::from_mins(1)).await;
+		}
 	});
 
 	//                      mane
