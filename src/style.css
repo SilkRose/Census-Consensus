@@ -534,6 +534,10 @@
 		outline: none;
 	}
 
+	input[type="checkbox"] {
+		scale: 120%;
+	}
+
 	textarea {
 		box-sizing: content-box;
 		min-height: 6lh;
