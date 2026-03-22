@@ -1,6 +1,8 @@
 #![feature(impl_trait_in_assoc_type)]
 
 use chrono::Utc;
+use serde_json::{Value, json};
+use std::collections::HashMap;
 use std::time::Duration;
 
 use crate::endpoints::*;
@@ -188,4 +190,59 @@ async fn main() -> Result<()> {
 	server.bind(("0.0.0.0", 6263))?.run().await?;
 
 	Ok(())
+}
+
+fn chapter_json(title: &str, content: &str, authors_note: Option<&str>) -> Value {
+	// Construct the json for chapters.
+	json!({
+		 "data": {
+			  "type": "chapter",
+			  "attributes": {
+					"title": title,
+					"content": content,
+					"authors_note": authors_note.unwrap_or_default(),
+					"published": true
+			  }
+		 }
+	})
+}
+
+fn story_json(id: u32, title: &str, short_description: &str, description: &str) -> Value {
+	// Construct the json for story updates.
+	json!({
+		"data": {
+			"id": id,
+			"attributes": {
+				"title": title,
+				"description": description,
+				"short_description": short_description
+			}
+		}
+	})
+}
+
+fn story_json_optional(
+	id: u32, title: &Option<String>, short_description: &Option<String>,
+	description: &Option<String>, completion_status: &Option<String>,
+) -> String {
+	let mut attributes = HashMap::new();
+	if let Some(name) = title {
+		attributes.insert("title", name);
+	}
+	if let Some(short_desc) = short_description {
+		attributes.insert("short_description", short_desc);
+	}
+	if let Some(desc) = description {
+		attributes.insert("description", desc);
+	}
+	if let Some(status) = completion_status {
+		attributes.insert("completion_status", status);
+	}
+	let json = json!({
+		"data": {
+			"id": id,
+			"attributes": serde_json::to_value(attributes).unwrap()
+		}
+	});
+	serde_json::to_string(&json).unwrap()
 }
