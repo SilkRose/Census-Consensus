@@ -159,18 +159,29 @@ async fn main() -> Result<()> {
 		let fimfic = fimfic_clone.clone();
 		let mut db = db_clone.clone();
 		loop {
-			if let Ok(settings) = db.get_settings().await
-				&& let Some(start_time) = settings.start_time
-				&& start_time <= Utc::now()
-				&& let Ok(chapters) = db.get_all_chapters().await
-			{
-				let mut active_chapter: Option<Chapter> = None;
-				for chapter in chapters {
-					if chapter.chapter_order.is_some() && chapter.fimfic_ch_id.is_none() {
-						active_chapter = Some(chapter);
-						break;
-					}
+			let time = Utc::now();
+			let diff = 60_000 - (time.timestamp_millis() % 60_000) as u64;
+			tokio::time::sleep(Duration::from_millis(diff)).await;
+			let settings = match db.get_settings().await {
+				Ok(settings) => settings,
+				Err(e) => {
+					eprintln!("Error occurred during event loop: {e}");
+					continue;
 				}
+			};
+			if let Some(start_time) = settings.start_time
+				&& start_time <= Utc::now()
+			{
+				let chapters = match db.get_all_chapters().await {
+					Ok(chapters) => chapters,
+					Err(e) => {
+						eprintln!("Error occurred during event loop: {e}");
+						continue;
+					}
+				};
+				let active_chapter = chapters
+					.iter()
+					.find(|c| c.chapter_order.is_some() && c.fimfic_ch_id.is_none());
 				if let Some(chapter) = active_chapter {
 					let minutes_left = chapter
 						.minutes_left
@@ -180,25 +191,24 @@ async fn main() -> Result<()> {
 						.await
 					{
 						eprintln!("Error occurred during event loop: {e}");
+						continue;
 					};
 					if minutes_left <= 0 {
 						// publish chapter
 					}
 					// update story
-				} else {
-					let endpoint = format!(
-						"https://www.fimfiction.net/api/v2/stories/{}",
-						settings.story_id
-					);
-					if let Ok(story) = get_story_update(&http_client, &fimfic, endpoint).await
-						&& let Err(e) = db.insert_story_update(story.data).await
-					{
-						eprintln!("Error occurred during event loop: {e}");
-					};
 				}
-			};
-			// Todo: Make this so it ticks on the minute exactly.
-			tokio::time::sleep(Duration::from_mins(1)).await;
+			} else {
+				let endpoint = format!(
+					"https://www.fimfiction.net/api/v2/stories/{}",
+					settings.story_id
+				);
+				if let Ok(story) = get_story_update(&http_client, &fimfic, endpoint).await
+					&& let Err(e) = db.insert_story_update(story.data).await
+				{
+					eprintln!("Error occurred during event loop: {e}");
+				};
+			}
 		}
 	});
 
