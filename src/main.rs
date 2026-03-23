@@ -7,7 +7,7 @@ use std::collections::HashMap;
 use std::time::Duration;
 
 use crate::endpoints::*;
-use crate::structs::{Chapter, UserType};
+use crate::structs::UserType;
 
 pub use self::database::*;
 pub use self::error::Result;
@@ -157,59 +157,8 @@ async fn main() -> Result<()> {
 	tokio::task::spawn_local(async move {
 		let http_client = http_clone.clone();
 		let fimfic = fimfic_clone.clone();
-		let mut db = db_clone.clone();
-		loop {
-			let time = Utc::now();
-			let diff = 60_000 - (time.timestamp_millis() % 60_000) as u64;
-			tokio::time::sleep(Duration::from_millis(diff)).await;
-			let settings = match db.get_settings().await {
-				Ok(settings) => settings,
-				Err(e) => {
-					eprintln!("Error occurred during event loop: {e}");
-					continue;
-				}
-			};
-			if let Some(start_time) = settings.start_time
-				&& start_time <= Utc::now()
-			{
-				let chapters = match db.get_all_chapters().await {
-					Ok(chapters) => chapters,
-					Err(e) => {
-						eprintln!("Error occurred during event loop: {e}");
-						continue;
-					}
-				};
-				let active_chapter = chapters
-					.iter()
-					.find(|c| c.chapter_order.is_some() && c.fimfic_ch_id.is_none());
-				if let Some(chapter) = active_chapter {
-					let minutes_left = chapter
-						.minutes_left
-						.map_or(chapter.vote_duration, |m| m - 1);
-					if let Err(e) = db
-						.update_chapter_minutes_left(chapter.id, Some(minutes_left))
-						.await
-					{
-						eprintln!("Error occurred during event loop: {e}");
-						continue;
-					};
-					if minutes_left <= 0 {
-						// publish chapter
-					}
-					// update story
-				}
-			} else {
-				let endpoint = format!(
-					"https://www.fimfiction.net/api/v2/stories/{}",
-					settings.story_id
-				);
-				if let Ok(story) = get_story_update(&http_client, &fimfic, endpoint).await
-					&& let Err(e) = db.insert_story_update(story.data).await
-				{
-					eprintln!("Error occurred during event loop: {e}");
-				};
-			}
-		}
+		let db = db_clone.clone();
+		event_control(db, http_client, fimfic).await;
 	});
 
 	//                      mane
@@ -218,11 +167,58 @@ async fn main() -> Result<()> {
 	Ok(())
 }
 
+async fn event_control(
+	mut db: Data<Db>, http_client: Data<HttpClient>, fimfic_cfg: Data<FimficCfg>,
+) {
+	loop {
+		let time = Utc::now();
+		let diff = 60_000 - (time.timestamp_millis() % 60_000) as u64;
+		tokio::time::sleep(Duration::from_millis(diff)).await;
+		let event = async {
+			let settings = db.get_settings().await?;
+			if let Some(start_time) = settings.start_time
+				&& start_time <= Utc::now()
+			{
+				let chapters = db.get_all_chapters().await?;
+				let active_chapter = chapters
+					.iter()
+					.find(|c| c.chapter_order.is_some() && c.fimfic_ch_id.is_none());
+				if let Some(chapter) = active_chapter {
+					let minutes_left = chapter
+						.minutes_left
+						.map_or(chapter.vote_duration, |m| m - 1);
+					db.update_chapter_minutes_left(chapter.id, Some(minutes_left))
+						.await?;
+					if minutes_left <= 0 {
+						let question_count = db.get_question_count_by_chapter(chapter.id).await?;
+						if question_count > 0 {
+							// normal chapter
+						} else {
+							// final chapter
+						}
+					}
+					// update story
+				} else {
+					let story =
+						get_story_update(&http_client, &fimfic_cfg, settings.story_id).await?;
+					db.insert_story_update(story.data).await?;
+				}
+			}
+			Ok::<_, Box<dyn std::error::Error>>(())
+		}
+		.await;
+		if let Err(e) = event {
+			eprintln!("Error occurred during event loop: {e}");
+		}
+	}
+}
+
 async fn get_story_update(
-	client: &Data<HttpClient>, fimfic_cfg: &Data<FimficCfg>, endpoint: String,
+	client: &Data<HttpClient>, fimfic_cfg: &Data<FimficCfg>, id: i32,
 ) -> Result<StoryApi<i32>> {
+	let url = format!("https://www.fimfiction.net/api/v2/stories/{id}",);
 	Ok(client
-		.get(endpoint, Some(&fimfic_cfg.bearer_token))
+		.get(url, Some(&fimfic_cfg.bearer_token))
 		.send()
 		.await?
 		.json::<StoryApi<i32>>()
