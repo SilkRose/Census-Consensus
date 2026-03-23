@@ -158,7 +158,7 @@ async fn main() -> Result<()> {
 		let http_client = http_clone.clone();
 		let fimfic = fimfic_clone.clone();
 		let db = db_clone.clone();
-		event_control(db, http_client, fimfic).await;
+		event_control_loop(db, http_client, fimfic).await;
 	});
 
 	//                      mane
@@ -167,7 +167,7 @@ async fn main() -> Result<()> {
 	Ok(())
 }
 
-async fn event_control(
+async fn event_control_loop(
 	mut db: Data<Db>, http_client: Data<HttpClient>, fimfic_cfg: Data<FimficCfg>,
 ) {
 	loop {
@@ -176,33 +176,30 @@ async fn event_control(
 		tokio::time::sleep(Duration::from_millis(diff)).await;
 		let event = async {
 			let settings = db.get_settings().await?;
-			if let Some(start_time) = settings.start_time
-				&& start_time <= Utc::now()
-			{
-				let chapters = db.get_all_chapters().await?;
-				let active_chapter = chapters
-					.iter()
-					.find(|c| c.chapter_order.is_some() && c.fimfic_ch_id.is_none());
-				if let Some(chapter) = active_chapter {
-					let minutes_left = chapter
-						.minutes_left
-						.map_or(chapter.vote_duration, |m| m - 1);
-					db.update_chapter_minutes_left(chapter.id, Some(minutes_left))
-						.await?;
-					if minutes_left <= 0 {
-						let question_count = db.get_question_count_by_chapter(chapter.id).await?;
-						if question_count > 0 {
-							// normal chapter
-						} else {
-							// final chapter
-						}
+			if settings.start_time.is_none_or(|time| time > Utc::now()) {
+				let story = get_story_update(&http_client, &fimfic_cfg, settings.story_id).await?;
+				db.insert_story_update(story.data).await?;
+				return Ok(());
+			}
+			let chapters = db.get_all_chapters().await?;
+			let active_chapter = chapters
+				.iter()
+				.find(|c| c.chapter_order.is_some() && c.fimfic_ch_id.is_none());
+			if let Some(chapter) = active_chapter {
+				let minutes_left = chapter
+					.minutes_left
+					.map_or(chapter.vote_duration, |m| m - 1);
+				db.update_chapter_minutes_left(chapter.id, Some(minutes_left))
+					.await?;
+				if minutes_left <= 0 {
+					let question_count = db.get_question_count_by_chapter(chapter.id).await?;
+					if question_count > 0 {
+						// normal chapter
+					} else {
+						// final chapter
 					}
-					// update story
-				} else {
-					let story =
-						get_story_update(&http_client, &fimfic_cfg, settings.story_id).await?;
-					db.insert_story_update(story.data).await?;
 				}
+				// update story
 			}
 			Ok::<_, Box<dyn std::error::Error>>(())
 		}
