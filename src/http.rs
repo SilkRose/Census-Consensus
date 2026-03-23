@@ -105,7 +105,7 @@ fn common_setup(mut builder: RequestBuilder, token: Option<&str>) -> RequestBuil
 macro_rules! http_methods {
 	($($method:ident)*) => {
 		$(
-			fn $method(&self, url: impl IntoUrl, token: Option<&str>) -> RequestBuilder {
+			pub fn $method(&self, url: impl IntoUrl, token: Option<&str>) -> RequestBuilder {
 				common_setup(self.inner.$method(url), token)
 			}
 		)*

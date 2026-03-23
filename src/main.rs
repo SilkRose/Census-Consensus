@@ -1,6 +1,7 @@
 #![feature(impl_trait_in_assoc_type)]
 
 use chrono::Utc;
+use pony::fimfiction_api::story::StoryApi;
 use serde_json::{Value, json};
 use std::collections::HashMap;
 use std::time::Duration;
@@ -39,7 +40,7 @@ async fn main() -> Result<()> {
 
 	let db = Db::new(&env_vars::database_url()).await?;
 	let mut db = Data(db);
-	let mut db_clone = db.clone();
+	let db_clone = db.clone();
 
 	let admin_id = env_vars::admin_id().parse::<i32>()?;
 	let bearer_token = env_vars::bearer_token();
@@ -55,9 +56,11 @@ async fn main() -> Result<()> {
 		.bearer_token(bearer_token.clone())
 		.build();
 	let fimfic = Data(fimfic_cfg);
+	let fimfic_clone = fimfic.clone();
 
 	let http_client = HttpClient::new()?;
 	let http_client = Data(http_client);
+	let http_clone = http_client.clone();
 
 	let admin = match db.get_user_opt(admin_id).await? {
 		Some(admin) => {
@@ -152,11 +155,14 @@ async fn main() -> Result<()> {
 	});
 
 	tokio::task::spawn_local(async move {
+		let http_client = http_clone.clone();
+		let fimfic = fimfic_clone.clone();
+		let mut db = db_clone.clone();
 		loop {
-			if let Ok(settings) = db_clone.get_settings().await
+			if let Ok(settings) = db.get_settings().await
 				&& let Some(start_time) = settings.start_time
 				&& start_time <= Utc::now()
-				&& let Ok(chapters) = db_clone.get_all_chapters().await
+				&& let Ok(chapters) = db.get_all_chapters().await
 			{
 				let mut active_chapter: Option<Chapter> = None;
 				for chapter in chapters {
@@ -169,7 +175,7 @@ async fn main() -> Result<()> {
 					let minutes_left = chapter
 						.minutes_left
 						.map_or(chapter.vote_duration, |m| m - 1);
-					if let Err(e) = db_clone
+					if let Err(e) = db
 						.update_chapter_minutes_left(chapter.id, Some(minutes_left))
 						.await
 					{
@@ -179,6 +185,16 @@ async fn main() -> Result<()> {
 						// publish chapter
 					}
 					// update story
+				} else {
+					let endpoint = format!(
+						"https://www.fimfiction.net/api/v2/stories/{}",
+						settings.story_id
+					);
+					if let Ok(story) = get_story_update(&http_client, &fimfic, endpoint).await
+						&& let Err(e) = db.insert_story_update(story.data).await
+					{
+						eprintln!("Error occurred during event loop: {e}");
+					};
 				}
 			};
 			// Todo: Make this so it ticks on the minute exactly.
@@ -190,6 +206,17 @@ async fn main() -> Result<()> {
 	server.bind(("0.0.0.0", 6263))?.run().await?;
 
 	Ok(())
+}
+
+async fn get_story_update(
+	client: &Data<HttpClient>, fimfic_cfg: &Data<FimficCfg>, endpoint: String,
+) -> Result<StoryApi<i32>> {
+	Ok(client
+		.get(endpoint, Some(&fimfic_cfg.bearer_token))
+		.send()
+		.await?
+		.json::<StoryApi<i32>>()
+		.await?)
 }
 
 fn chapter_json(title: &str, content: &str, authors_note: Option<&str>) -> Value {
