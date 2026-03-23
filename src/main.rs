@@ -186,30 +186,31 @@ async fn event_control_tick(
 ) -> Result<()> {
 	let settings = db.get_settings().await?;
 	if settings.start_time.is_none_or(|time| time > Utc::now()) {
-		let story = get_story_update(http_client, fimfic_cfg, settings.story_id).await?;
-		db.insert_story_update(story.data).await?;
 		return Ok(());
 	}
 	let chapters = db.get_all_chapters().await?;
-	let active_chapter = chapters
+	let Some(chapter) = chapters
 		.iter()
-		.find(|c| c.chapter_order.is_some() && c.fimfic_ch_id.is_none());
-	if let Some(chapter) = active_chapter {
-		let minutes_left = chapter
-			.minutes_left
-			.map_or(chapter.vote_duration, |m| m - 1);
-		db.update_chapter_minutes_left(chapter.id, Some(minutes_left))
-			.await?;
-		if minutes_left <= 0 {
-			let question_count = db.get_question_count_by_chapter(chapter.id).await?;
-			if question_count > 0 {
-				// normal chapter
-			} else {
-				// final chapter
-			}
+		.find(|c| c.chapter_order.is_some() && c.fimfic_ch_id.is_none())
+	else {
+		let story = get_story_update(http_client, fimfic_cfg, settings.story_id).await?;
+		db.insert_story_update(story.data).await?;
+		return Ok(());
+	};
+	let minutes_left = chapter
+		.minutes_left
+		.map_or(chapter.vote_duration, |m| m - 1);
+	db.update_chapter_minutes_left(chapter.id, Some(minutes_left))
+		.await?;
+	if minutes_left <= 0 {
+		let question_count = db.get_question_count_by_chapter(chapter.id).await?;
+		if question_count > 0 {
+			// normal chapter
+		} else {
+			// final chapter
 		}
-		// update story
 	}
+	// update story
 	Ok(())
 }
 
