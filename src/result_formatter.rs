@@ -72,15 +72,27 @@ pub fn format(input: &QuestionDataOption) -> (String, Vec<String>) {
 					}
 
 					Rule::cond_option => {
-						let Some(vote) = get_count_from_str(first.as_str(), &votes, &mut errors) else {
+						let first_str = first.as_str();
+						let Some(vote) = get_count_from_str(first_str, &votes, &mut errors) else {
+							errors.push(format!("{} is not a valid option", first_str));
 							state = ParseState::None;
 							continue;
 						};
-						let vote = vote.percent;
+						let vote_percent = vote.percent;
 
 						let comparison = match pairs.next().map(|p| p.as_rule()) {
 							Some(Rule::cond_comparison_gt) => { f64::gt }
-							None => { continue }
+							None => {
+								// we got a vote out, which means that thare are votes at all,
+								// so indexing 0 won't panic
+								state = if &*votes_sorted[0].id == &*vote.id {
+									ParseState::Matching
+								} else {
+									ParseState::None
+								};
+
+								continue;
+							}
 							Some(_) => { unreachable!() }
 						};
 
@@ -116,7 +128,7 @@ pub fn format(input: &QuestionDataOption) -> (String, Vec<String>) {
 							_ => { unreachable!() }
 						};
 
-						state = if comparison(&vote, &other_percent) {
+						state = if comparison(&vote_percent, &other_percent) {
 							ParseState::Matching
 						} else {
 							ParseState::None
