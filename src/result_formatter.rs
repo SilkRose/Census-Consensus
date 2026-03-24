@@ -249,7 +249,11 @@ pub fn format(input: &QuestionDataOption) -> (String, Vec<String>) {
 		}
 	}
 
-	(middle, errors)
+	let mut all = start.unwrap_or_default();
+	all.push_str(&middle);
+	end.inspect(|end| all.push_str(end));
+
+	(all, errors)
 }
 
 enum ParseState {
