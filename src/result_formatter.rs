@@ -1,47 +1,15 @@
-#![allow(unused, reason = "todo remove me")]
-
+use crate::structs::{ OptionData, QuestionDataOption };
 use pest::Parser;
 
-pub struct Vote<'h> {
-	count: u64,
-	text: &'h str
-}
-
-#[derive(Clone)]
-struct VoteWithPercentage<'h> {
-	count: u64,
-	text: &'h str,
-	percentage: f64
-}
-
-enum SpecifiedOption {
-	OptionLetter(char),
-	OptionNumber(usize),
-	Ordinal(usize)
-}
-
-pub fn format(
-	input: &str,
-	votes: &[Vote]
-) -> (String, Vec<String>) {
+#[expect(
+	clippy::single_char_add_str,
+	reason = "doesn't matter, and it's theoretically more efficient anyways (microoptimisation yippee)"
+)]
+pub fn format(input: &QuestionDataOption) -> (String, Vec<String>) {
 	use result_parser::*;
 
-	enum ParseState {
-		None,
-		Start,
-		End,
-		Matching
-	}
-
-	let total_count = votes.iter().map(|v| v.count).sum::<u64>();
-	let total_count_f64 = total_count as f64;
-	let votes = votes
-		.iter()
-		.map(|v| VoteWithPercentage {
-			count: v.count,
-			text: v.text,
-			percentage: (v.count as f64 / total_count_f64) * 100.0
-		}).collect::<Vec<_>>();
+	let input_str = input.data.result_writing.as_deref().unwrap_or_default();
+	let votes = input.options.iter().collect::<Vec<_>>();
 	let votes_sorted = {
 		let mut votes_sorted = votes.clone();
 		votes_sorted.sort_by_key(|v| v.count);
@@ -49,7 +17,6 @@ pub fn format(
 	};
 
 	let mut state = ParseState::None;
-	let mut matched = false;
 	let mut start = None;
 	let mut end = None;
 	let mut middle = String::new();
@@ -66,12 +33,12 @@ pub fn format(
 		}
 	}
 
-	let lines = match ResultParser::parse(Rule::result_parse, input) {
+	let lines = match ResultParser::parse(Rule::result_parse, input_str) {
 		Ok(lines) => { lines }
 		Err(err) => {
 			// can't parse I guess
 			errors.push(err.to_string());
-			return (input.into(), errors);
+			return (input_str.into(), errors);
 		}
 	};
 
@@ -89,8 +56,8 @@ pub fn format(
 							continue;
 						}
 
-						state = ParseState::Start;
 						start = Some(String::new());
+						state = ParseState::Start;
 					}
 
 					Rule::cond_end => {
@@ -100,8 +67,8 @@ pub fn format(
 							continue;
 						}
 
-						state = ParseState::End;
 						end = Some(String::new());
+						state = ParseState::End;
 					}
 
 					Rule::cond_option => {
@@ -109,7 +76,7 @@ pub fn format(
 							state = ParseState::None;
 							continue;
 						};
-						let vote = vote.percentage;
+						let vote = vote.percent;
 
 						let comparison = match pairs.next().unwrap().as_rule() {
 							Rule::cond_comparison_gt => { f64::gt }
@@ -123,7 +90,7 @@ pub fn format(
 									state = ParseState::None;
 									continue;
 								};
-								other_vote.percentage
+								other_vote.percent
 							}
 
 							Rule::cond_percentage => {
@@ -165,13 +132,16 @@ pub fn format(
 				while let Some(segment) = pairs.next() {
 					let mut option = match segment.as_rule() {
 						Rule::text_normal_text => {
-							current_match_mut!().push_str(segment.as_str());
+							let current = current_match_mut!();
+							current.push_str("\n");
+							current.push_str(segment.as_str());
 							continue;
-
 						}
 
 						Rule::text_option_question => {
-							current_match_mut!().push_str("todo get the question text as input then put it here");
+							let current = current_match_mut!();
+							current.push_str("\n");
+							current.push_str(&input.data.question_text);
 							continue;
 						}
 
@@ -207,7 +177,9 @@ pub fn format(
 
 					let next = pairs.next().unwrap();
 					if matches!(next.as_rule(), Rule::text_vote_count) {
-						current_match_mut!().push_str(&format!("{total_count}"));
+						let current = current_match_mut!();
+						current.push_str("\n");
+						current.push_str(&option.count.to_string());
 						continue;
 					}
 
@@ -218,18 +190,15 @@ pub fn format(
 
 					match next.as_rule() {
 						Rule::text_vote_percent => {
-							// current_match_mut!().push_str(&format!("{:.precision$}"));
-							// todo vote percent??? where do I get this data
+							let current = current_match_mut!();
+							current.push_str("\n");
+							current.push_str(&format!("{vp:.precision$}", vp = option.percent));
 						}
 
 						Rule::text_vote_count_formatted => {
-							current_match_mut!()
-								.push_str(&format_count_words(total_count, precision));
-						}
-
-						Rule::text_vote_count => {
-							current_match_mut!()
-								.push_str(&option.count.to_string());
+							let current = current_match_mut!();
+							current.push_str("\n");
+							current.push_str(&format_count_words(option.count, precision));
 						}
 
 						_ => { unreachable!() }
@@ -237,7 +206,7 @@ pub fn format(
 				}
 			}
 
-			Rule::result_next_comment => { /* ignore :3 */}
+			Rule::result_next_comment => { /* ignore :3 */ }
 			Rule::EOI => { break }
 			_ => { unreachable!() }
 		}
@@ -246,8 +215,21 @@ pub fn format(
 	(middle, errors)
 }
 
+enum ParseState {
+	None,
+	Start,
+	End,
+	Matching
+}
+
+enum SpecifiedOption {
+	OptionLetter(char),
+	OptionNumber(usize),
+	Ordinal(usize)
+}
+
 fn format_count_words(
-	count: u64,
+	count: u32,
 	decimal_places: usize
 ) -> String {
 	let words = [
@@ -271,43 +253,43 @@ fn format_count_words(
 }
 
 fn get_count_from_str<'h>(
-	str: &'_ str,
-	votes: &'h [VoteWithPercentage<'h>],
-	errors: &'_ mut Vec<String>
-) -> Option<&'h VoteWithPercentage<'h>> {
+	str: &str,
+	votes: &[&'h OptionData],
+	errors: &mut Vec<String>
+) -> Option<&'h OptionData> {
 	get_count_from_char(str.chars().next().unwrap(), votes, errors)
 }
 
 fn get_count_from_char<'h>(
 	char: char,
-	votes: &'h [VoteWithPercentage<'h>],
+	votes: &[&'h OptionData],
 	errors: &'_ mut Vec<String>
-) -> Option<&'h VoteWithPercentage<'h>> {
+) -> Option<&'h OptionData> {
 	let index = map_option_to_array_index(char).unwrap();
 	get_count_from_impl(&char.to_string(), index, votes, errors)
 }
 
 fn get_count_from_index<'h>(
 	index: usize,
-	votes: &'h [VoteWithPercentage<'h>],
-	errors: &'_ mut Vec<String>
-) -> Option<&'h VoteWithPercentage<'h>> {
+	votes: &[&'h OptionData],
+	errors: &mut Vec<String>
+) -> Option<&'h OptionData> {
 	get_count_from_impl(&index.to_string(), index, votes, errors)
 }
 
 fn get_count_from_impl<'h>(
 	orig: &'_ str,
 	index: usize,
-	votes: &'h [VoteWithPercentage<'h>],
-	errors: &'_ mut Vec<String>
-) -> Option<&'h VoteWithPercentage<'h>> {
+	votes: &[&'h OptionData],
+	errors: &mut Vec<String>
+) -> Option<&'h OptionData> {
 	let vote = votes.get(index);
 
 	if vote.is_none() {
 		errors.push(format!("{orig} is not a valid option"));
 	}
 
-	vote
+	vote.copied()
 }
 
 fn map_option_to_array_index(option: char) -> Option<usize> {
@@ -320,8 +302,6 @@ fn map_option_to_array_index(option: char) -> Option<usize> {
 }
 
 mod result_parser {
-	use super::*;
-
 	#[derive(pest_derive::Parser)]
 	#[grammar_inline = r##"
 		nl_char = _{ "\r" | "\n" }
@@ -357,7 +337,7 @@ mod result_parser {
 		text_normal_text_char = _{ !"%" ~ !nl_char ~ ANY }
 		text_normal_text = { text_normal_text_char+ }
 
-		text_float_precision = { ASCII_DIGIT }
+		text_float_precision = { ASCII_DIGIT+ }
 		text_float_precision_wrap = _{ "." ~ text_float_precision }
 
 		text_vote_percent = { "vp" }
