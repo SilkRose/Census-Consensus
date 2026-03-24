@@ -4,11 +4,10 @@ use chrono::Utc;
 use pony::markdown::WarningType;
 use pony::markdown::bbcode::parse;
 use serde_json::{Value, json};
-use std::collections::HashMap;
 use std::time::Duration;
 
 use crate::endpoints::*;
-use crate::structs::UserType;
+use crate::structs::{ChapterRevision, UserType};
 use crate::utility::parse_options;
 
 pub use self::database::*;
@@ -215,46 +214,69 @@ async fn event_control_tick(
 		.map_or(chapter.vote_duration, |m| m - 1);
 	db.update_chapter_minutes_left(chapter.id, Some(minutes_left))
 		.await?;
-	let publish = minutes_left <= 0;
-	let final_chapter = db.get_question_count_by_chapter(chapter.id).await? <= 0;
-	let mut story_json_value = Value::Null;
+	let publish = minutes_left == 0;
+	let final_chapter = db.get_question_count_by_chapter(chapter.id).await? == 0;
 	if publish {
 		let data = db.get_latest_chapter_revision(chapter.id).await?;
-		let json = match final_chapter {
-			true => chapter_json(&data.title, &data.outro_text.ok_or("Missing outro!")?, None),
-			false => {
-				let mut texts = Vec::new();
-				if let Some(ref intro) = data.intro_text {
-					texts.push(intro.trim());
-				}
-				let questions = db.get_questions_by_chapter(chapter.id).await?;
-				for question in questions {
-					let data = db.get_latest_question_revision(question.id).await?;
-					let options = data.option_writing.ok_or("Missing options!")?;
-					let option_tuples = parse_options(&options, &data.question_type);
-					let votes = db.get_all_votes_by_question(question.id).await?;
-					// insert parsing results here
-					texts.push("".trim());
-				}
-				if let Some(ref outro) = data.outro_text {
-					texts.push(outro.trim());
-				}
-				chapter_json(&data.title, &texts.join("\n\n"), None)
-			}
-		};
+		let json = construct_chapter_json(db, data, final_chapter).await?;
 		http_client
 			.post_story_chapter(fimfic_cfg, settings.story_id, json)
 			.await?;
 		return Ok(Tick::Skip);
 	}
-	let json = match final_chapter {
-		true => {
-			let title = format!("{minutes_left} Until Consensus");
+	let final_update = final_chapter && minutes_left <= -1;
+	let json = match (final_chapter, final_update) {
+		// normal story updates during live surveys
+		(false, false) => {
+			todo!()
+		}
+		// final chapter countdown updates
+		(true, false) => {
+			let title = format!("{minutes_left} Minutes Until Consensus");
 			story_json(settings.story_id, &title, "", "")
 		}
-		false => todo!(),
+		// final story update
+		(true, true) => story_json_completed(
+			settings.story_id,
+			"Census Consensus",
+			"The Equestrian Census, redefined.",
+			"",
+		),
+		// should be impossible
+		(false, true) => unreachable!(),
 	};
+	http_client
+		.patch_story(fimfic_cfg, settings.story_id, json)
+		.await?;
 	Ok(Tick::Continue)
+}
+
+async fn construct_chapter_json(
+	db: &mut Db, data: ChapterRevision, final_chapter: bool,
+) -> Result<Value> {
+	let json = match final_chapter {
+		true => chapter_json(&data.title, &data.outro_text.ok_or("Missing outro!")?, None),
+		false => {
+			let mut texts = Vec::new();
+			if let Some(ref intro) = data.intro_text {
+				texts.push(intro.trim());
+			}
+			let questions = db.get_questions_by_chapter(data.chapter_id).await?;
+			for question in questions {
+				let data = db.get_latest_question_revision(question.id).await?;
+				let options = data.option_writing.ok_or("Missing options!")?;
+				let option_tuples = parse_options(&options, &data.question_type);
+				let votes = db.get_all_votes_by_question(question.id).await?;
+				// insert parsing results here
+				texts.push("".trim());
+			}
+			if let Some(ref outro) = data.outro_text {
+				texts.push(outro.trim());
+			}
+			chapter_json(&data.title, &texts.join("\n\n"), None)
+		}
+	};
+	Ok(json)
 }
 
 fn chapter_json(title: &str, content: &str, authors_note: Option<&str>) -> Value {
