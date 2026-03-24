@@ -832,7 +832,21 @@ pub trait DbExecutor {
 		.rows_affected())
 	}
 
-	async fn update_chapter_minutes_left(&mut self, id: i32, minutes: i32) -> Result<u64> {
+	async fn update_chapter_vote_durations(&mut self, vote_duration: i32) -> Result<u64> {
+		Ok(sqlx::query!(
+			"UPDATE Chapters
+			SET
+				vote_duration = $1,
+				last_edit = now();",
+			vote_duration
+		)
+		.execute(self.executor())
+		.await
+		.map_err(update_err)?
+		.rows_affected())
+	}
+
+	async fn update_chapter_minutes_left(&mut self, id: i32, minutes: Option<i32>) -> Result<u64> {
 		Ok(sqlx::query!(
 			"UPDATE Chapters
 			SET
@@ -848,7 +862,7 @@ pub trait DbExecutor {
 		.rows_affected())
 	}
 
-	async fn update_chapter_fimfic_id(&mut self, id: i32, fimfic_id: i32) -> Result<u64> {
+	async fn update_chapter_fimfic_id(&mut self, id: i32, fimfic_id: Option<i32>) -> Result<u64> {
 		Ok(sqlx::query!(
 			"UPDATE Chapters
 			SET
@@ -1168,7 +1182,7 @@ pub trait DbExecutor {
             q.id, q.claimed_by, q.chapter_id, q.chapter_order, q.last_edit
         FROM Questions AS q
         LEFT JOIN Chapters AS c ON q.chapter_id = c.id
-        ORDER BY c.chapter_order NULLS LAST, q.chapter_order, q.id;"
+        ORDER BY c.chapter_order NULLS LAST, c.id, q.chapter_order, q.id;"
 		)
 		.fetch_all(self.executor())
 		.await
@@ -1324,7 +1338,7 @@ pub trait DbExecutor {
 	}
 
 	async fn insert_vote(
-		&mut self, user_id: i32, question_id: i32, option_id: i32,
+		&mut self, user_id: i32, question_id: i32, option_id: &str,
 	) -> Result<Vote> {
 		Ok(sqlx::query_as!(
 			Vote,
@@ -1371,7 +1385,7 @@ pub trait DbExecutor {
 		.map_err(select_err)?)
 	}
 
-	async fn get_all_votes_by_option(&mut self, option_id: i32) -> Result<Vec<Vote>> {
+	async fn get_all_votes_by_option(&mut self, option_id: &str) -> Result<Vec<Vote>> {
 		Ok(sqlx::query_as!(
 			Vote,
 			"SELECT
@@ -1424,7 +1438,7 @@ pub trait DbExecutor {
 		)
 	}
 
-	async fn delete_votes_by_question(&mut self, option_id: i32) -> Result<u64> {
+	async fn delete_votes_by_question(&mut self, option_id: &str) -> Result<u64> {
 		Ok(
 			sqlx::query!("DELETE FROM Votes WHERE option_id = $1;", option_id)
 				.execute(self.executor())
@@ -1677,5 +1691,47 @@ pub trait DbExecutor {
 			.await
 			.map_err(delete_err)?
 			.rows_affected())
+	}
+
+	async fn get_settings(&mut self) -> Result<Settings> {
+		Ok(sqlx::query_as!(
+			Settings,
+			"SELECT
+				story_id, population, start_time
+			FROM
+				Settings
+			LIMIT 1;"
+		)
+		.fetch_one(self.executor())
+		.await
+		.map_err(select_err)?)
+	}
+
+	async fn update_story_id(&mut self, story_id: i32) -> Result<u64> {
+		Ok(sqlx::query!("UPDATE Settings SET story_id = $1;", story_id)
+			.execute(self.executor())
+			.await
+			.map_err(update_err)?
+			.rows_affected())
+	}
+
+	async fn update_population(&mut self, population: i32) -> Result<u64> {
+		Ok(
+			sqlx::query!("UPDATE Settings SET population = $1;", population)
+				.execute(self.executor())
+				.await
+				.map_err(update_err)?
+				.rows_affected(),
+		)
+	}
+
+	async fn update_start_time(&mut self, start_time: Option<DateTime<Utc>>) -> Result<u64> {
+		Ok(
+			sqlx::query!("UPDATE Settings SET start_time = $1;", start_time)
+				.execute(self.executor())
+				.await
+				.map_err(update_err)?
+				.rows_affected(),
+		)
 	}
 }

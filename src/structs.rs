@@ -201,7 +201,7 @@ pub struct QuestionChapterId {
 pub struct Vote {
 	pub voter_id: i32,
 	pub question_id: i32,
-	pub option_id: i32,
+	pub option_id: String,
 	pub date_created: DateTime<Utc>,
 }
 
@@ -219,12 +219,6 @@ pub struct StoryUpdate {
 	pub likes: i32,
 	pub dislikes: i32,
 	pub date_cached: DateTime<Utc>,
-}
-
-#[repr(transparent)]
-#[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct Population {
-	pub inner: u32,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -255,6 +249,7 @@ pub enum Pages {
 	Chapters,
 	Questions,
 	Feedback,
+	Dashboard,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, Type, Eq, Hash, PartialEq)]
@@ -285,4 +280,26 @@ pub struct OEmbed {
 	pub author_url: Option<String>,
 	pub cache_age: u32,
 	pub html: String,
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct QuestionDataOption {
+	pub meta: Question,
+	pub total_count: u32,
+	pub data: QuestionRevision,
+	pub options: Vec<OptionData>,
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct OptionData {
+	pub id: String,
+	pub percent: f64,
+	pub count: u32,
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct Settings {
+	pub story_id: i32,
+	pub population: i32,
+	pub start_time: Option<DateTime<Utc>>,
 }

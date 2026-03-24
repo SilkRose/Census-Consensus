@@ -1,9 +1,10 @@
+use std::collections::HashMap;
 use std::fs;
 
 use crate::endpoints::MIN_USER_UPDATE_TIME;
 use crate::structs::*;
 use crate::theme::Theme;
-use crate::utility::count_words;
+use crate::utility::{construct_question_data, count_words, parse_options};
 use bon::builder;
 use chrono::Utc;
 use maud::{DOCTYPE, PreEscaped, html};
@@ -426,7 +427,7 @@ pub fn feedback_html(user: User, theme: Theme, users: Vec<UserData>) -> String {
 
 pub fn questions_html(
 	user: User, theme: Theme, questions: Vec<QuestionTable>,
-	chapters: SmartMap<i32, (Chapter, ChapterRevision)>, population: u32,
+	chapters: SmartMap<i32, (Chapter, ChapterRevision)>, population: i32,
 ) -> String {
 	let heading = "Questions";
 	let title: String = format!("{heading} - {SITE_NAME}");
@@ -458,7 +459,7 @@ pub fn questions_html(
 }
 
 pub fn chapter_questions_html(
-	user: User, theme: Theme, chapter: Chapter, questions: Vec<QuestionTable>, population: u32,
+	user: User, theme: Theme, chapter: Chapter, questions: Vec<QuestionTable>, population: i32,
 ) -> String {
 	let heading = "Chapter Questions";
 	let title: String = format!("{heading} - {SITE_NAME}");
@@ -485,7 +486,7 @@ pub fn chapter_questions_html(
 }
 
 pub fn question_list_item_html(
-	question: QuestionTable, population: u32, user: &User, chapter: QuestionChapter,
+	question: QuestionTable, population: i32, user: &User, chapter: QuestionChapter,
 ) -> PreEscaped<String> {
 	html! {
 		h3 { a href = (format!("/questions/{}", question.meta.id)) { (question.newest_data.question_text) sup { "↗" } } }
@@ -499,8 +500,9 @@ pub fn question_list_item_html(
 			}
 		}
 		p {
+			a href = (format!("/questions/{}/preview", question.meta.id)) { b { "Preview" } sup { "↗" } }
 			@if let QuestionChapter::ChapterQuestions(ref chapter) = chapter {
-				b { "Ch Order: " }
+				b { " Ch Order: " }
 				@if let Some(order) = question.meta.chapter_order {
 					@if order > 1 {
 						@let endpoint = format!("/chapters/{}/questions/{}/ordered/-1", chapter.id, question.meta.id);
@@ -519,7 +521,7 @@ pub fn question_list_item_html(
 				@if let Some((chapter, _)) = chapter
 					&& let Some(chapter_order) = chapter.chapter_order
 					&& let Some(question_order) = question.meta.chapter_order {
-					b { "Ch Num/Order: " }
+					b { " Ch Num/Order: " }
 					(chapter_order) "/" (question_order)
 				}
 			}
@@ -611,7 +613,7 @@ pub fn new_question_html(chapter: Option<&Chapter>) -> PreEscaped<String> {
 }
 
 pub fn edit_question_html(
-	user: User, theme: Theme, question: Question, data: QuestionRevision, population: u32,
+	user: User, theme: Theme, question: Question, data: QuestionRevision, population: i32,
 ) -> String {
 	let heading = "Edit Question";
 	let title: String = format!("{heading} - {SITE_NAME}");
@@ -684,7 +686,7 @@ fn question_type_match(question_type: QuestionType) -> PreEscaped<String> {
 }
 
 pub fn question_history_html(
-	user: User, theme: Theme, question: QuestionData, population: u32,
+	user: User, theme: Theme, question: QuestionData, population: i32,
 ) -> String {
 	let heading = "Question Revision History";
 	let title: String = format!("{heading} - {SITE_NAME}");
@@ -815,6 +817,151 @@ pub fn about_html(user: Option<User>, theme: Theme, contributors: Vec<User>) -> 
 		.call()
 }
 
+pub fn question_preview_html(
+	user: User, theme: Theme, question: Question, data: QuestionRevision,
+	options: HashMap<String, f64>, population: i32,
+) -> String {
+	let heading = "Question Preview";
+	let title: String = format!("{heading} - {SITE_NAME}");
+	let description = "Preview a question's outcomes.";
+	let link = format!("{SITE_LINK}/questions/{}/preview", question.id);
+	let opts = parse_options(
+		&data.option_writing.clone().unwrap_or_default(),
+		&data.question_type,
+	);
+	let mane = html! {
+		h1 { (heading) }
+		p { (description) }
+		h2 { "Question Preview" }
+		(question_html(&question, &data, &opts))
+		h2 { "Preview Selector" }
+		h3 { (data.question_text) }
+		form method = "get" action = (format!("/questions/{}/preview", question.id)) {
+			@for (id, option) in opts {
+				span class = "row" {
+					label for = (id) { (option) }
+					(input_text_float_value_required(&id, &id, *options.get(&id).unwrap_or(&0.0)))
+				}
+			}
+			button type = "submit" { "Preview Outcome" }
+		}
+		@if !options.is_empty() {
+			h2 { "Selected Preview" }
+			@let question_data = construct_question_data(question, data, options, population);
+			(format!("{:?}", question_data))
+		}
+		h2 { "All Outcomes Preview" }
+		// All outcomes preview here
+	};
+	html_builder()
+		.theme(&theme)
+		.head(head_html(&title, description, &link, &theme))
+		.header(header_html(Some(user.user_type), Pages::Questions, &theme))
+		.mane(mane)
+		.call()
+}
+
+pub fn dashboard_html(user: User, theme: Theme, settings: Settings) -> String {
+	let heading = "Event Dashboard";
+	let title: String = format!("{heading} - {SITE_NAME}");
+	let description = "Event control dashboard.";
+	let link = format!("{SITE_LINK}/dashboard");
+	let mane = html! {
+		h1 { (heading) }
+		p { (description) }
+		form method = "post" action = "/story-id" class = "row" {
+			label for = "story-id" { "Story ID: " }
+			(input_text_numeric_value_required("story-id", "story-id", 1, 8, settings.story_id))
+			button type = "submit" { "Update" }
+		}
+		form method = "post" action = "/population" class = "row" {
+			label for = "population" { "Population: " }
+			(input_text_numeric_value_required("population", "population", 1, 8, settings.population))
+			button type = "submit" { "Update" }
+		}
+		form method = "post" action = "/vote-duration" class = "row" {
+			label for = "vote-duration" { "Vote Durations: " }
+			(input_text_numeric_required("vote-duration", "vote-duration", 1, 8))
+			button type = "submit" { "Update" }
+		}
+		form method = "post" action = "/reset" class = "row" {
+			label { "Reset Event: " }
+			span class = "column" {
+				span class = "row" {
+					input type = "checkbox" id = "reset-1" name = "reset-1" value = "true" {}
+					label for = "reset-1" { "Are you sure?" }
+				}
+				span class = "row" {
+					input type = "checkbox" id = "reset-2" name = "reset-2" value = "true" {}
+					label for = "reset-2" { "Are you super sure?" }
+				}
+				span class = "row" {
+					input type = "checkbox" id = "reset-3" name = "reset-3" value = "true" {}
+					label for = "reset-3" { "Are you super-duper sure?" }
+				}
+			}
+			button type = "submit" { "Reset" }
+		}
+		form method = "post" action = "/start-time" class = "row" {
+			label { "Event Date/Time (UTC): " }
+			@if let Some(start_time) = settings.start_time {
+				@let date = start_time.format("%Y-%m-%d");
+				@let time = start_time.format("%H:%M");
+				input type = "date" id = "date" name = "date" value = (date) required {}
+				input type = "time" id = "time" name = "time" value = (time) required {}
+			} @else {
+				input type = "date" id = "date" name = "date" required {}
+				input type = "time" id = "time" name = "time" required {}
+			}
+			button type = "submit" { "Update" }
+			(button_link("Reset", "/start-time/reset"))
+		}
+		@if let Some(start_time) = settings.start_time {
+			h2 { "Event Start Countdown" }
+			span id = "countdown" { "Countdown loading…" }
+			script defer {
+				(format!("countDown('{}', 'Event is now live!')",
+				(start_time - Utc::now()).num_seconds().max(0)))
+			}
+		}
+	};
+	html_builder()
+		.theme(&theme)
+		.head(head_html(&title, description, &link, &theme))
+		.header(header_html(Some(user.user_type), Pages::Dashboard, &theme))
+		.mane(mane)
+		.call()
+}
+
+pub fn question_html(
+	question: &Question, data: &QuestionRevision, options: &Vec<(String, String)>,
+) -> PreEscaped<String> {
+	html! {
+		p {
+			(question.chapter_order.unwrap_or_default())
+			". "
+			(data.question_text)
+		}
+		@if options.is_empty() {
+			p { "No options found." }
+		} @else {
+			span class = (data.question_type) {
+				@for (id, opt) in options {
+					span class = "question-option" {
+						@if QuestionType::Multiselect == data.question_type {
+							input id = (id) type = "checkbox" name = (question.id) value = (id) {}
+							label for = (id) { (opt) }
+						} @else {
+							input id = (id) type = "radio" name = (question.id) value = (id) {}
+							label for = (id) { (opt) }
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
 // HTML components go below this comment:
 
 pub fn head_html(title: &str, description: &str, link: &str, theme: &Theme) -> PreEscaped<String> {
@@ -904,6 +1051,11 @@ fn header_html(user_type: Option<UserType>, page: Pages, theme: &Theme) -> PreEs
 					(header_link_html("/chapters", "Chapters", page == Pages::Chapters))
 					(header_link_html("/questions", "Questions", page == Pages::Questions))
 					(header_link_html("/feedback", "Feedback", page == Pages::Feedback))
+				}
+				@if user_type == UserType::Admin {
+					span class = "nav" {
+						(header_link_html("/dashboard", "Dashboard", page == Pages::Dashboard))
+					}
 				}
 			}
 		}
@@ -1020,6 +1172,23 @@ fn input_text_numeric_required(id: &str, name: &str, min: u32, max: u32) -> PreE
 	)
 }
 
+fn input_text_numeric_value_required(
+	id: &str, name: &str, min: u32, max: u32, value: i32,
+) -> PreEscaped<String> {
+	html!	(
+		input
+			id = (id)
+			type = "text"
+			name = (name)
+			inputmode = "numeric"
+			pattern = r"\d*"
+			minlength = (min)
+			maxlength = (max)
+			required
+			value = (value) {}
+	)
+}
+
 fn textarea(id: &str, name: &str, max: u32) -> PreEscaped<String> {
 	html!	(
 		textarea
@@ -1056,7 +1225,7 @@ fn textarea_required(id: &str, name: &str, min: u32, max: u32) -> PreEscaped<Str
 
 fn button_link(text: &str, endpoint: &str) -> PreEscaped<String> {
 	html! (
-		button onclick = (format!("window.location.href='{endpoint}';")) { (text) }
+		button type = "button" onclick = (format!("window.location.href='{endpoint}';")) { (text) }
 	)
 }
 
