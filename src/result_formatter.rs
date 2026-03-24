@@ -140,6 +140,7 @@ pub fn format(input: &QuestionDataOption) -> (String, Vec<String>) {
 			}
 
 			Rule::result_next_text => {
+				if matches!(state, ParseState::None) { continue }
 				let mut pairs = line.into_inner().peekable();
 
 				while let Some(segment) = pairs.next() {
