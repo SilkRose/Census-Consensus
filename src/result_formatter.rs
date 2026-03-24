@@ -215,6 +215,12 @@ pub fn format(input: &QuestionDataOption) -> (String, Vec<String>) {
 							current.push_str(&format_count_words(option.count, precision));
 						}
 
+						Rule::text_vote_count => {
+							let current = current_match_mut!();
+							current.push_str("\n");
+							current.push_str(&option.count.to_string());
+						}
+
 						_ => { unreachable!() }
 					};
 				}
