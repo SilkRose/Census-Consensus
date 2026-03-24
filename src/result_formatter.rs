@@ -221,13 +221,15 @@ pub fn format(input: &QuestionDataOption) -> (String, Vec<String>) {
 						0
 					};
 
-					match dbg!(next.as_rule()) {
+					match next.as_rule() {
 						Rule::text_vote_percent => {
-							current_match_mut!().push_str(&format!("{vp:.precision$}", vp = option.percent));
+							current_match_mut!()
+								.push_str(&format!("{vp:.precision$}", vp = option.percent));
 						}
 
 						Rule::text_vote_count_formatted => {
-							current_match_mut!().push_str(&format_count_words(option.count, precision));
+							current_match_mut!()
+								.push_str(&format_count_words(option.count, precision));
 						}
 
 						Rule::text_name => {

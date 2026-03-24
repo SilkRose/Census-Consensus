@@ -1,7 +1,7 @@
 use self::inner::ReseedingRng;
 use base64ct::{Base64Url, Encoding as _};
-use rand::{RngExt as _, SeedableRng as _};
 use rand::rngs::{ChaCha20Rng, SysRng};
+use rand::{RngExt as _, SeedableRng as _};
 use std::cell::UnsafeCell;
 use std::marker::PhantomData;
 
@@ -28,12 +28,12 @@ mod inner {
 
 	pub(super) struct ReseedingRng {
 		inner: UnsafeCell<ReseedingRngInner>,
-		__not_thread_safe: PhantomData<*mut ()>
+		__not_thread_safe: PhantomData<*mut ()>,
 	}
 
 	struct ReseedingRngInner {
 		rng: ChaCha20Rng,
-		remaining: u64
+		remaining: u64,
 	}
 
 	impl ReseedingRng {
@@ -41,9 +41,9 @@ mod inner {
 			Self {
 				inner: UnsafeCell::new(ReseedingRngInner {
 					rng: get_newly_seeded_rng(),
-					remaining: RESEED_THRESHOLD
+					remaining: RESEED_THRESHOLD,
 				}),
-				__not_thread_safe: PhantomData
+				__not_thread_safe: PhantomData,
 			}
 		}
 
@@ -77,8 +77,7 @@ mod inner {
 	}
 
 	fn get_newly_seeded_rng() -> ChaCha20Rng {
-		ChaCha20Rng::try_from_rng(&mut SysRng)
-			.expect("failed to seed rng")
+		ChaCha20Rng::try_from_rng(&mut SysRng).expect("failed to seed rng")
 	}
 
 	const RESEED_THRESHOLD: u64 = 1 << 16;
