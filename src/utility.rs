@@ -94,9 +94,18 @@ pub fn construct_question_data(
 ) -> QuestionDataOption {
 	let mut total_count = 0;
 	let mut options = Vec::new();
+	let binding = data.option_writing.clone().unwrap_or_default();
+	let ordering = binding
+		.lines()
+		.find(|line| line.starts_with("Order:"))
+		.unwrap_or_default()
+		.trim_start_matches("Order:")
+		.split(",")
+		.map(|c| c.trim())
+		.collect::<Vec<_>>();
+	let ponies = population as f64 * data.response_percent / 100.0;
 	for (id, percent) in option_percents {
-		let count =
-			((population as f64 * data.response_percent / 100.0) * percent / 100.0).round() as u32;
+		let count = (ponies * percent / 100.0).round() as u32;
 		let text = option_texts
 			.iter()
 			.find(|(opt, _)| *opt == id)
@@ -110,6 +119,29 @@ pub fn construct_question_data(
 		};
 		options.push(data);
 		total_count += count;
+	}
+	let binding = options.clone();
+	let buckets = binding
+		.chunk_by(|a, b| a.count == b.count)
+		.collect::<Vec<_>>();
+	for bucket in buckets {
+		if bucket.is_empty() || bucket[0].count == 0 {
+			continue;
+		}
+		let mut orders = Vec::with_capacity(bucket.len());
+		for option in bucket {
+			let order = ordering
+				.iter()
+				.enumerate()
+				.find(|(_, opt)| **opt == option.id)
+				.map_or(0, |(i, _)| i);
+			orders.push(order);
+		}
+		if bucket.len().is_multiple_of(2) {
+			//
+		} else {
+			//
+		}
 	}
 	QuestionDataOption {
 		meta,
