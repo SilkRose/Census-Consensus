@@ -169,15 +169,24 @@ async fn main() -> Result<()> {
 	Ok(())
 }
 
+#[derive(Clone, Debug, PartialEq, Eq)]
+enum Tick {
+	Continue,
+	Skip,
+}
+
 async fn event_control_loop(
 	mut db: Data<Db>, http_client: Data<HttpClient>, fimfic_cfg: Data<FimficCfg>,
 ) {
+	let mut tick: Result<Tick> = Ok(Tick::Continue);
 	loop {
-		let time = Utc::now();
-		let diff = 60_000 - (time.timestamp_millis() % 60_000) as u64;
-		tokio::time::sleep(Duration::from_millis(diff)).await;
-		let event = event_control_tick(&mut db, &http_client, &fimfic_cfg).await;
-		if let Err(e) = event {
+		if matches!(tick, Err(_) | Ok(Tick::Continue)) {
+			let time = Utc::now();
+			let diff = 60_000 - (time.timestamp_millis() % 60_000) as u64;
+			tokio::time::sleep(Duration::from_millis(diff)).await;
+		}
+		tick = event_control_tick(&mut db, &http_client, &fimfic_cfg).await;
+		if let Err(e) = tick.as_ref() {
 			eprintln!("Error occurred during event loop: {e}");
 		}
 	}
@@ -185,10 +194,10 @@ async fn event_control_loop(
 
 async fn event_control_tick(
 	db: &mut Data<Db>, http_client: &Data<HttpClient>, fimfic_cfg: &Data<FimficCfg>,
-) -> Result<()> {
+) -> Result<Tick> {
 	let settings = db.get_settings().await?;
 	if settings.start_time.is_none_or(|time| time > Utc::now()) {
-		return Ok(());
+		return Ok(Tick::Continue);
 	}
 	let chapters = db.get_all_chapters().await?;
 	let Some(chapter) = chapters
@@ -199,7 +208,7 @@ async fn event_control_tick(
 			.get_story_update(fimfic_cfg, settings.story_id)
 			.await?;
 		db.insert_story_update(story.data).await?;
-		return Ok(());
+		return Ok(Tick::Continue);
 	};
 	let minutes_left = chapter
 		.minutes_left
@@ -236,6 +245,7 @@ async fn event_control_tick(
 		http_client
 			.post_story_chapter(fimfic_cfg, settings.story_id, json)
 			.await?;
+		return Ok(Tick::Skip);
 	}
 	let json = match final_chapter {
 		true => {
@@ -244,7 +254,7 @@ async fn event_control_tick(
 		}
 		false => todo!(),
 	};
-	Ok(())
+	Ok(Tick::Continue)
 }
 
 fn chapter_json(title: &str, content: &str, authors_note: Option<&str>) -> Value {
