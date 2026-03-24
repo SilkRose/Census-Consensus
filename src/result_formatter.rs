@@ -12,7 +12,7 @@ pub fn format(input: &QuestionDataOption) -> (String, Vec<String>) {
 	let votes = input.options.iter().collect::<Vec<_>>();
 	let votes_sorted = {
 		let mut votes_sorted = votes.clone();
-		votes_sorted.sort_by_key(|v| v.count);
+		votes_sorted.sort_by_key(|v| core::cmp::Reverse(v.count));
 		votes_sorted
 	};
 
