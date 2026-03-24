@@ -1,7 +1,6 @@
 #![feature(impl_trait_in_assoc_type)]
 
 use chrono::Utc;
-use pony::fimfiction_api::story::StoryApi;
 use serde_json::{Value, json};
 use std::collections::HashMap;
 use std::time::Duration;
@@ -193,7 +192,9 @@ async fn event_control_tick(
 		.iter()
 		.find(|c| c.chapter_order.is_some() && c.fimfic_ch_id.is_none())
 	else {
-		let story = get_story_update(http_client, fimfic_cfg, settings.story_id).await?;
+		let story = http_client
+			.get_story_update(fimfic_cfg, settings.story_id)
+			.await?;
 		db.insert_story_update(story.data).await?;
 		return Ok(());
 	};
@@ -212,18 +213,6 @@ async fn event_control_tick(
 	}
 	// update story
 	Ok(())
-}
-
-async fn get_story_update(
-	client: &Data<HttpClient>, fimfic_cfg: &Data<FimficCfg>, id: i32,
-) -> Result<StoryApi<i32>> {
-	let url = format!("https://www.fimfiction.net/api/v2/stories/{id}",);
-	Ok(client
-		.get(url, Some(&fimfic_cfg.bearer_token))
-		.send()
-		.await?
-		.json::<StoryApi<i32>>()
-		.await?)
 }
 
 fn chapter_json(title: &str, content: &str, authors_note: Option<&str>) -> Value {

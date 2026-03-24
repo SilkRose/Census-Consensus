@@ -1,11 +1,12 @@
 use crate::error::Result;
 use crate::fimfic_cfg::FimficCfg;
+use pony::fimfiction_api::chapter::ChapterApi;
+use pony::fimfiction_api::story::StoryApi;
 use pony::fimfiction_api::user::UserApi;
-use reqwest::{
-	Client as ReqwestClient, IntoUrl, RequestBuilder,
-	header::{AUTHORIZATION, USER_AGENT},
-};
+use reqwest::header::{AUTHORIZATION, USER_AGENT};
+use reqwest::{Client as ReqwestClient, IntoUrl, RequestBuilder};
 use serde::Deserialize;
+use serde_json::Value;
 use std::borrow::Cow;
 
 #[derive(Clone)]
@@ -85,6 +86,55 @@ impl HttpClient {
 			access_token: res.access_token,
 		})
 	}
+
+	pub async fn get_story_update(&self, fimfic_cfg: &FimficCfg, id: i32) -> Result<StoryApi<i32>> {
+		let url = format!("https://www.fimfiction.net/api/v2/stories/{id}",);
+		Ok(self
+			.get(url, Some(&fimfic_cfg.bearer_token))
+			.send()
+			.await?
+			.json()
+			.await?)
+	}
+
+	pub async fn post_story_chapter(
+		&self, fimfic_cfg: &FimficCfg, id: i32, value: Value,
+	) -> Result<ChapterApi<i32>> {
+		let url = format!("https://www.fimfiction.net/api/v2/stories/{id}/chapters",);
+		Ok(self
+			.post(url, Some(&fimfic_cfg.bearer_token))
+			.body(value.to_string())
+			.send()
+			.await?
+			.json()
+			.await?)
+	}
+
+	pub async fn patch_story(
+		&self, fimfic_cfg: &FimficCfg, id: i32, value: Value,
+	) -> Result<StoryApi<i32>> {
+		let url = format!("https://www.fimfiction.net/api/v2/stories/{id}",);
+		Ok(self
+			.patch(url, Some(&fimfic_cfg.bearer_token))
+			.body(value.to_string())
+			.send()
+			.await?
+			.json()
+			.await?)
+	}
+
+	pub async fn patch_chapter(
+		&self, fimfic_cfg: &FimficCfg, id: i32, value: Value,
+	) -> Result<ChapterApi<i32>> {
+		let url = format!("https://www.fimfiction.net/api/v2/chapters/{id}",);
+		Ok(self
+			.patch(url, Some(&fimfic_cfg.bearer_token))
+			.body(value.to_string())
+			.send()
+			.await?
+			.json()
+			.await?)
+	}
 }
 
 // internal only helper functions
@@ -113,5 +163,5 @@ macro_rules! http_methods {
 }
 
 impl HttpClient {
-	http_methods!(get post);
+	http_methods!(get post patch);
 }
