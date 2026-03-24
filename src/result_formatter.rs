@@ -78,9 +78,10 @@ pub fn format(input: &QuestionDataOption) -> (String, Vec<String>) {
 						};
 						let vote = vote.percent;
 
-						let comparison = match pairs.next().unwrap().as_rule() {
-							Rule::cond_comparison_gt => { f64::gt }
-							_ => { unreachable!() }
+						let comparison = match pairs.next().map(|p| p.as_rule()) {
+							Some(Rule::cond_comparison_gt) => { f64::gt }
+							None => { continue }
+							Some(_) => { unreachable!() }
 						};
 
 						let next = pairs.next().unwrap();
