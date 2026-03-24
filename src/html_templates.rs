@@ -837,17 +837,17 @@ pub fn question_preview_html(
 		h2 { "Preview Selector" }
 		h3 { (data.question_text) }
 		form method = "get" action = (format!("/questions/{}/preview", question.id)) {
-			@for (id, option) in opts {
+			@for (id, option) in &opts {
 				span class = "row" {
 					label for = (id) { (option) }
-					(input_text_float_value_required(&id, &id, *options.get(&id).unwrap_or(&0.0)))
+					(input_text_float_value_required(id, id, *options.get(id).unwrap_or(&0.0)))
 				}
 			}
 			button type = "submit" { "Preview Outcome" }
 		}
 		@if !options.is_empty() {
 			h2 { "Selected Preview" }
-			@let question_data = construct_question_data(question, data, options, population);
+			@let question_data = construct_question_data(question, data, options, opts, population);
 			(format!("{:?}", question_data))
 		}
 		h2 { "All Outcomes Preview" }

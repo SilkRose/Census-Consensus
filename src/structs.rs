@@ -293,6 +293,7 @@ pub struct QuestionDataOption {
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct OptionData {
 	pub id: String,
+	pub text: String,
 	pub percent: f64,
 	pub count: u32,
 }
