@@ -89,14 +89,25 @@ pub fn parse_options(text: &str, question_type: &QuestionType) -> Vec<(String, S
 }
 
 pub fn construct_question_data(
-	meta: Question, data: QuestionRevision, option_data: HashMap<String, f64>, population: i32,
+	meta: Question, data: QuestionRevision, option_percents: HashMap<String, f64>,
+	option_texts: Vec<(String, String)>, population: i32,
 ) -> QuestionDataOption {
 	let mut total_count = 0;
 	let mut options = Vec::new();
-	for (id, percent) in option_data {
+	for (id, percent) in option_percents {
 		let count =
 			((population as f64 * data.response_percent / 100.0) * percent / 100.0).round() as u32;
-		let data = OptionData { id, percent, count };
+		let text = option_texts
+			.iter()
+			.find(|(opt, _)| *opt == id)
+			.map(|(_, text)| text.clone())
+			.unwrap_or_default();
+		let data = OptionData {
+			id,
+			text,
+			percent,
+			count,
+		};
 		options.push(data);
 		total_count += count;
 	}
