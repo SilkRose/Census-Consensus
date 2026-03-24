@@ -2,9 +2,9 @@ use std::collections::HashMap;
 use std::fs;
 
 use crate::endpoints::MIN_USER_UPDATE_TIME;
-use crate::structs::*;
 use crate::theme::Theme;
 use crate::utility::{construct_question_data, count_words, parse_options};
+use crate::{result_formatter, structs::*};
 use bon::builder;
 use chrono::Utc;
 use maud::{DOCTYPE, PreEscaped, html};
@@ -848,7 +848,11 @@ pub fn question_preview_html(
 		@if !options.is_empty() {
 			h2 { "Selected Preview" }
 			@let question_data = construct_question_data(question, data, options, opts, population);
-			(format!("{:?}", question_data))
+			@let (preview, errors) = result_formatter::format(&question_data);
+			@ for error in errors {
+				"Error detected: " (error) br;
+			}
+			(parse(&preview, &WarningType::Quiet))
 		}
 		h2 { "All Outcomes Preview" }
 		// All outcomes preview here
