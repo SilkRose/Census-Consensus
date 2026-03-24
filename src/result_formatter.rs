@@ -143,19 +143,17 @@ pub fn format(input: &QuestionDataOption) -> (String, Vec<String>) {
 				if matches!(state, ParseState::None) { continue }
 				let mut pairs = line.into_inner().peekable();
 
+				current_match_mut!().push_str("\n");
+
 				while let Some(segment) = pairs.next() {
 					let mut option = match segment.as_rule() {
 						Rule::text_normal_text => {
-							let current = current_match_mut!();
-							current.push_str("\n");
-							current.push_str(segment.as_str());
+							current_match_mut!().push_str(segment.as_str());
 							continue;
 						}
 
 						Rule::text_option_question => {
-							let current = current_match_mut!();
-							current.push_str("\n");
-							current.push_str(&input.data.question_text);
+							current_match_mut!().push_str(&input.data.question_text);
 							continue;
 						}
 
@@ -191,9 +189,7 @@ pub fn format(input: &QuestionDataOption) -> (String, Vec<String>) {
 
 					let next = pairs.next().unwrap();
 					if matches!(next.as_rule(), Rule::text_vote_count) {
-						let current = current_match_mut!();
-						current.push_str("\n");
-						current.push_str(&option.count.to_string());
+						current_match_mut!().push_str(&option.count.to_string());
 						continue;
 					}
 
@@ -208,15 +204,11 @@ pub fn format(input: &QuestionDataOption) -> (String, Vec<String>) {
 
 					match next.as_rule() {
 						Rule::text_vote_percent => {
-							let current = current_match_mut!();
-							current.push_str("\n");
-							current.push_str(&format!("{vp:.precision$}", vp = option.percent));
+							current_match_mut!().push_str(&format!("{vp:.precision$}", vp = option.percent));
 						}
 
 						Rule::text_vote_count_formatted => {
-							let current = current_match_mut!();
-							current.push_str("\n");
-							current.push_str(&format_count_words(option.count, precision));
+							current_match_mut!().push_str(&format_count_words(option.count, precision));
 						}
 
 						_ => { unreachable!() }
