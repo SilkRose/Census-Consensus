@@ -211,6 +211,10 @@ pub fn format(input: &QuestionDataOption) -> (String, Vec<String>) {
 							current_match_mut!().push_str(&format_count_words(option.count, precision));
 						}
 
+						Rule::text_name => {
+							current_match_mut!().push_str(&option.text);
+						}
+
 						_ => { unreachable!() }
 					};
 				}
