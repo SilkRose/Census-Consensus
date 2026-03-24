@@ -1,4 +1,4 @@
-use crate::structs::{ OptionData, QuestionDataOption };
+use crate::structs::{OptionData, QuestionDataOption};
 use pest::Parser;
 
 #[expect(
@@ -25,16 +25,18 @@ pub fn format(input: &QuestionDataOption) -> (String, Vec<String>) {
 	macro_rules! current_match_mut {
 		() => {
 			match state {
-				ParseState::Start => { start.as_mut().unwrap() }
-				ParseState::End => { end.as_mut().unwrap() }
-				ParseState::Matching => { &mut middle }
-				ParseState::None => { unreachable!() }
+				ParseState::Start => start.as_mut().unwrap(),
+				ParseState::End => end.as_mut().unwrap(),
+				ParseState::Matching => &mut middle,
+				ParseState::None => {
+					unreachable!()
+				}
 			}
-		}
+		};
 	}
 
 	let lines = match ResultParser::parse(Rule::result_parse, input_str) {
-		Ok(lines) => { lines }
+		Ok(lines) => lines,
 		Err(err) => {
 			// can't parse I guess
 			errors.push(err.to_string());
@@ -81,7 +83,7 @@ pub fn format(input: &QuestionDataOption) -> (String, Vec<String>) {
 						let vote_percent = vote.percent;
 
 						let comparison = match pairs.next().map(|p| p.as_rule()) {
-							Some(Rule::cond_comparison_gt) => { f64::gt }
+							Some(Rule::cond_comparison_gt) => f64::gt,
 							None => {
 								// we got a vote out, which means that thare are votes at all,
 								// so indexing 0 won't panic
@@ -93,13 +95,17 @@ pub fn format(input: &QuestionDataOption) -> (String, Vec<String>) {
 
 								continue;
 							}
-							Some(_) => { unreachable!() }
+							Some(_) => {
+								unreachable!()
+							}
 						};
 
 						let next = pairs.next().unwrap();
 						let other_percent = match next.as_rule() {
 							Rule::cond_option => {
-								let Some(other_vote) = get_count_from_str(next.as_str(), &votes, &mut errors) else {
+								let Some(other_vote) =
+									get_count_from_str(next.as_str(), &votes, &mut errors)
+								else {
 									state = ParseState::None;
 									continue;
 								};
@@ -125,7 +131,9 @@ pub fn format(input: &QuestionDataOption) -> (String, Vec<String>) {
 								frac1 / frac2
 							}
 
-							_ => { unreachable!() }
+							_ => {
+								unreachable!()
+							}
 						};
 
 						state = if comparison(&vote_percent, &other_percent) {
@@ -135,12 +143,16 @@ pub fn format(input: &QuestionDataOption) -> (String, Vec<String>) {
 						}
 					}
 
-					_ => { unreachable!() }
+					_ => {
+						unreachable!()
+					}
 				}
 			}
 
 			Rule::result_next_text => {
-				if matches!(state, ParseState::None) { continue }
+				if matches!(state, ParseState::None) {
+					continue;
+				}
 				let mut pairs = line.into_inner().peekable();
 
 				current_match_mut!().push_str("\n");
@@ -165,10 +177,15 @@ pub fn format(input: &QuestionDataOption) -> (String, Vec<String>) {
 							SpecifiedOption::OptionNumber(segment.as_str().parse().unwrap())
 						}
 
-						_ => { unreachable!() }
+						_ => {
+							unreachable!()
+						}
 					};
 
-					if matches!(pairs.peek().unwrap().as_rule(), Rule::text_vote_place_indicator) {
+					if matches!(
+						pairs.peek().unwrap().as_rule(),
+						Rule::text_vote_place_indicator
+					) {
 						pairs.next();
 						if let SpecifiedOption::OptionNumber(place) = option {
 							option = SpecifiedOption::Ordinal(place)
@@ -185,7 +202,9 @@ pub fn format(input: &QuestionDataOption) -> (String, Vec<String>) {
 						SpecifiedOption::Ordinal(option) => {
 							get_count_from_index(option, &votes_sorted, &mut errors)
 						}
-					}) else { continue };
+					}) else {
+						continue;
+					};
 
 					let next = pairs.next().unwrap();
 					if matches!(next.as_rule(), Rule::text_vote_count) {
@@ -202,7 +221,7 @@ pub fn format(input: &QuestionDataOption) -> (String, Vec<String>) {
 						0
 					};
 
-					match next.as_rule() {
+					match dbg!(next.as_rule()) {
 						Rule::text_vote_percent => {
 							current_match_mut!().push_str(&format!("{vp:.precision$}", vp = option.percent));
 						}
@@ -215,14 +234,18 @@ pub fn format(input: &QuestionDataOption) -> (String, Vec<String>) {
 							current_match_mut!().push_str(&option.text);
 						}
 
-						_ => { unreachable!() }
+						_ => {
+							unreachable!()
+						}
 					};
 				}
 			}
 
 			Rule::result_next_comment => { /* ignore :3 */ }
-			Rule::EOI => { break }
-			_ => { unreachable!() }
+			Rule::EOI => break,
+			_ => {
+				unreachable!()
+			}
 		}
 	}
 
@@ -233,19 +256,16 @@ enum ParseState {
 	None,
 	Start,
 	End,
-	Matching
+	Matching,
 }
 
 enum SpecifiedOption {
 	OptionLetter(char),
 	OptionNumber(usize),
-	Ordinal(usize)
+	Ordinal(usize),
 }
 
-fn format_count_words(
-	count: u32,
-	decimal_places: usize
-) -> String {
+fn format_count_words(count: u32, decimal_places: usize) -> String {
 	let words = [
 		" thousand",
 		" million",
@@ -257,7 +277,9 @@ fn format_count_words(
 	let mut word = "";
 
 	for w in words {
-		if (0.0..1000.0).contains(&count) { break }
+		if (0.0..1000.0).contains(&count) {
+			break;
+		}
 
 		word = w;
 		count /= 1000.0;
@@ -267,35 +289,26 @@ fn format_count_words(
 }
 
 fn get_count_from_str<'h>(
-	str: &str,
-	votes: &[&'h OptionData],
-	errors: &mut Vec<String>
+	str: &str, votes: &[&'h OptionData], errors: &mut Vec<String>,
 ) -> Option<&'h OptionData> {
 	get_count_from_char(str.chars().next().unwrap(), votes, errors)
 }
 
 fn get_count_from_char<'h>(
-	char: char,
-	votes: &[&'h OptionData],
-	errors: &'_ mut Vec<String>
+	char: char, votes: &[&'h OptionData], errors: &'_ mut Vec<String>,
 ) -> Option<&'h OptionData> {
 	let index = map_option_to_array_index(char).unwrap();
 	get_count_from_impl(&char.to_string(), index, votes, errors)
 }
 
 fn get_count_from_index<'h>(
-	index: usize,
-	votes: &[&'h OptionData],
-	errors: &mut Vec<String>
+	index: usize, votes: &[&'h OptionData], errors: &mut Vec<String>,
 ) -> Option<&'h OptionData> {
 	get_count_from_impl(&index.to_string(), index, votes, errors)
 }
 
 fn get_count_from_impl<'h>(
-	orig: &'_ str,
-	index: usize,
-	votes: &[&'h OptionData],
-	errors: &mut Vec<String>
+	orig: &'_ str, index: usize, votes: &[&'h OptionData], errors: &mut Vec<String>,
 ) -> Option<&'h OptionData> {
 	let vote = votes.get(index);
 
