@@ -198,9 +198,13 @@ pub fn format(input: &QuestionDataOption) -> (String, Vec<String>) {
 					}
 
 					let precision = pairs.peek().unwrap();
-					let precision = matches!(precision.as_rule(), Rule::text_float_precision)
-						.then(|| precision.as_str().parse().unwrap())
-						.unwrap_or(0);
+					let precision = if matches!(precision.as_rule(), Rule::text_float_precision) {
+						let parsed = precision.as_str().parse().unwrap();
+						pairs.next();
+						parsed
+					} else {
+						0
+					};
 
 					match next.as_rule() {
 						Rule::text_vote_percent => {
@@ -213,12 +217,6 @@ pub fn format(input: &QuestionDataOption) -> (String, Vec<String>) {
 							let current = current_match_mut!();
 							current.push_str("\n");
 							current.push_str(&format_count_words(option.count, precision));
-						}
-
-						Rule::text_vote_count => {
-							let current = current_match_mut!();
-							current.push_str("\n");
-							current.push_str(&option.count.to_string());
 						}
 
 						_ => { unreachable!() }
