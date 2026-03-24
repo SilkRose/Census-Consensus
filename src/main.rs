@@ -208,6 +208,7 @@ async fn event_control_tick(
 		.await?;
 	let publish = minutes_left <= 0;
 	let final_chapter = db.get_question_count_by_chapter(chapter.id).await? <= 0;
+	let mut story_json_value = Value::Null;
 	if publish {
 		let data = db.get_latest_chapter_revision(chapter.id).await?;
 		let json = match final_chapter {
@@ -215,24 +216,34 @@ async fn event_control_tick(
 			false => {
 				let mut texts = Vec::new();
 				if let Some(ref intro) = data.intro_text {
-					texts.push(parse(intro.trim(), &WarningType::Quiet));
+					texts.push(intro.trim());
 				}
 				let questions = db.get_questions_by_chapter(chapter.id).await?;
 				for question in questions {
 					let data = db.get_latest_question_revision(question.id).await?;
 					let options = data.option_writing.ok_or("Missing options!")?;
-					let options = parse_options(&options, &data.question_type);
+					let option_tuples = parse_options(&options, &data.question_type);
 					let votes = db.get_all_votes_by_question(question.id).await?;
 					// insert parsing results here
-					texts.push(parse("".trim(), &WarningType::Quiet));
+					texts.push("".trim());
 				}
 				if let Some(ref outro) = data.outro_text {
-					texts.push(parse(outro.trim(), &WarningType::Quiet));
+					texts.push(outro.trim());
 				}
 				chapter_json(&data.title, &texts.join("\n\n"), None)
 			}
 		};
+		http_client
+			.post_story_chapter(fimfic_cfg, settings.story_id, json)
+			.await?;
 	}
+	let json = match final_chapter {
+		true => {
+			let title = format!("{minutes_left} Until Consensus");
+			story_json(settings.story_id, &title, "", "")
+		}
+		false => todo!(),
+	};
 	Ok(())
 }
 
@@ -243,7 +254,7 @@ fn chapter_json(title: &str, content: &str, authors_note: Option<&str>) -> Value
 			  "type": "chapter",
 			  "attributes": {
 					"title": title,
-					"content": content,
+					"content": parse(content.trim(), &WarningType::Quiet),
 					"authors_note": authors_note.unwrap_or_default(),
 					"published": true
 			  }
@@ -251,42 +262,31 @@ fn chapter_json(title: &str, content: &str, authors_note: Option<&str>) -> Value
 	})
 }
 
-fn story_json(id: u32, title: &str, short_description: &str, description: &str) -> Value {
+fn story_json(id: i32, title: &str, short_description: &str, description: &str) -> Value {
 	// Construct the json for story updates.
 	json!({
 		"data": {
 			"id": id,
 			"attributes": {
 				"title": title,
-				"description": description,
+				"description": parse(description.trim(), &WarningType::Quiet),
 				"short_description": short_description
 			}
 		}
 	})
 }
 
-fn story_json_optional(
-	id: u32, title: &Option<String>, short_description: &Option<String>,
-	description: &Option<String>, completion_status: &Option<String>,
-) -> String {
-	let mut attributes = HashMap::new();
-	if let Some(name) = title {
-		attributes.insert("title", name);
-	}
-	if let Some(short_desc) = short_description {
-		attributes.insert("short_description", short_desc);
-	}
-	if let Some(desc) = description {
-		attributes.insert("description", desc);
-	}
-	if let Some(status) = completion_status {
-		attributes.insert("completion_status", status);
-	}
-	let json = json!({
+fn story_json_completed(id: i32, title: &str, short_description: &str, description: &str) -> Value {
+	// Construct the json for story updates.
+	json!({
 		"data": {
 			"id": id,
-			"attributes": serde_json::to_value(attributes).unwrap()
+			"attributes": {
+				"title": title,
+				"description": parse(description.trim(), &WarningType::Quiet),
+				"short_description": short_description,
+				"completion_status": "complete"
+			}
 		}
-	});
-	serde_json::to_string(&json).unwrap()
+	})
 }
