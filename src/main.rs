@@ -1,9 +1,7 @@
 #![feature(impl_trait_in_assoc_type)]
 
 use chrono::Utc;
-use pony::markdown::WarningType;
-use pony::markdown::bbcode::parse;
-use serde_json::{Value, json};
+use serde_json::Value;
 use std::time::Duration;
 
 use crate::endpoints::*;
@@ -14,6 +12,7 @@ pub use self::database::*;
 pub use self::error::Result;
 pub use self::fimfic_cfg::FimficCfg;
 pub use self::http::HttpClient;
+pub use self::json::{chapter_json, story_json, story_json_completed};
 
 pub use actix_files::Files;
 pub use actix_web::middleware::Compress;
@@ -28,6 +27,7 @@ mod error;
 mod fimfic_cfg;
 mod html_templates;
 mod http;
+mod json;
 mod rand;
 mod result_formatter;
 mod structs;
@@ -277,48 +277,4 @@ async fn construct_chapter_json(
 		}
 	};
 	Ok(json)
-}
-
-fn chapter_json(title: &str, content: &str, authors_note: Option<&str>) -> Value {
-	// Construct the json for chapters.
-	json!({
-		 "data": {
-			  "type": "chapter",
-			  "attributes": {
-					"title": title,
-					"content": parse(content.trim(), &WarningType::Quiet),
-					"authors_note": authors_note.unwrap_or_default(),
-					"published": true
-			  }
-		 }
-	})
-}
-
-fn story_json(id: i32, title: &str, short_description: &str, description: &str) -> Value {
-	// Construct the json for story updates.
-	json!({
-		"data": {
-			"id": id,
-			"attributes": {
-				"title": title,
-				"description": parse(description.trim(), &WarningType::Quiet),
-				"short_description": short_description
-			}
-		}
-	})
-}
-
-fn story_json_completed(id: i32, title: &str, short_description: &str, description: &str) -> Value {
-	// Construct the json for story updates.
-	json!({
-		"data": {
-			"id": id,
-			"attributes": {
-				"title": title,
-				"description": parse(description.trim(), &WarningType::Quiet),
-				"short_description": short_description,
-				"completion_status": "complete"
-			}
-		}
-	})
 }
