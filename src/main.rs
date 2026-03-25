@@ -5,7 +5,7 @@ use serde_json::Value;
 use std::time::Duration;
 
 use crate::endpoints::*;
-use crate::structs::{ChapterRevision, UserType};
+use crate::structs::{Chapter, ChapterRevision, Settings, UserType};
 use crate::utility::parse_options;
 
 pub use self::database::*;
@@ -214,8 +214,9 @@ async fn event_control_tick(
 		.map_or(chapter.vote_duration, |m| m - 1);
 	db.update_chapter_minutes_left(chapter.id, Some(minutes_left))
 		.await?;
+	let question_count = db.get_question_count_by_chapter(chapter.id).await?;
 	let publish = minutes_left == 0;
-	let final_chapter = db.get_question_count_by_chapter(chapter.id).await? == 0;
+	let final_chapter = question_count == 0;
 	if publish {
 		let data = db.get_latest_chapter_revision(chapter.id).await?;
 		let json = construct_chapter_json(db, data, final_chapter).await?;
@@ -225,25 +226,16 @@ async fn event_control_tick(
 		return Ok(Tick::Skip);
 	}
 	let final_update = final_chapter && minutes_left <= -1;
-	let json = match (final_chapter, final_update) {
-		// normal story updates during live surveys
-		(false, false) => {
-			todo!()
-		}
-		// final chapter countdown updates
-		(true, false) => {
-			let title = format!("{minutes_left} Minutes Until Consensus");
-			story_json(settings.story_id, &title, "")
-		}
-		// final story update
-		(true, true) => story_json_completed(
-			settings.story_id,
-			"Census Consensus",
-			"The Equestrian Census, redefined.",
-		),
-		// should be impossible
-		(false, true) => unreachable!(),
-	};
+	let json = construct_story_json()
+		.db(db)
+		.settings(&settings)
+		.chapter(chapter)
+		.final_chapter(final_chapter)
+		.final_update(final_update)
+		.minutes_left(minutes_left)
+		.question_count(question_count)
+		.call()
+		.await?;
 	http_client
 		.patch_story(fimfic_cfg, settings.story_id, json)
 		.await?;
@@ -274,6 +266,55 @@ async fn construct_chapter_json(
 			}
 			chapter_json(&data.title, &texts.join("\n\n"), None)
 		}
+	};
+	Ok(json)
+}
+
+#[bon::builder]
+async fn construct_story_json(
+	db: &mut Db, settings: &Settings, chapter: &Chapter, final_chapter: bool, final_update: bool,
+	minutes_left: i32, question_count: i64,
+) -> Result<Value> {
+	let json = match (final_chapter, final_update) {
+		// normal story updates during live surveys
+		(false, false) => {
+			let title = format!("Survey ends in {minutes_left} Minutes!");
+			let segments = (chapter.vote_duration as f64 / question_count as f64).ceil();
+			let current = segments
+				- (minutes_left as f64 / (chapter.vote_duration as f64 / segments)).floor()
+				+ 1.0;
+			let question = db
+				.get_question_by_chapter_and_order(chapter.id, current as i32)
+				.await?;
+			let Some(question) = question else {
+				return Err(
+					"Chapter question order missing from database! Check math again.".into(),
+				);
+			};
+			let data = db.get_latest_question_revision(question.id).await?;
+			let mut short_desc = format!("{} asked, \"{}\"", data.asked_by, data.question_text);
+			if short_desc.len() > 250 {
+				short_desc = format!("{}…", &short_desc[..=249])
+			}
+			story_json(settings.story_id, &title, &short_desc)
+		}
+		// final chapter countdown updates
+		(true, false) => {
+			let title = format!("{minutes_left} Minutes Until Consensus");
+			story_json(
+				settings.story_id,
+				&title,
+				"The Equestrian Census, redefined.",
+			)
+		}
+		// final story update
+		(true, true) => story_json_completed(
+			settings.story_id,
+			"Census Consensus",
+			"The Equestrian Census, redefined.",
+		),
+		// should be impossible
+		(false, true) => unreachable!(),
 	};
 	Ok(json)
 }
