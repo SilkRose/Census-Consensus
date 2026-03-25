@@ -220,6 +220,7 @@ fn chapter_list_item_html(
 	html! (
 		h3 { a href = (format!("/chapters/{}", chapter.meta.id)) { (chapter.newest_data.title) sup { "↗" } } }
 		p {
+			a href = (format!("/chapters/{}/survey", chapter.meta.id)) { b { "Preview Survey" } sup { "↗" } }
 			b { " Ch Order: " }
 			@if let Some(order) = chapter.meta.chapter_order {
 				@if !active && admin {
