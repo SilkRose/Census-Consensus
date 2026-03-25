@@ -1,6 +1,8 @@
 use std::collections::HashMap;
 
-use crate::structs::{OptionData, Question, QuestionDataOption, QuestionRevision, QuestionType};
+use crate::structs::{
+	OptionData, OptionType, Question, QuestionDataOption, QuestionRevision, QuestionType,
+};
 use actix_web::HttpRequest;
 use pony::word_stats::word_count;
 
@@ -88,8 +90,9 @@ pub fn parse_options(text: &str, question_type: &QuestionType) -> Vec<(String, S
 	options
 }
 
+#[bon::builder]
 pub fn construct_question_data(
-	meta: Question, data: QuestionRevision, option_percents: HashMap<String, f64>,
+	meta: Question, data: QuestionRevision, option_data: OptionType,
 	option_texts: Vec<(String, String)>, population: i32,
 ) -> QuestionDataOption {
 	let mut total_count = 0;
@@ -104,13 +107,19 @@ pub fn construct_question_data(
 		.map(|c| c.trim())
 		.collect::<Vec<_>>();
 	let ponies = population as f64 * data.response_percent / 100.0;
-	for (id, percent) in option_percents {
-		let count = (ponies * percent / 100.0).round() as u32;
-		let text = option_texts
-			.iter()
-			.find(|(opt, _)| *opt == id)
-			.map(|(_, text)| text.clone())
-			.unwrap_or_default();
+	for (id, text) in option_texts {
+		let (percent, count) = match option_data {
+			OptionType::Percent(ref percents) => {
+				let percent = percents.get(&id).cloned().unwrap_or_default();
+				let count = (ponies * percent / 100.0).round() as u32;
+				(percent, count)
+			}
+			OptionType::Count(ref counts) => {
+				let count = counts.get(&id).cloned().unwrap_or_default();
+				let percent = (count as f64 / ponies) * 100.0;
+				(percent, count)
+			}
+		};
 		let order = ordering
 			.iter()
 			.enumerate()

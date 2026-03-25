@@ -847,7 +847,14 @@ pub fn question_preview_html(
 		}
 		@if !options.is_empty() {
 			h2 { "Selected Preview" }
-			@let question_data = construct_question_data(question, data, options, opts, population);
+			@let options = OptionType::Percent(options);
+			@let question_data = construct_question_data()
+					.meta(question)
+					.data(data)
+					.option_texts(opts)
+					.option_data(options)
+					.population(population)
+					.call();
 			@let (preview, errors) = result_formatter::format(&question_data);
 			@ for error in errors {
 				"Error detected: " (error) br;

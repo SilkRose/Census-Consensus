@@ -2,11 +2,12 @@
 
 use chrono::Utc;
 use serde_json::Value;
+use std::collections::HashMap;
 use std::time::Duration;
 
 use crate::endpoints::*;
-use crate::structs::{Chapter, ChapterRevision, Settings, UserType};
-use crate::utility::parse_options;
+use crate::structs::{Chapter, ChapterRevision, OptionType, Settings, UserType};
+use crate::utility::{construct_question_data, parse_options};
 
 pub use self::database::*;
 pub use self::error::Result;
@@ -219,7 +220,13 @@ async fn event_control_tick(
 	let final_chapter = question_count == 0;
 	if publish {
 		let data = db.get_latest_chapter_revision(chapter.id).await?;
-		let json = construct_chapter_json(db, data, final_chapter).await?;
+		let json = construct_chapter_json()
+			.db(db)
+			.settings(&settings)
+			.data(data)
+			.final_chapter(final_chapter)
+			.call()
+			.await?;
 		http_client
 			.post_story_chapter(fimfic_cfg, settings.story_id, json)
 			.await?;
@@ -242,27 +249,51 @@ async fn event_control_tick(
 	Ok(Tick::Continue)
 }
 
+#[bon::builder]
 async fn construct_chapter_json(
-	db: &mut Db, data: ChapterRevision, final_chapter: bool,
+	db: &mut Db, settings: &Settings, data: ChapterRevision, final_chapter: bool,
 ) -> Result<Value> {
 	let json = match final_chapter {
 		true => chapter_json(&data.title, &data.outro_text.ok_or("Missing outro!")?, None),
 		false => {
 			let mut texts = Vec::new();
 			if let Some(ref intro) = data.intro_text {
-				texts.push(intro.trim());
+				texts.push(intro.trim().to_string());
 			}
 			let questions = db.get_questions_by_chapter(data.chapter_id).await?;
 			for question in questions {
 				let data = db.get_latest_question_revision(question.id).await?;
-				let options = data.option_writing.ok_or("Missing options!")?;
+				let options = data.option_writing.clone().ok_or("Missing options!")?;
 				let option_tuples = parse_options(&options, &data.question_type);
 				let votes = db.get_all_votes_by_question(question.id).await?;
-				// insert parsing results here
-				texts.push("".trim());
+				let buckets = votes.chunk_by(|a, b| a.option_id == b.option_id);
+				let mut results = HashMap::new();
+				for bucket in buckets {
+					let mut count = 0;
+					for vote in bucket {
+						let banned = db.get_banned_user(vote.voter_id).await?;
+						if banned.is_none() {
+							count += 1;
+						}
+					}
+					results.insert(bucket[0].option_id.clone(), count);
+				}
+				let options = OptionType::Count(results);
+				let question_data = construct_question_data()
+					.meta(question)
+					.data(data)
+					.option_texts(option_tuples)
+					.option_data(options)
+					.population(settings.population)
+					.call();
+				let (preview, errors) = result_formatter::format(&question_data);
+				texts.push(preview.trim().to_string());
+				for error in errors {
+					eprintln!("Error in parsing question: {error}")
+				}
 			}
 			if let Some(ref outro) = data.outro_text {
-				texts.push(outro.trim());
+				texts.push(outro.trim().to_string());
 			}
 			chapter_json(&data.title, &texts.join("\n\n"), None)
 		}

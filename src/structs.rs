@@ -3,6 +3,7 @@ use pony::smart_map::SmartMap;
 use pony::structs::{option_bool, option_string};
 use serde::{Deserialize, Serialize};
 use sqlx::Type;
+use std::collections::HashMap;
 use std::fmt::{self, Display};
 
 #[derive(Clone, Debug, Deserialize, Serialize, Type, Eq, Hash, PartialEq)]
@@ -304,4 +305,10 @@ pub struct Settings {
 	pub story_id: i32,
 	pub population: i32,
 	pub start_time: Option<DateTime<Utc>>,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
+pub enum OptionType {
+	Percent(HashMap<String, f64>),
+	Count(HashMap<String, u32>),
 }
