@@ -233,14 +233,13 @@ async fn event_control_tick(
 		// final chapter countdown updates
 		(true, false) => {
 			let title = format!("{minutes_left} Minutes Until Consensus");
-			story_json(settings.story_id, &title, "", "")
+			story_json(settings.story_id, &title, "")
 		}
 		// final story update
 		(true, true) => story_json_completed(
 			settings.story_id,
 			"Census Consensus",
 			"The Equestrian Census, redefined.",
-			"",
 		),
 		// should be impossible
 		(false, true) => unreachable!(),

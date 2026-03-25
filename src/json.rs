@@ -16,30 +16,26 @@ pub fn chapter_json(title: &str, content: &str, authors_note: Option<&str>) -> V
 	})
 }
 
-pub fn story_json(id: i32, title: &str, short_description: &str, description: &str) -> Value {
+pub fn story_json(id: i32, title: &str, short_description: &str) -> Value {
 	// Construct the json for story updates.
 	json!({
 		"data": {
 			"id": id,
 			"attributes": {
 				"title": title,
-				"description": parse(description.trim(), &WarningType::Quiet),
 				"short_description": short_description
 			}
 		}
 	})
 }
 
-pub fn story_json_completed(
-	id: i32, title: &str, short_description: &str, description: &str,
-) -> Value {
+pub fn story_json_completed(id: i32, title: &str, short_description: &str) -> Value {
 	// Construct the json for story updates.
 	json!({
 		"data": {
 			"id": id,
 			"attributes": {
 				"title": title,
-				"description": parse(description.trim(), &WarningType::Quiet),
 				"short_description": short_description,
 				"completion_status": "complete"
 			}
