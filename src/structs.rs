@@ -296,6 +296,7 @@ pub struct OptionData {
 	pub text: String,
 	pub percent: f64,
 	pub count: u32,
+	pub order: u32,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]

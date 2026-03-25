@@ -111,37 +111,20 @@ pub fn construct_question_data(
 			.find(|(opt, _)| *opt == id)
 			.map(|(_, text)| text.clone())
 			.unwrap_or_default();
+		let order = ordering
+			.iter()
+			.enumerate()
+			.find(|(_, opt)| **opt == id)
+			.map_or(0, |(i, _)| i) as u32;
 		let data = OptionData {
 			id,
 			text,
 			percent,
 			count,
+			order,
 		};
 		options.push(data);
 		total_count += count;
-	}
-	let binding = options.clone();
-	let buckets = binding
-		.chunk_by(|a, b| a.count == b.count)
-		.collect::<Vec<_>>();
-	for bucket in buckets {
-		if bucket.is_empty() || bucket[0].count == 0 {
-			continue;
-		}
-		let mut orders = Vec::with_capacity(bucket.len());
-		for option in bucket {
-			let order = ordering
-				.iter()
-				.enumerate()
-				.find(|(_, opt)| **opt == option.id)
-				.map_or(0, |(i, _)| i);
-			orders.push(order);
-		}
-		if bucket.len().is_multiple_of(2) {
-			//
-		} else {
-			//
-		}
 	}
 	QuestionDataOption {
 		meta,
