@@ -859,7 +859,9 @@ pub fn question_preview_html(
 			@ for error in errors {
 				"Error detected: " (error) br;
 			}
-			(PreEscaped (parse(&preview, &WarningType::Quiet)))
+			span class = "left-text" {
+				(PreEscaped (parse(&preview, &WarningType::Quiet)))
+			}
 		}
 		h2 { "All Outcomes Preview" }
 		// All outcomes preview here
