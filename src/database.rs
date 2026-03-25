@@ -1137,7 +1137,9 @@ pub trait DbExecutor {
 			Question,
 			"SELECT
 				id, claimed_by, chapter_id, chapter_order, last_edit
-			FROM Questions WHERE chapter_id = $1;",
+			FROM Questions
+			WHERE chapter_id = $1
+			ORDER BY chapter_order;",
 			chapter_id
 		)
 		.fetch_all(self.executor())

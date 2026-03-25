@@ -147,6 +147,7 @@ async fn main() -> Result<()> {
 			.service(set_start_time)
 			.service(set_start_time_reset)
 			.service(get_questions)
+			.service(get_chapter_survey)
 			.service(auth::dev_session)
 			.service(Files::new("/assets", "./assets"))
 			.app_data(db.clone())

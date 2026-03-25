@@ -975,6 +975,38 @@ pub fn question_html(
 	}
 }
 
+pub fn chapter_survey_html(
+	user: User, theme: Theme, chapter: ChapterRevision,
+	questions: Vec<(Question, QuestionRevision)>,
+) -> String {
+	let heading = "Census Survey";
+	let title: String = format!("{heading} - {SITE_NAME}");
+	let description = "Chapter survey page.";
+	let link = format!("{SITE_LINK}/chapters/{}/survey", chapter.chapter_id);
+	let user_type = user.user_type;
+	let mane = html! {
+		h1 { (heading) }
+		p { (description) }
+		h2 { (chapter.title) }
+		form method = "post" action = (link) {
+			@for (question, data) in questions {
+				@let opts = parse_options(
+					&data.option_writing.clone().unwrap_or_default(),
+					&data.question_type,
+				);
+				(question_html(&question, &data, &opts))
+			}
+			button type = "submit" { "Submit" }
+		}
+	};
+	html_builder()
+		.theme(&theme)
+		.head(head_html(&title, description, &link, &theme))
+		.header(header_html(Some(user_type), Pages::Chapters, &theme))
+		.mane(mane)
+		.call()
+}
+
 // HTML components go below this comment:
 
 pub fn head_html(title: &str, description: &str, link: &str, theme: &Theme) -> PreEscaped<String> {

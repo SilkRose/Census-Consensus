@@ -749,3 +749,25 @@ pub async fn set_start_time_reset(
 		Ok(HttpResponse::InternalServerError().finish())
 	}
 }
+
+#[get("/chapters/{chapter_id}/survey")]
+pub async fn get_chapter_survey(
+	theme: Theme, path: Path<i32>, mut db: ThinData<Db>, session: WriterSessionInfo,
+) -> actix_web::Result<impl Responder> {
+	let chapter_id = path.into_inner();
+	if let Some(chapter) = db.get_latest_chapter_revision_opt(chapter_id).await?
+		&& let Ok(questions) = db.get_questions_by_chapter(chapter_id).await
+	{
+		let mut data = Vec::with_capacity(questions.len());
+		for question in questions {
+			let question_data = db.get_latest_question_revision(question.id).await?;
+			data.push((question, question_data));
+		}
+		let page = chapter_survey_html(session.user, theme, chapter, data);
+		Ok(HttpResponse::Ok()
+			.content_type("text/html; charset=utf-8")
+			.body(page))
+	} else {
+		Ok(HttpResponse::BadRequest().finish())
+	}
+}
