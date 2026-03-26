@@ -961,13 +961,14 @@ pub fn question_html(
 		} @else {
 			span class = (data.question_type) {
 				@for (id, opt) in options {
+					@let name = format!("{}-{id}", question.id);
 					span class = "question-option" {
 						@if QuestionType::Multiselect == data.question_type {
-							input id = (id) type = "checkbox" name = (question.id) value = (id) {}
-							label for = (id) { (opt) }
+							input id = (name) type = "checkbox" name = (question.id) value = (id) {}
+							label for = (name) { (opt) }
 						} @else {
-							input id = (id) type = "radio" name = (question.id) value = (id) {}
-							label for = (id) { (opt) }
+							input id = (name) type = "radio" name = (question.id) value = (id) {}
+							label for = (name) { (opt) }
 						}
 					}
 				}
