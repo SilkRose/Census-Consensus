@@ -228,9 +228,11 @@ async fn event_control_tick(
 			.final_chapter(final_chapter)
 			.call()
 			.await?;
-		http_client
+		let res = http_client
 			.post_story_chapter(fimfic_cfg, settings.story_id, json)
 			.await?;
+		let fimfic_id = res.data.id.parse::<i32>().ok();
+		db.update_chapter_fimfic_id(chapter.id, fimfic_id).await?;
 		return Ok(Tick::Skip);
 	}
 	let final_update = final_chapter && minutes_left <= -1;
