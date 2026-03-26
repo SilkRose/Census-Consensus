@@ -311,12 +311,11 @@ async fn construct_story_json(
 		// normal story updates during live surveys
 		(false, false) => {
 			let title = format!("Survey ends in {minutes_left} Minutes!");
-			let segments = (chapter.vote_duration as f64 / question_count as f64).ceil();
-			let current = segments
-				- (minutes_left as f64 / (chapter.vote_duration as f64 / segments)).floor()
-				+ 1.0;
+			let order = (minutes_left as f64 * question_count as f64 / chapter.vote_duration as f64)
+				.floor() as i32
+				+ 1;
 			let question = db
-				.get_question_by_chapter_and_order(chapter.id, current as i32)
+				.get_question_by_chapter_and_order(chapter.id, order)
 				.await?;
 			let Some(question) = question else {
 				return Err(
