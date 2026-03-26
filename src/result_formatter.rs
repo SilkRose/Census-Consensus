@@ -12,7 +12,7 @@ pub fn format(input: &QuestionDataOption) -> (String, Vec<String>) {
 	let votes = input.options.iter().collect::<Vec<_>>();
 	let votes_sorted = {
 		let mut votes_sorted = votes.clone();
-		votes_sorted.sort_by_key(|v| core::cmp::Reverse(v.count));
+		votes_sorted.sort_by_key(|v| (core::cmp::Reverse(v.count), v.order));
 		votes_sorted
 	};
 
@@ -155,7 +155,7 @@ pub fn format(input: &QuestionDataOption) -> (String, Vec<String>) {
 				}
 				let mut pairs = line.into_inner().peekable();
 
-				current_match_mut!().push_str("\n");
+				current_match_mut!().push_str("\n\n");
 
 				while let Some(segment) = pairs.next() {
 					let mut option = match segment.as_rule() {
@@ -223,13 +223,22 @@ pub fn format(input: &QuestionDataOption) -> (String, Vec<String>) {
 
 					match next.as_rule() {
 						Rule::text_vote_percent => {
-							current_match_mut!()
-								.push_str(&format!("{vp:.precision$}", vp = option.percent));
+							let current = current_match_mut!();
+							current.push_str(
+								format!("{vp:.precision$}", vp = option.percent)
+									.trim_end_matches('0')
+									.trim_end_matches('.')
+							);
+							current.push_str("%");
 						}
 
 						Rule::text_vote_count_formatted => {
 							current_match_mut!()
-								.push_str(&format_count_words(option.count, precision));
+								.push_str(
+									format_count_words(option.count, precision)
+										.trim_end_matches('0')
+										.trim_end_matches('.')
+								);
 						}
 
 						Rule::text_name => {
