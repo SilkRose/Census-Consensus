@@ -271,6 +271,7 @@ async fn construct_chapter_json(
 				let votes = db.get_all_votes_by_question(question.id).await?;
 				let buckets = votes.chunk_by(|a, b| a.option_id == b.option_id);
 				let mut results = HashMap::new();
+				let mut total_count = 0;
 				for bucket in buckets {
 					let mut count = 0;
 					for vote in bucket {
@@ -280,8 +281,9 @@ async fn construct_chapter_json(
 						}
 					}
 					results.insert(bucket[0].option_id.clone(), count);
+					total_count += count;
 				}
-				let options = OptionType::Count(results);
+				let options = OptionType::Count((results, total_count));
 				let question_data = construct_question_data()
 					.meta(question)
 					.data(data)

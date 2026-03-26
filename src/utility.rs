@@ -114,9 +114,10 @@ pub fn construct_question_data(
 				let count = (ponies * percent / 100.0).round() as u32;
 				(percent, count)
 			}
-			OptionType::Count(ref counts) => {
-				let count = counts.get(&id).cloned().unwrap_or_default();
-				let percent = (count as f64 / ponies) * 100.0;
+			OptionType::Count((ref counts, total_votes)) => {
+				let vote_count = counts.get(&id).cloned().unwrap_or_default();
+				let percent = (vote_count as f64 / total_votes as f64) * 100.0;
+				let count = (ponies * percent / 100.0).round() as u32;
 				(percent, count)
 			}
 		};

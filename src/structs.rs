@@ -310,5 +310,5 @@ pub struct Settings {
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
 pub enum OptionType {
 	Percent(HashMap<String, f64>),
-	Count(HashMap<String, u32>),
+	Count((HashMap<String, u32>, u32)),
 }
