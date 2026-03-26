@@ -860,7 +860,7 @@ pub fn question_preview_html(
 			@ for error in errors {
 				"Error detected: " (error) br;
 			}
-			span class = "left-text" {
+			pre class = "left-text" {
 				(PreEscaped (parse(&preview, &WarningType::Quiet)))
 			}
 		}
