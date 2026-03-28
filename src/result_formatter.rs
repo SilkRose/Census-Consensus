@@ -19,7 +19,7 @@ pub fn format(input: &QuestionDataOption) -> (String, Vec<String>) {
 	let mut state = ParseState::None;
 	let mut start = None;
 	let mut end = None;
-	let mut middle = String::new();
+	let mut middle = None;
 	let mut errors = Vec::new();
 
 	macro_rules! current_match_mut {
@@ -27,7 +27,7 @@ pub fn format(input: &QuestionDataOption) -> (String, Vec<String>) {
 			match state {
 				ParseState::Start => start.as_mut().unwrap(),
 				ParseState::End => end.as_mut().unwrap(),
-				ParseState::Matching => &mut middle,
+				ParseState::Matching => middle.as_mut().unwrap(),
 				ParseState::None => {
 					unreachable!()
 				}
@@ -74,6 +74,11 @@ pub fn format(input: &QuestionDataOption) -> (String, Vec<String>) {
 					}
 
 					Rule::cond_option => {
+						if middle.is_some() {
+							state = ParseState::None;
+							continue
+						}
+
 						let first_str = first.as_str();
 						let Some(vote) = get_count_from_str(first_str, &votes, &mut errors) else {
 							errors.push(format!("{} is not a valid option", first_str));
@@ -87,10 +92,11 @@ pub fn format(input: &QuestionDataOption) -> (String, Vec<String>) {
 							None => {
 								// we got a vote out, which means that thare are votes at all,
 								// so indexing 0 won't panic
-								state = if &*votes_sorted[0].id == &*vote.id {
-									ParseState::Matching
+								if &*votes_sorted[0].id == &*vote.id {
+									middle = Some(String::new());
+									state = ParseState::Matching;
 								} else {
-									ParseState::None
+									state = ParseState::None
 								};
 
 								continue;
@@ -136,10 +142,11 @@ pub fn format(input: &QuestionDataOption) -> (String, Vec<String>) {
 							}
 						};
 
-						state = if comparison(&vote_percent, &other_percent) {
-							ParseState::Matching
+						if comparison(&vote_percent, &other_percent) {
+							middle = Some(String::new());
+							state = ParseState::Matching;
 						} else {
-							ParseState::None
+							state = ParseState::None;
 						}
 					}
 
@@ -261,7 +268,7 @@ pub fn format(input: &QuestionDataOption) -> (String, Vec<String>) {
 	}
 
 	let mut all = start.unwrap_or_default();
-	all.push_str(&middle);
+	middle.inspect(|middle| all.push_str(middle));
 	end.inspect(|end| all.push_str(end));
 
 	(all, errors)
