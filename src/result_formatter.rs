@@ -310,7 +310,7 @@ fn get_count_from_str<'h>(
 }
 
 fn get_count_from_char<'h>(
-	char: char, votes: &[&'h OptionData], errors: &'_ mut Vec<String>,
+	char: char, votes: &[&'h OptionData], errors: &mut Vec<String>,
 ) -> Option<&'h OptionData> {
 	let index = map_option_to_array_index(char).unwrap();
 	get_count_from_impl(&char.to_string(), index, votes, errors)
@@ -325,7 +325,8 @@ fn get_count_from_index<'h>(
 fn get_count_from_impl<'h>(
 	orig: &'_ str, index: usize, votes: &[&'h OptionData], errors: &mut Vec<String>,
 ) -> Option<&'h OptionData> {
-	let vote = votes.get(index);
+	// `index` starts at 1, but slice indexes start at 0, so we subtract 1
+	let vote = votes.get(index.saturating_sub(1));
 
 	if vote.is_none() {
 		errors.push(format!("{orig} is not a valid option"));
