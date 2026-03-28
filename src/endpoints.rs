@@ -3,7 +3,7 @@ use crate::database::*;
 use crate::html_templates::*;
 use crate::structs::*;
 use crate::theme::Theme;
-use crate::utility::redirect;
+use crate::utility::{parse_options, redirect};
 use crate::{FimficCfg, HttpClient};
 use actix_web::web::{Path, Query, ThinData};
 use actix_web::{HttpRequest, HttpResponse, Responder, get, post};
@@ -767,6 +767,41 @@ pub async fn get_chapter_survey(
 		Ok(HttpResponse::Ok()
 			.content_type("text/html; charset=utf-8")
 			.body(page))
+	} else {
+		Ok(HttpResponse::BadRequest().finish())
+	}
+}
+
+#[post("/chapters/{chapter_id}/submit")]
+pub async fn set_chapter_submit(
+	path: Path<i32>, body: String, mut db: ThinData<Db>, session: SessionInfo,
+) -> actix_web::Result<impl Responder> {
+	let chapter_id = path.into_inner();
+	let votes = serde_urlencoded::from_str::<HashMap<String, String>>(&body)?;
+	if let Some(chapter) = db.get_chapter(chapter_id).await?
+		&& chapter.chapter_order.is_some()
+		&& chapter.fimfic_ch_id.is_none()
+	{
+		let user = db.get_user(session.user_id).await?;
+		let data = db.get_latest_chapter_revision(chapter_id).await?;
+		let active = db
+			.get_active_chapter()
+			.await?
+			.is_some_and(|ch| ch.id == chapter_id);
+		if active || user.user_type != UserType::Voter {
+			let questions = db.get_questions_by_chapter(chapter_id).await?;
+			for question in questions {
+				let data = db.get_latest_question_revision(question.id).await?;
+				let text = data.option_writing.unwrap_or_default();
+				let options = parse_options(&text, &data.question_type);
+				for option in options {
+					// Check and insert the vote.
+				}
+			}
+		}
+		Ok(HttpResponse::SeeOther()
+			.append_header(("Location", "/"))
+			.finish())
 	} else {
 		Ok(HttpResponse::BadRequest().finish())
 	}

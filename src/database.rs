@@ -70,6 +70,14 @@ impl Db {
 		Ok(meta)
 	}
 
+	pub async fn get_active_chapter(&mut self) -> Result<Option<Chapter>> {
+		let chapters = self.get_all_chapters().await?;
+		let chapter = chapters
+			.into_iter()
+			.find(|c| c.chapter_order.is_some() && c.fimfic_ch_id.is_none());
+		Ok(chapter)
+	}
+
 	pub async fn get_chapters_table(&mut self) -> Result<Vec<ChapterTable>> {
 		let mut tx = self.transaction().await?;
 		let chapters = tx.get_all_chapters().await?;

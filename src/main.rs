@@ -148,6 +148,7 @@ async fn main() -> Result<()> {
 			.service(set_start_time_reset)
 			.service(get_questions)
 			.service(get_chapter_survey)
+			.service(set_chapter_submit)
 			.service(auth::dev_session)
 			.service(Files::new("/assets", "./assets"))
 			.app_data(db.clone())
@@ -200,11 +201,7 @@ async fn event_control_tick(
 	if settings.start_time.is_none_or(|time| time > Utc::now()) {
 		return Ok(Tick::Continue);
 	}
-	let chapters = db.get_all_chapters().await?;
-	let Some(chapter) = chapters
-		.iter()
-		.find(|c| c.chapter_order.is_some() && c.fimfic_ch_id.is_none())
-	else {
+	let Some(chapter) = db.get_active_chapter().await? else {
 		let story = http_client
 			.get_story_update(fimfic_cfg, settings.story_id)
 			.await?;
@@ -239,7 +236,7 @@ async fn event_control_tick(
 	let json = construct_story_json()
 		.db(db)
 		.settings(&settings)
-		.chapter(chapter)
+		.chapter(&chapter)
 		.final_chapter(final_chapter)
 		.final_update(final_update)
 		.minutes_left(minutes_left)
