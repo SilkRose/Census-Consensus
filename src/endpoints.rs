@@ -783,7 +783,6 @@ pub async fn set_chapter_submit(
 		&& chapter.fimfic_ch_id.is_none()
 	{
 		let user = db.get_user(session.user_id).await?;
-		let data = db.get_latest_chapter_revision(chapter_id).await?;
 		let active = db
 			.get_active_chapter()
 			.await?
@@ -791,11 +790,23 @@ pub async fn set_chapter_submit(
 		if active || user.user_type != UserType::Voter {
 			let questions = db.get_questions_by_chapter(chapter_id).await?;
 			for question in questions {
+				let Some(vote) = votes.get(&question.id.to_string()) else {
+					continue;
+				};
 				let data = db.get_latest_question_revision(question.id).await?;
 				let text = data.option_writing.unwrap_or_default();
-				let options = parse_options(&text, &data.question_type);
-				for option in options {
-					// Check and insert the vote.
+				let options = parse_options(&text, &data.question_type)
+					.into_iter()
+					.collect::<HashMap<_, _>>();
+				let answers: Vec<String> = match data.question_type {
+					QuestionType::Multiselect => vote.split("+").map(|v| v.to_string()).collect(),
+					_ => vec![vote.clone()],
+				};
+				for answer in answers {
+					if !options.contains_key(&answer) {
+						continue;
+					}
+					db.insert_vote(user.id, question.id, &answer).await?;
 				}
 			}
 		}
