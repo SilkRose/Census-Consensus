@@ -984,7 +984,7 @@ pub fn chapter_survey_html(
 	let heading = "Census Survey";
 	let title: String = format!("{heading} - {SITE_NAME}");
 	let description = "Chapter survey page.";
-	let link = format!("{SITE_LINK}/chapters/{}/survey", chapter.chapter_id);
+	let link = format!("{SITE_LINK}/chapters/{}/submit", chapter.chapter_id);
 	let user_type = user.user_type;
 	let mane = html! {
 		h1 { (heading) }
