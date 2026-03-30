@@ -19,7 +19,7 @@ pub fn format(input: &QuestionDataOption) -> (String, Vec<String>) {
 	let mut state = ParseState::None;
 	let mut start = None;
 	let mut end = None;
-	let mut middle = String::new();
+	let mut middle = None;
 	let mut errors = Vec::new();
 
 	macro_rules! current_match_mut {
@@ -27,7 +27,7 @@ pub fn format(input: &QuestionDataOption) -> (String, Vec<String>) {
 			match state {
 				ParseState::Start => start.as_mut().unwrap(),
 				ParseState::End => end.as_mut().unwrap(),
-				ParseState::Matching => &mut middle,
+				ParseState::Matching => middle.as_mut().unwrap(),
 				ParseState::None => {
 					unreachable!()
 				}
@@ -74,9 +74,14 @@ pub fn format(input: &QuestionDataOption) -> (String, Vec<String>) {
 					}
 
 					Rule::cond_option => {
+						if middle.is_some() {
+							state = ParseState::None;
+							continue
+						}
+
 						let first_str = first.as_str();
-						let Some(vote) = get_count_from_str(first_str, &votes, &mut errors) else {
-							errors.push(format!("{} is not a valid option", first_str));
+						let Some(vote) = get_count_from_str_maybe_ordinal(first_str, &votes, &votes_sorted, &mut errors) else {
+							errors.push(format!("{first_str} is not a valid option"));
 							state = ParseState::None;
 							continue;
 						};
@@ -87,10 +92,11 @@ pub fn format(input: &QuestionDataOption) -> (String, Vec<String>) {
 							None => {
 								// we got a vote out, which means that thare are votes at all,
 								// so indexing 0 won't panic
-								state = if &*votes_sorted[0].id == &*vote.id {
-									ParseState::Matching
+								if &*votes_sorted[0].id == &*vote.id {
+									middle = Some(String::new());
+									state = ParseState::Matching;
 								} else {
-									ParseState::None
+									state = ParseState::None
 								};
 
 								continue;
@@ -104,8 +110,9 @@ pub fn format(input: &QuestionDataOption) -> (String, Vec<String>) {
 						let other_percent = match next.as_rule() {
 							Rule::cond_option => {
 								let Some(other_vote) =
-									get_count_from_str(next.as_str(), &votes, &mut errors)
+									get_count_from_str_maybe_ordinal(next.as_str(), &votes, &votes_sorted, &mut errors)
 								else {
+									errors.push(format!("{next} is not a valid option"));
 									state = ParseState::None;
 									continue;
 								};
@@ -136,10 +143,11 @@ pub fn format(input: &QuestionDataOption) -> (String, Vec<String>) {
 							}
 						};
 
-						state = if comparison(&vote_percent, &other_percent) {
-							ParseState::Matching
+						if comparison(&vote_percent, &other_percent) {
+							middle = Some(String::new());
+							state = ParseState::Matching;
 						} else {
-							ParseState::None
+							state = ParseState::None;
 						}
 					}
 
@@ -261,7 +269,7 @@ pub fn format(input: &QuestionDataOption) -> (String, Vec<String>) {
 	}
 
 	let mut all = start.unwrap_or_default();
-	all.push_str(&middle);
+	middle.inspect(|middle| all.push_str(middle));
 	end.inspect(|end| all.push_str(end));
 
 	(all, errors)
@@ -303,6 +311,18 @@ fn format_count_words(count: u32, decimal_places: usize) -> String {
 	format!("{count:.decimal_places$}{word}")
 }
 
+fn get_count_from_str_maybe_ordinal<'h>(
+	str: &str, votes: &[&'h OptionData], votes_sorted: &[&'h OptionData], errors: &mut Vec<String>
+) -> Option<&'h OptionData> {
+	let ordinal = str.get(0..1).and_then(|c| c.parse().ok());
+
+	if let Some(ordinal) = ordinal {
+		get_count_from_index(ordinal, votes_sorted, errors)
+	} else {
+		get_count_from_str(str, votes, errors)
+	}
+}
+
 fn get_count_from_str<'h>(
 	str: &str, votes: &[&'h OptionData], errors: &mut Vec<String>,
 ) -> Option<&'h OptionData> {
@@ -310,7 +330,7 @@ fn get_count_from_str<'h>(
 }
 
 fn get_count_from_char<'h>(
-	char: char, votes: &[&'h OptionData], errors: &'_ mut Vec<String>,
+	char: char, votes: &[&'h OptionData], errors: &mut Vec<String>,
 ) -> Option<&'h OptionData> {
 	let index = map_option_to_array_index(char).unwrap();
 	get_count_from_impl(&char.to_string(), index, votes, errors)
@@ -325,7 +345,8 @@ fn get_count_from_index<'h>(
 fn get_count_from_impl<'h>(
 	orig: &'_ str, index: usize, votes: &[&'h OptionData], errors: &mut Vec<String>,
 ) -> Option<&'h OptionData> {
-	let vote = votes.get(index);
+	// `index` starts at 1, but slice indexes start at 0, so we subtract 1
+	let vote = votes.get(index.saturating_sub(1));
 
 	if vote.is_none() {
 		errors.push(format!("{orig} is not a valid option"));
@@ -361,7 +382,7 @@ mod result_parser {
 		cond_comparison_gt = { " > " }
 		cond_comparison = _{ cond_comparison_gt }
 
-		cond_option = { ASCII_ALPHA_UPPER }
+		cond_option = { ASCII_ALPHA | ASCII_DIGIT }
 		cond_percentage = { ASCII_DIGIT{,2} }
 		cond_percentage_wrap = _{ cond_percentage ~ "%" }
 		cond_fraction_part = { ASCII_DIGIT{1,5} }
