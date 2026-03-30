@@ -14,14 +14,14 @@ use std::borrow::Cow;
 pub struct HttpClient {
 	inner: ReqwestClient,
 	local: ReqwestClient,
-	cf_data: CloudFlareData,
+	pub cf_data: CloudFlareData,
 }
 
 #[derive(Clone)]
 pub struct CloudFlareData {
-	user_agent: String,
-	cookies: Vec<String>,
-	created: DateTime<Utc>,
+	pub user_agent: String,
+	pub cookies: Vec<String>,
+	pub created: DateTime<Utc>,
 }
 
 pub struct FimficTokenExchangeResponse {
@@ -239,7 +239,11 @@ async fn get_cookie(local: &ReqwestClient) -> Result<CloudFlareData> {
 		.await?
 		.json::<FlareSolverr>()
 		.await?;
-	println!("{}: Cookie message: {}", Utc::now(), res.message);
+	println!(
+		"{}: Cookie Message: {}",
+		Utc::now().format("%y-%m-%d %H:%M"),
+		res.message
+	);
 	let cf_data = CloudFlareData {
 		user_agent: res.solution.user_agent,
 		cookies: res
@@ -248,7 +252,7 @@ async fn get_cookie(local: &ReqwestClient) -> Result<CloudFlareData> {
 			.iter()
 			.map(|cookie| cookie.to_cookie_string())
 			.collect(),
-		created: DateTime::from_timestamp_secs(res.end_timestamp).unwrap_or(Utc::now()),
+		created: Utc::now(),
 	};
 	Ok(cf_data)
 }

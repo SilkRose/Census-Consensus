@@ -168,16 +168,13 @@ async fn main() -> Result<()> {
 
 	tokio::task::spawn_local(async move {
 		let mut http_client = http_clone_clone.clone();
-		let mut minutes = 0;
 		loop {
 			let time = Utc::now();
 			let diff = 60_000 - (time.timestamp_millis() % 60_000) as u64;
 			tokio::time::sleep(Duration::from_millis(diff)).await;
-			if minutes > 30 {
+			if http_client.cf_data.created + Duration::from_mins(30) <= time {
 				let _ = http_client.refresh_cookie().await;
-				minutes = 0;
 			}
-			minutes += 1;
 		}
 	});
 
