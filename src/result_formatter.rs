@@ -80,8 +80,8 @@ pub fn format(input: &QuestionDataOption) -> (String, Vec<String>) {
 						}
 
 						let first_str = first.as_str();
-						let Some(vote) = get_count_from_str(first_str, &votes, &mut errors) else {
-							errors.push(format!("{} is not a valid option", first_str));
+						let Some(vote) = get_count_from_str_maybe_ordinal(first_str, &votes, &votes_sorted, &mut errors) else {
+							errors.push(format!("{first_str} is not a valid option"));
 							state = ParseState::None;
 							continue;
 						};
@@ -110,8 +110,9 @@ pub fn format(input: &QuestionDataOption) -> (String, Vec<String>) {
 						let other_percent = match next.as_rule() {
 							Rule::cond_option => {
 								let Some(other_vote) =
-									get_count_from_str(next.as_str(), &votes, &mut errors)
+									get_count_from_str_maybe_ordinal(next.as_str(), &votes, &votes_sorted, &mut errors)
 								else {
+									errors.push(format!("{next} is not a valid option"));
 									state = ParseState::None;
 									continue;
 								};
@@ -310,6 +311,18 @@ fn format_count_words(count: u32, decimal_places: usize) -> String {
 	format!("{count:.decimal_places$}{word}")
 }
 
+fn get_count_from_str_maybe_ordinal<'h>(
+	str: &str, votes: &[&'h OptionData], votes_sorted: &[&'h OptionData], errors: &mut Vec<String>
+) -> Option<&'h OptionData> {
+	let ordinal = str.get(0..1).and_then(|c| c.parse().ok());
+
+	if let Some(ordinal) = ordinal {
+		get_count_from_index(ordinal, votes_sorted, errors)
+	} else {
+		get_count_from_str(str, votes, errors)
+	}
+}
+
 fn get_count_from_str<'h>(
 	str: &str, votes: &[&'h OptionData], errors: &mut Vec<String>,
 ) -> Option<&'h OptionData> {
@@ -369,7 +382,7 @@ mod result_parser {
 		cond_comparison_gt = { " > " }
 		cond_comparison = _{ cond_comparison_gt }
 
-		cond_option = { ASCII_ALPHA_UPPER }
+		cond_option = { ASCII_ALPHA | ASCII_DIGIT }
 		cond_percentage = { ASCII_DIGIT{,2} }
 		cond_percentage_wrap = _{ cond_percentage ~ "%" }
 		cond_fraction_part = { ASCII_DIGIT{1,5} }
