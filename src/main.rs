@@ -63,6 +63,7 @@ async fn main() -> Result<()> {
 	let http_client = HttpClient::new().await?;
 	let http_client = Data(http_client);
 	let http_clone = http_client.clone();
+	let http_clone_clone = http_clone.clone();
 
 	let admin = match db.get_user_opt(admin_id).await? {
 		Some(admin) => {
@@ -163,6 +164,20 @@ async fn main() -> Result<()> {
 		let fimfic = fimfic_clone.clone();
 		let db = db_clone.clone();
 		event_control_loop(db, http_client, fimfic).await;
+	});
+
+	tokio::task::spawn_local(async move {
+		let mut http_client = http_clone_clone.clone();
+		let mut minutes = 0;
+		loop {
+			let time = Utc::now();
+			let diff = 60_000 - (time.timestamp_millis() % 60_000) as u64;
+			tokio::time::sleep(Duration::from_millis(diff)).await;
+			if minutes > 30 {
+				let _ = http_client.refresh_cookie().await;
+			}
+			minutes += 1;
+		}
 	});
 
 	//                      mane

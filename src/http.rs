@@ -36,8 +36,8 @@ pub struct FlareSolverr {
 	status: String,
 	message: String,
 	solution: SolverrSolution,
-	start_timestamp: u64,
-	end_timestamp: u64,
+	start_timestamp: i64,
+	end_timestamp: i64,
 	version: String,
 }
 
@@ -73,35 +73,17 @@ impl HttpClient {
 	pub async fn new() -> Result<Self> {
 		let inner = ReqwestClient::builder().https_only(true).build()?;
 		let local = ReqwestClient::builder().build()?;
-		let json = json!({
-		  "cmd": "request.get",
-		  "url": "https://www.fimfiction.net/privacy-policy",
-		  "returnOnlyCookies": true,
-		  "maxTimeout": 60000
-		});
-		let res = local
-			.post("http://localhost:8191/v1")
-			.header("Content-Type", "application/json")
-			.body(json.to_string())
-			.send()
-			.await?
-			.json::<FlareSolverr>()
-			.await?;
-		let cf_data = CloudFlareData {
-			user_agent: res.solution.user_agent,
-			cookies: res
-				.solution
-				.cookies
-				.iter()
-				.map(|cookie| cookie.to_cookie_string())
-				.collect(),
-			created: Utc::now(),
-		};
+		let cf_data = get_cookie(&local).await?;
 		Ok(Self {
 			inner,
 			local,
 			cf_data,
 		})
+	}
+
+	pub async fn refresh_cookie(&mut self) -> Result<()> {
+		self.cf_data = get_cookie(&self.local).await?;
+		Ok(())
 	}
 
 	// if we ever need to fetch more user data than only a
@@ -240,4 +222,33 @@ macro_rules! http_methods {
 
 impl HttpClient {
 	http_methods!(get post patch);
+}
+
+async fn get_cookie(local: &ReqwestClient) -> Result<CloudFlareData> {
+	let json = json!({
+	  "cmd": "request.get",
+	  "url": "https://www.fimfiction.net/privacy-policy",
+	  "returnOnlyCookies": true,
+	  "maxTimeout": 60000
+	});
+	let res = local
+		.post("http://localhost:8191/v1")
+		.header("Content-Type", "application/json")
+		.body(json.to_string())
+		.send()
+		.await?
+		.json::<FlareSolverr>()
+		.await?;
+	println!("{}: Cookie message: {}", Utc::now(), res.message);
+	let cf_data = CloudFlareData {
+		user_agent: res.solution.user_agent,
+		cookies: res
+			.solution
+			.cookies
+			.iter()
+			.map(|cookie| cookie.to_cookie_string())
+			.collect(),
+		created: DateTime::from_timestamp_secs(res.end_timestamp).unwrap_or(Utc::now()),
+	};
+	Ok(cf_data)
 }
