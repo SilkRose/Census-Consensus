@@ -860,7 +860,7 @@ pub fn question_preview_html(
 			pre class = "left-text" {
 				code {
 					@for error in errors {
-						"Error detected: " (error) br;
+						"Error detected:" br; (error) br;
 					}
 				}
 			}
