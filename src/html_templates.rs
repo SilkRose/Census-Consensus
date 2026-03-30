@@ -771,12 +771,12 @@ pub fn home_html(user: Option<User>, theme: Theme) -> String {
 			}
 		} @else {
 			p {
-				"To sign up for this year's census, please click the button below."
+				"To sign up for this year's census, or to sign in to your account, please click the button below."
 			}
 			blockquote {
 				"We do not store email addresses or API access tokens."
 			}
-			(button_link("Sign Up", "/login/fimfic"))
+			(button_link("Sign Up or Sign In", "/login/fimfic"))
 		}
 	};
 	let user_type = user.map(|user| user.user_type);
