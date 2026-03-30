@@ -857,15 +857,17 @@ pub fn question_preview_html(
 					.population(population)
 					.call();
 			@let (preview, errors) = result_formatter::format(&question_data);
-			@ for error in errors {
-				"Error detected: " (error) br;
+			pre class = "left-text" {
+				code {
+					@for error in errors {
+						"Error detected: " (error) br;
+					}
+				}
 			}
 			pre class = "left-text" {
 				(PreEscaped (parse(&preview, &WarningType::Quiet)))
 			}
 		}
-		h2 { "All Outcomes Preview" }
-		// All outcomes preview here
 	};
 	html_builder()
 		.theme(&theme)
