@@ -175,6 +175,7 @@ async fn main() -> Result<()> {
 			tokio::time::sleep(Duration::from_millis(diff)).await;
 			if minutes > 30 {
 				let _ = http_client.refresh_cookie().await;
+				minutes = 0;
 			}
 			minutes += 1;
 		}
