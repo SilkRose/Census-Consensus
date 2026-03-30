@@ -802,6 +802,8 @@ pub async fn set_chapter_submit(
 					QuestionType::Multiselect => vote.split("+").map(|v| v.to_string()).collect(),
 					_ => vec![vote.clone()],
 				};
+				db.delete_votes_by_question_and_user(question.id, user.id)
+					.await?;
 				for answer in answers {
 					if !options.contains_key(&answer) {
 						continue;

@@ -1409,6 +1409,26 @@ pub trait DbExecutor {
 		.map_err(select_err)?)
 	}
 
+	async fn get_all_votes_by_question_and_user(
+		&mut self, question_id: i32, user_id: i32,
+	) -> Result<Vec<Vote>> {
+		Ok(sqlx::query_as!(
+			Vote,
+			"SELECT
+				voter_id, question_id, option_id, date_created
+			FROM Votes
+			WHERE
+				question_id = $1
+			AND
+				voter_id = $2;",
+			question_id,
+			user_id
+		)
+		.fetch_all(self.executor())
+		.await
+		.map_err(select_err)?)
+	}
+
 	async fn get_all_votes(&mut self) -> Result<Vec<Vote>> {
 		Ok(sqlx::query_as!(
 			Vote,
@@ -1456,6 +1476,24 @@ pub trait DbExecutor {
 				.map_err(delete_err)?
 				.rows_affected(),
 		)
+	}
+
+	async fn delete_votes_by_question_and_user(
+		&mut self, question_id: i32, user_id: i32,
+	) -> Result<u64> {
+		Ok(sqlx::query!(
+			"DELETE FROM Votes
+			WHERE
+				question_id = $1
+			AND
+				voter_id = $2;",
+			question_id,
+			user_id
+		)
+		.execute(self.executor())
+		.await
+		.map_err(delete_err)?
+		.rows_affected())
 	}
 
 	async fn delete_all_votes(&mut self) -> Result<u64> {
