@@ -1,17 +1,27 @@
 use crate::error::Result;
 use crate::fimfic_cfg::FimficCfg;
+use chrono::{DateTime, Utc};
 use pony::fimfiction_api::chapter::ChapterApi;
 use pony::fimfiction_api::story::StoryApi;
 use pony::fimfiction_api::user::UserApi;
-use reqwest::header::{AUTHORIZATION, USER_AGENT};
+use reqwest::header::{AUTHORIZATION, COOKIE, USER_AGENT};
 use reqwest::{Client as ReqwestClient, IntoUrl, RequestBuilder};
-use serde::Deserialize;
-use serde_json::Value;
+use serde::{Deserialize, Serialize};
+use serde_json::{Value, json};
 use std::borrow::Cow;
 
 #[derive(Clone)]
 pub struct HttpClient {
 	inner: ReqwestClient,
+	local: ReqwestClient,
+	cf_data: CloudFlareData,
+}
+
+#[derive(Clone)]
+pub struct CloudFlareData {
+	user_agent: String,
+	cookies: Vec<String>,
+	created: DateTime<Utc>,
 }
 
 pub struct FimficTokenExchangeResponse {
@@ -20,25 +30,88 @@ pub struct FimficTokenExchangeResponse {
 	pub access_token: String,
 }
 
-impl HttpClient {
-	pub fn new() -> Result<Self> {
-		let inner = ReqwestClient::builder().https_only(true).build()?;
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct FlareSolverr {
+	status: String,
+	message: String,
+	solution: SolverrSolution,
+	start_timestamp: u64,
+	end_timestamp: u64,
+	version: String,
+}
 
-		Ok(Self { inner })
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SolverrSolution {
+	url: String,
+	status: i32,
+	cookies: Vec<Cookie>,
+	user_agent: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Cookie {
+	domain: String,
+	expiry: u64,
+	http_only: bool,
+	name: String,
+	path: String,
+	same_site: String,
+	secure: bool,
+	value: String,
+}
+
+impl Cookie {
+	fn to_cookie_string(&self) -> String {
+		format!("name={}; value={}", self.name, self.value)
+	}
+}
+
+impl HttpClient {
+	pub async fn new() -> Result<Self> {
+		let inner = ReqwestClient::builder().https_only(true).build()?;
+		let local = ReqwestClient::builder().build()?;
+		let json = json!({
+		  "cmd": "request.get",
+		  "url": "https://www.fimfiction.net/privacy-policy",
+		  "returnOnlyCookies": true,
+		  "maxTimeout": 60000
+		});
+		let res = local
+			.post("http://localhost:8191/v1")
+			.header("Content-Type", "application/json")
+			.body(json.to_string())
+			.send()
+			.await?
+			.json::<FlareSolverr>()
+			.await?;
+		let cf_data = CloudFlareData {
+			user_agent: res.solution.user_agent,
+			cookies: res
+				.solution
+				.cookies
+				.iter()
+				.map(|cookie| cookie.to_cookie_string())
+				.collect(),
+			created: Utc::now(),
+		};
+		Ok(Self {
+			inner,
+			local,
+			cf_data,
+		})
 	}
 
 	// if we ever need to fetch more user data than only a
 	// pfp from fimfic, modify this function into that
 	pub async fn get_fimfic_user(&self, user_id: i32, token: &str) -> Result<UserApi<i32>> {
-		self.get(
+		let req = self.get(
 			format!("https://www.fimfiction.net/api/v2/users/{user_id}"),
 			Some(token),
-		)
-		.send()
-		.await?
-		.json()
-		.await
-		.map_err(Into::into)
+		);
+		req.send().await?.json().await.map_err(Into::into)
 	}
 
 	pub async fn fimfic_token_exchange(
@@ -138,12 +211,15 @@ impl HttpClient {
 }
 
 // internal only helper functions
-fn common_setup(mut builder: RequestBuilder, token: Option<&str>) -> RequestBuilder {
+fn common_setup(
+	mut builder: RequestBuilder, cf_data: CloudFlareData, token: Option<&str>,
+) -> RequestBuilder {
 	// todo need real header
-	builder = builder.header(
-		USER_AGENT,
-		format!("Silk Rose Survey {}", env!("CARGO_PKG_VERSION")),
-	);
+	builder = builder.header(USER_AGENT, cf_data.user_agent);
+
+	for cookie in cf_data.cookies {
+		builder = builder.header(COOKIE, cookie);
+	}
 
 	if let Some(token) = token {
 		builder = builder.header(AUTHORIZATION, format!("Bearer {token}"));
@@ -156,7 +232,7 @@ macro_rules! http_methods {
 	($($method:ident)*) => {
 		$(
 			pub fn $method(&self, url: impl IntoUrl, token: Option<&str>) -> RequestBuilder {
-				common_setup(self.inner.$method(url), token)
+				common_setup(self.inner.$method(url), self.cf_data.clone(), token)
 			}
 		)*
 	}

@@ -60,7 +60,7 @@ async fn main() -> Result<()> {
 	let fimfic = Data(fimfic_cfg);
 	let fimfic_clone = fimfic.clone();
 
-	let http_client = HttpClient::new()?;
+	let http_client = HttpClient::new().await?;
 	let http_client = Data(http_client);
 	let http_clone = http_client.clone();
 
