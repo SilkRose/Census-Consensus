@@ -92,7 +92,7 @@ pub fn format(input: &QuestionDataOption) -> (String, Vec<String>) {
 							None => {
 								// we got a vote out, which means that thare are votes at all,
 								// so indexing 0 won't panic
-								if &*votes_sorted[0].id == &*vote.id {
+								if *votes_sorted[0].id == *vote.id {
 									middle = Some(String::new());
 									state = ParseState::Matching;
 								} else {
