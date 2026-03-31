@@ -417,7 +417,7 @@ mod result_parser {
 		text_option_question = { "%[question]%" }
 
 		text_option_letter = { ASCII_ALPHA }
-		text_option_number = { ASCII_DIGIT }
+		text_option_number = { ASCII_DIGIT+ }
 		text_option = _{ text_option_letter | text_option_number }
 
 		text_inners = _{ text_vote_place_indicator? ~ (text_vote_percent_wrap | text_vote_count | text_vote_count_formatted_wrap | text_name) }
