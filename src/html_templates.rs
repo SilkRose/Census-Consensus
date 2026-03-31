@@ -1023,7 +1023,7 @@ pub fn home_survey_complete_html(
 	let minutes_left = Duration::from_mins(chapter.minutes_left.unwrap_or_default() as u64);
 	let end_time = start_time + minutes_left;
 	let millis_diff = Duration::from_millis((end_time.timestamp_millis() % 60_000) as u64);
-	let millis_left = ((end_time - millis_diff) - start_time).num_milliseconds();
+	let seconds_left = ((end_time - millis_diff) - start_time).num_seconds();
 	let mane = html! {
 		h1 { (heading) }
 		p { (description) }
@@ -1035,7 +1035,7 @@ pub fn home_survey_complete_html(
 			}
 			span id = "countdown" { "Countdown loading…" }
 			script defer {
-				(format!("countDown('{millis_left}', 'Event is now live!')"))
+				(format!("countDown('{seconds_left}', 'Event is now live!')"))
 			}
 		}
 		p {
