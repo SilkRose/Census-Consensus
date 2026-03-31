@@ -590,10 +590,44 @@ pub async fn get_home(
 	theme: Theme, mut db: ThinData<Db>, session: MaybeSessionInfo,
 ) -> actix_web::Result<impl Responder> {
 	let user = match session.session_info {
-		Some(user) => db.get_user_opt(user.user_id).await?,
-		None => None,
+		Some(user) => db.get_user(user.user_id).await?,
+		None => {
+			return Ok(HttpResponse::Ok()
+				.content_type("text/html; charset=utf-8")
+				.body(home_html(None, theme)));
+		}
 	};
-	let page = home_html(user, theme);
+	let setting = db.get_settings().await?;
+	let page = if let Some(chapter) = db.get_active_chapter().await? {
+		// event live
+		let question_count = db.get_question_count_by_chapter(chapter.id).await?;
+		if question_count > 0 {
+			// survey chapter
+			let questions = db.get_questions_by_chapter(chapter.id).await?;
+			for question in questions {
+				let votes = db
+					.get_all_votes_by_question_and_user(question.id, user.id)
+					.await?;
+				if !votes.is_empty() {
+					// previously voted
+					todo!()
+				}
+			}
+			// new voter
+			todo!()
+		} else {
+			// final chapter
+			todo!()
+		}
+	} else if let Some(start_time) = setting.start_time
+		&& start_time < Utc::now()
+	{
+		// event over
+		todo!()
+	} else {
+		// event hasn't started
+		home_html(Some(user), theme)
+	};
 	Ok(HttpResponse::Ok()
 		.content_type("text/html; charset=utf-8")
 		.body(page))
