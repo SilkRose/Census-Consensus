@@ -325,9 +325,9 @@ async fn construct_story_json(
 		// normal story updates during live surveys
 		(false, false) => {
 			let title = format!("Survey ends in {minutes_left} Minutes!");
-			let order = (minutes_left as f64 * question_count as f64 / chapter.vote_duration as f64)
-				.floor() as i32
-				+ 1;
+			let elapsed = (chapter.vote_duration - minutes_left) as f64;
+			let fraction = elapsed / chapter.vote_duration as f64;
+			let order = (question_count as f64 * fraction).ceil() as i32;
 			let question = db
 				.get_question_by_chapter_and_order(chapter.id, order)
 				.await?;
