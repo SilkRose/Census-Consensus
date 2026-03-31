@@ -610,14 +610,20 @@ pub async fn get_home(
 					.await?;
 				if !votes.is_empty() {
 					// previously voted
-					todo!()
+					let page = home_survey_complete_html(user, theme, chapter, question_count);
+					return Ok(HttpResponse::Ok()
+						.content_type("text/html; charset=utf-8")
+						.body(page));
 				}
 			}
 			// new voter
 			todo!()
 		} else {
 			// final chapter
-			todo!()
+			let page = home_survey_complete_html(user, theme, chapter, question_count);
+			return Ok(HttpResponse::Ok()
+				.content_type("text/html; charset=utf-8")
+				.body(page));
 		}
 	} else if let Some(start_time) = setting.start_time
 		&& start_time < Utc::now()

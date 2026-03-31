@@ -6,7 +6,7 @@ use crate::theme::Theme;
 use crate::utility::{construct_question_data, count_words, parse_options};
 use crate::{result_formatter, structs::*};
 use bon::builder;
-use chrono::Utc;
+use chrono::{Duration, Utc};
 use maud::{DOCTYPE, PreEscaped, html};
 use pony::markdown::WarningType;
 use pony::markdown::html::parse;
@@ -1007,6 +1007,44 @@ pub fn chapter_survey_html(
 		.theme(&theme)
 		.head(head_html(&title, description, &link, &theme))
 		.header(header_html(Some(user_type), Pages::Chapters, &theme))
+		.mane(mane)
+		.call()
+}
+
+pub fn home_survey_complete_html(
+	user: User, theme: Theme, chapter: Chapter, questions: i64,
+) -> String {
+	let heading = "Census Consensus";
+	let title: String = format!("{heading} - {SITE_NAME}");
+	let description = "The Equestrian Census, redefined!";
+	let link = format!("{SITE_LINK}/");
+	let user_type = user.user_type.clone();
+	let mane = html! {
+		h1 { (heading) }
+		p { (description) }
+		p {
+			@if questions > 0 {
+				"The next survey will be available in: "
+			} @else {
+				"The final chapter will be published in: "
+			}
+			span id = "countdown" { "Countdown loading…" }
+			script defer {
+				(format!("countDown('{}', 'Event is now live!')",
+					// Need to fix this math
+					Duration::minutes(chapter.minutes_left.unwrap() as i64)
+				))
+			}
+		}
+		p {
+			"While you wait, consider providing feedback on the event and story below:"
+		}
+		(user_feedback_html(user))
+	};
+	html_builder()
+		.theme(&theme)
+		.head(head_html(&title, description, &link, &theme))
+		.header(header_html(Some(user_type), Pages::Home, &theme))
 		.mane(mane)
 		.call()
 }
