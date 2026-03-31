@@ -9,6 +9,15 @@ use pony::number_format::{ FormatType, format_number_unit_metric };
 pub fn format(input: &QuestionDataOption) -> (String, Vec<String>) {
 	use result_parser::*;
 
+	macro_rules! unreachable {
+		() => {
+			return (
+				input.data.result_writing.clone().unwrap_or_default(),
+				vec!["entered unreachable code, blame meadowsys :3c".into()]
+			)
+		}
+	}
+
 	let input_str = input.data.result_writing.as_deref().unwrap_or_default();
 	let votes = input.options.iter().collect::<Vec<_>>();
 	let votes_sorted = {
@@ -367,7 +376,7 @@ mod result_parser {
 		cond_fraction_part = { ASCII_DIGIT{1,5} }
 		cond_fraction = { cond_fraction_part ~ "/" ~ cond_fraction_part }
 
-		cond_option_ext = _{ cond_option | cond_percentage_wrap | cond_fraction }
+		cond_option_ext = _{ cond_percentage_wrap | cond_fraction | cond_option }
 
 		cond_condition = _{ cond_option ~ (cond_comparison ~ cond_option_ext)? ~ (cond_booleans ~ cond_condition)? }
 		cond_partial = _{ cond_start | cond_end | cond_condition }
