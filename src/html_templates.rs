@@ -1083,6 +1083,28 @@ pub fn home_survey_html(
 		.call()
 }
 
+pub fn home_event_complete_html(user: User, theme: Theme) -> String {
+	let heading = "Census Consensus";
+	let title: String = format!("{heading} - {SITE_NAME}");
+	let description = "The Equestrian Census, redefined!";
+	let link = format!("{SITE_LINK}/");
+	let user_type = user.user_type.clone();
+	let mane = html! {
+		h1 { (heading) }
+		p { (description) }
+		p {
+			"Thank you for (potentially) participating in this year's event." br;
+			"The event is currently over."
+		}
+	};
+	html_builder()
+		.theme(&theme)
+		.head(head_html(&title, description, &link, &theme))
+		.header(header_html(Some(user_type), Pages::Home, &theme))
+		.mane(mane)
+		.call()
+}
+
 // HTML components go below this comment:
 
 pub fn head_html(title: &str, description: &str, link: &str, theme: &Theme) -> PreEscaped<String> {

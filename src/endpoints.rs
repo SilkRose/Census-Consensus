@@ -598,7 +598,9 @@ pub async fn get_home(
 		}
 	};
 	let setting = db.get_settings().await?;
-	let page = if let Some(chapter) = db.get_active_chapter().await? {
+	let page = if let Some(chapter) = db.get_active_chapter().await?
+		&& chapter.minutes_left.is_some()
+	{
 		// event live
 		let question_count = db.get_question_count_by_chapter(chapter.id).await?;
 		if question_count > 0 {
@@ -635,7 +637,7 @@ pub async fn get_home(
 		&& start_time < Utc::now()
 	{
 		// event over
-		todo!()
+		home_event_complete_html(user, theme)
 	} else {
 		// event hasn't started
 		home_html(Some(user), theme)
