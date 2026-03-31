@@ -856,6 +856,10 @@ pub fn question_preview_html(
 					.option_data(options)
 					.population(population)
 					.call();
+			pre class = "left-text" {
+				"DEBUG" br;
+				(format!("{:#?}", &question_data.options))
+			}
 			@let (preview, errors) = result_formatter::format(&question_data);
 			pre class = "left-text" {
 				code {
