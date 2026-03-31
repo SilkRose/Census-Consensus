@@ -9,6 +9,15 @@ use pony::number_format::{ FormatType, format_number_unit_metric };
 pub fn format(input: &QuestionDataOption) -> (String, Vec<String>) {
 	use result_parser::*;
 
+	macro_rules! unreachable {
+		() => {
+			return (
+				input.data.result_writing.clone().unwrap_or_default(),
+				vec!["entered unreachable code, blame meadowsys :3c".into()]
+			)
+		}
+	}
+
 	let input_str = input.data.result_writing.as_deref().unwrap_or_default();
 	let votes = input.options.iter().collect::<Vec<_>>();
 	let votes_sorted = {
