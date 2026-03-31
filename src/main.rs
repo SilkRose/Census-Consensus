@@ -229,6 +229,7 @@ async fn event_control_tick(
 	let question_count = db.get_question_count_by_chapter(chapter.id).await?;
 	let publish = minutes_left == 0;
 	let final_chapter = question_count == 0;
+	let final_update = publish && final_chapter;
 	if publish {
 		let data = db.get_latest_chapter_revision(chapter.id).await?;
 		let json = construct_chapter_json()
@@ -243,9 +244,10 @@ async fn event_control_tick(
 			.await?;
 		let fimfic_id = res.data.id.parse::<i32>().ok();
 		db.update_chapter_fimfic_id(chapter.id, fimfic_id).await?;
-		return Ok(Tick::Skip);
+		if !final_update {
+			return Ok(Tick::Skip);
+		}
 	}
-	let final_update = final_chapter && minutes_left <= -1;
 	let json = construct_story_json()
 		.db(db)
 		.settings(&settings)
