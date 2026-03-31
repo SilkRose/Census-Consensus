@@ -104,6 +104,7 @@ pub fn format(input: &QuestionDataOption) -> (String, Vec<String>) {
 
 						let comparison = match pairs.next().map(|p| p.as_rule()) {
 							Some(Rule::cond_comparison_gt) => f64::gt,
+							Some(Rule::cond_comparison_lt) => f64::lt,
 							None => {
 								// we got a vote out, which means that thare are votes at all,
 								// so indexing 0 won't panic
@@ -381,7 +382,8 @@ mod result_parser {
 		cond_or = { " OR " }
 		cond_booleans = _{ cond_and | cond_or }
 		cond_comparison_gt = { " > " }
-		cond_comparison = _{ cond_comparison_gt }
+		cond_comparison_lt = { " > " }
+		cond_comparison = _{ cond_comparison_gt | cond_comparison_lt }
 
 		cond_option = { ASCII_ALPHA | ASCII_DIGIT+ }
 		cond_percentage = { ASCII_DIGIT{,2} }
