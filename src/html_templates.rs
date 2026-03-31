@@ -1,12 +1,13 @@
 use std::collections::HashMap;
 use std::fs;
+use std::time::Duration;
 
 use crate::endpoints::MIN_USER_UPDATE_TIME;
 use crate::theme::Theme;
 use crate::utility::{construct_question_data, count_words, parse_options};
 use crate::{result_formatter, structs::*};
 use bon::builder;
-use chrono::{Duration, Utc};
+use chrono::Utc;
 use maud::{DOCTYPE, PreEscaped, html};
 use pony::markdown::WarningType;
 use pony::markdown::html::parse;
@@ -1019,6 +1020,11 @@ pub fn home_survey_complete_html(
 	let description = "The Equestrian Census, redefined!";
 	let link = format!("{SITE_LINK}/");
 	let user_type = user.user_type.clone();
+	let start_time = Utc::now();
+	let minutes_left = Duration::from_mins(chapter.minutes_left.unwrap_or_default() as u64);
+	let end_time = start_time + minutes_left;
+	let millis_diff = Duration::from_millis((end_time.timestamp_millis() % 60_000) as u64);
+	let millis_left = ((end_time - millis_diff) - start_time).num_milliseconds();
 	let mane = html! {
 		h1 { (heading) }
 		p { (description) }
@@ -1030,10 +1036,7 @@ pub fn home_survey_complete_html(
 			}
 			span id = "countdown" { "Countdown loading…" }
 			script defer {
-				(format!("countDown('{}', 'Event is now live!')",
-					// Need to fix this math
-					Duration::minutes(chapter.minutes_left.unwrap() as i64)
-				))
+				(format!("countDown('{millis_left}', 'Event is now live!')"))
 			}
 		}
 		p {
