@@ -330,11 +330,6 @@ async fn construct_story_json(
 			let elapsed = (chapter.vote_duration - minutes_left + 1) as f64;
 			let fraction = elapsed / chapter.vote_duration as f64;
 			let order = (question_count as f64 * fraction).ceil() as i32;
-			println!(
-				"vote dur: {}, min left: {minutes_left}",
-				chapter.vote_duration
-			);
-			println!("elapsed: {elapsed}, frac: {fraction}, order: {order}");
 			let question = db
 				.get_question_by_chapter_and_order(chapter.id, order)
 				.await?;
