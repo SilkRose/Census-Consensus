@@ -314,9 +314,9 @@ fn format_count_words(count: u32, decimal_places: usize) -> String {
 fn get_count_from_str_maybe_ordinal<'h>(
 	str: &str, votes: &[&'h OptionData], votes_sorted: &[&'h OptionData], errors: &mut Vec<String>
 ) -> Option<&'h OptionData> {
-	let ordinal = str.get(0..1).and_then(|c| c.parse().ok());
+	let ordinal = str.parse();
 
-	if let Some(ordinal) = ordinal {
+	if let Ok(ordinal) = ordinal {
 		get_count_from_index(ordinal, votes_sorted, errors)
 	} else {
 		get_count_from_str(str, votes, errors)
@@ -382,7 +382,7 @@ mod result_parser {
 		cond_comparison_gt = { " > " }
 		cond_comparison = _{ cond_comparison_gt }
 
-		cond_option = { ASCII_ALPHA | ASCII_DIGIT }
+		cond_option = { ASCII_ALPHA | ASCII_DIGIT+ }
 		cond_percentage = { ASCII_DIGIT{,2} }
 		cond_percentage_wrap = _{ cond_percentage ~ "%" }
 		cond_fraction_part = { ASCII_DIGIT{1,5} }
