@@ -745,7 +745,6 @@ pub fn home_html(user: Option<User>, theme: Theme) -> String {
 	let heading = "Home";
 	let title: String = format!("{heading} - {SITE_NAME}");
 	let description = "The Equestrian Census, reimagined.";
-	let link = format!("{SITE_LINK}/about");
 	let mane = html! {
 		h1 { "Census Consensus" }
 		p { (description) }
@@ -783,7 +782,7 @@ pub fn home_html(user: Option<User>, theme: Theme) -> String {
 	let user_type = user.map(|user| user.user_type);
 	html_builder()
 		.theme(&theme)
-		.head(head_html(&title, description, &link, &theme))
+		.head(head_html(&title, description, SITE_LINK, &theme))
 		.header(header_html(user_type, Pages::Home, &theme))
 		.mane(mane)
 		.call()
@@ -1047,6 +1046,38 @@ pub fn home_survey_complete_html(
 	html_builder()
 		.theme(&theme)
 		.head(head_html(&title, description, &link, &theme))
+		.header(header_html(Some(user_type), Pages::Home, &theme))
+		.mane(mane)
+		.call()
+}
+
+pub fn home_survey_html(
+	user: User, theme: Theme, chapter: ChapterRevision,
+	questions: Vec<(Question, QuestionRevision)>,
+) -> String {
+	let heading = "Home";
+	let title: String = format!("{heading} - {SITE_NAME}");
+	let description = "The Equestrian Census, reimagined.";
+	let link = format!("{SITE_LINK}/chapters/{}/submit", chapter.chapter_id);
+	let user_type = user.user_type;
+	let mane = html! {
+		h1 { (heading) }
+		p { (description) }
+		h2 { (chapter.title) }
+		form method = "post" action = (link) {
+			@for (question, data) in questions {
+				@let opts = parse_options(
+					&data.option_writing.clone().unwrap_or_default(),
+					&data.question_type,
+				);
+				(question_html(&question, &data, &opts))
+			}
+			button type = "submit" { "Submit" }
+		}
+	};
+	html_builder()
+		.theme(&theme)
+		.head(head_html(&title, description, SITE_LINK, &theme))
 		.header(header_html(Some(user_type), Pages::Home, &theme))
 		.mane(mane)
 		.call()

@@ -604,7 +604,7 @@ pub async fn get_home(
 		if question_count > 0 {
 			// survey chapter
 			let questions = db.get_questions_by_chapter(chapter.id).await?;
-			for question in questions {
+			for question in &questions {
 				let votes = db
 					.get_all_votes_by_question_and_user(question.id, user.id)
 					.await?;
@@ -617,7 +617,13 @@ pub async fn get_home(
 				}
 			}
 			// new voter
-			todo!()
+			let mut data = Vec::with_capacity(questions.len());
+			for question in questions {
+				let question_data = db.get_latest_question_revision(question.id).await?;
+				data.push((question, question_data));
+			}
+			let chapter = db.get_latest_chapter_revision(chapter.id).await?;
+			home_survey_html(user, theme, chapter, data)
 		} else {
 			// final chapter
 			let page = home_survey_complete_html(user, theme, chapter, question_count);
