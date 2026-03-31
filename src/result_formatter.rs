@@ -1,5 +1,6 @@
 use crate::structs::{OptionData, QuestionDataOption};
 use pest::Parser;
+use pony::number_format::{ FormatType, format_number_unit_metric };
 
 #[expect(
 	clippy::single_char_add_str,
@@ -92,7 +93,7 @@ pub fn format(input: &QuestionDataOption) -> (String, Vec<String>) {
 							None => {
 								// we got a vote out, which means that thare are votes at all,
 								// so indexing 0 won't panic
-								if &*votes_sorted[0].id == &*vote.id {
+								if *votes_sorted[0].id == *vote.id {
 									middle = Some(String::new());
 									state = ParseState::Matching;
 								} else {
@@ -243,9 +244,10 @@ pub fn format(input: &QuestionDataOption) -> (String, Vec<String>) {
 						Rule::text_vote_count_formatted => {
 							current_match_mut!()
 								.push_str(
-									format_count_words(option.count, precision)
-										.trim_end_matches('0')
-										.trim_end_matches('.')
+									&format_number_unit_metric(option.count as _, FormatType::ShortScaleName, precision)
+										// analysed the function, and there is no codepath
+										// in which this function will return Err
+										.unwrap()
 								);
 						}
 
@@ -288,35 +290,12 @@ enum SpecifiedOption {
 	Ordinal(usize),
 }
 
-fn format_count_words(count: u32, decimal_places: usize) -> String {
-	let words = [
-		" thousand",
-		" million",
-		" billion",
-		" trillion",
-		// will we ever need more than this?
-	];
-	let mut count = count as f64;
-	let mut word = "";
-
-	for w in words {
-		if (0.0..1000.0).contains(&count) {
-			break;
-		}
-
-		word = w;
-		count /= 1000.0;
-	}
-
-	format!("{count:.decimal_places$}{word}")
-}
-
 fn get_count_from_str_maybe_ordinal<'h>(
 	str: &str, votes: &[&'h OptionData], votes_sorted: &[&'h OptionData], errors: &mut Vec<String>
 ) -> Option<&'h OptionData> {
-	let ordinal = str.get(0..1).and_then(|c| c.parse().ok());
+	let ordinal = str.parse();
 
-	if let Some(ordinal) = ordinal {
+	if let Ok(ordinal) = ordinal {
 		get_count_from_index(ordinal, votes_sorted, errors)
 	} else {
 		get_count_from_str(str, votes, errors)
@@ -382,7 +361,7 @@ mod result_parser {
 		cond_comparison_gt = { " > " }
 		cond_comparison = _{ cond_comparison_gt }
 
-		cond_option = { ASCII_ALPHA | ASCII_DIGIT }
+		cond_option = { ASCII_ALPHA | ASCII_DIGIT+ }
 		cond_percentage = { ASCII_DIGIT{,2} }
 		cond_percentage_wrap = _{ cond_percentage ~ "%" }
 		cond_fraction_part = { ASCII_DIGIT{1,5} }
