@@ -382,7 +382,7 @@ mod result_parser {
 		cond_or = { " OR " }
 		cond_booleans = _{ cond_and | cond_or }
 		cond_comparison_gt = { " > " }
-		cond_comparison_lt = { " > " }
+		cond_comparison_lt = { " < " }
 		cond_comparison = _{ cond_comparison_gt | cond_comparison_lt }
 
 		cond_option = { ASCII_ALPHA | ASCII_DIGIT+ }
