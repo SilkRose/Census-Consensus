@@ -1,6 +1,6 @@
 use crate::structs::{OptionData, QuestionDataOption};
 use pest::Parser;
-use pony::number_format::{ FormatType, format_number_unit_metric };
+use pony::number_format::{FormatType, format_number_unit_metric};
 
 #[expect(
 	clippy::single_char_add_str,
@@ -13,9 +13,9 @@ pub fn format(input: &QuestionDataOption) -> (String, Vec<String>) {
 		() => {
 			return (
 				input.data.result_writing.clone().unwrap_or_default(),
-				vec!["entered unreachable code, blame meadowsys :3c".into()]
+				vec!["entered unreachable code, blame meadowsys :3c".into()],
 			)
-		}
+		};
 	}
 
 	let input_str = input.data.result_writing.as_deref().unwrap_or_default();
@@ -86,11 +86,16 @@ pub fn format(input: &QuestionDataOption) -> (String, Vec<String>) {
 					Rule::cond_option => {
 						if middle.is_some() {
 							state = ParseState::None;
-							continue
+							continue;
 						}
 
 						let first_str = first.as_str();
-						let Some(vote) = get_count_from_str_maybe_ordinal(first_str, &votes, &votes_sorted, &mut errors) else {
+						let Some(vote) = get_count_from_str_maybe_ordinal(
+							first_str,
+							&votes,
+							&votes_sorted,
+							&mut errors,
+						) else {
 							errors.push(format!("{first_str} is not a valid option"));
 							state = ParseState::None;
 							continue;
@@ -119,9 +124,12 @@ pub fn format(input: &QuestionDataOption) -> (String, Vec<String>) {
 						let next = pairs.next().unwrap();
 						let other_percent = match next.as_rule() {
 							Rule::cond_option => {
-								let Some(other_vote) =
-									get_count_from_str_maybe_ordinal(next.as_str(), &votes, &votes_sorted, &mut errors)
-								else {
+								let Some(other_vote) = get_count_from_str_maybe_ordinal(
+									next.as_str(),
+									&votes,
+									&votes_sorted,
+									&mut errors,
+								) else {
 									errors.push(format!("{next} is not a valid option"));
 									state = ParseState::None;
 									continue;
@@ -245,19 +253,24 @@ pub fn format(input: &QuestionDataOption) -> (String, Vec<String>) {
 							current.push_str(
 								format!("{vp:.precision$}", vp = option.percent)
 									.trim_end_matches('0')
-									.trim_end_matches('.')
+									.trim_end_matches('.'),
 							);
 							current.push_str("%");
 						}
 
 						Rule::text_vote_count_formatted => {
-							current_match_mut!()
-								.push_str(
-									&format_number_unit_metric(option.count as _, FormatType::ShortScaleName, precision)
-										// analysed the function, and there is no codepath
-										// in which this function will return Err
-										.unwrap()
-								);
+							current_match_mut!().push_str(
+								format_number_unit_metric(
+									option.count as _,
+									FormatType::ShortScaleName,
+									precision,
+								)
+								// analysed the function, and there is no codepath
+								// in which this function will return Err
+								.unwrap()
+								.trim_end_matches("0")
+								.trim_end_matches("."),
+							);
 						}
 
 						Rule::text_name => {
@@ -300,7 +313,7 @@ enum SpecifiedOption {
 }
 
 fn get_count_from_str_maybe_ordinal<'h>(
-	str: &str, votes: &[&'h OptionData], votes_sorted: &[&'h OptionData], errors: &mut Vec<String>
+	str: &str, votes: &[&'h OptionData], votes_sorted: &[&'h OptionData], errors: &mut Vec<String>,
 ) -> Option<&'h OptionData> {
 	let ordinal = str.parse();
 
