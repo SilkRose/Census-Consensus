@@ -376,7 +376,7 @@ mod result_parser {
 		cond_fraction_part = { ASCII_DIGIT{1,5} }
 		cond_fraction = { cond_fraction_part ~ "/" ~ cond_fraction_part }
 
-		cond_option_ext = _{ cond_option | cond_percentage_wrap | cond_fraction }
+		cond_option_ext = _{ cond_percentage_wrap | cond_fraction | cond_option }
 
 		cond_condition = _{ cond_option ~ (cond_comparison ~ cond_option_ext)? ~ (cond_booleans ~ cond_condition)? }
 		cond_partial = _{ cond_start | cond_end | cond_condition }
