@@ -319,7 +319,8 @@ async fn construct_chapter_json(
 			if let Some(ref outro) = data.outro_text {
 				texts.push(outro.trim().to_string());
 			}
-			chapter_json(&data.title, &texts.join("\n\n"), None)
+			let authors_note = "To participate in this event, please visit our [url=https://census.silkrose.dev/]custom survey site[/url].";
+			chapter_json(&data.title, &texts.join("\n\n"), Some(authors_note))
 		}
 	};
 	Ok(json)
