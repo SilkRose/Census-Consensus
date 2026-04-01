@@ -900,6 +900,11 @@ pub async fn get_chapter_preview(
 				results.insert(bucket[0].option_id.clone(), count);
 				total_count += count;
 			}
+			for (id, _) in &option_tuples {
+				if !results.contains_key(id) {
+					results.insert(id.clone(), 0);
+				}
+			}
 			let options = OptionType::Count((results, total_count));
 			let question_data = construct_question_data()
 				.meta(question)
