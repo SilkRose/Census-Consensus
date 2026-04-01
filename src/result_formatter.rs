@@ -260,15 +260,19 @@ pub fn format(input: &QuestionDataOption) -> (String, Vec<String>) {
 					match next.as_rule() {
 						Rule::text_vote_percent => {
 							let current = current_match_mut!();
+							let percent = format!("{vp:.precision$}", vp = option.percent);
 							let percent = match precision == 0 {
-								true => format!("{vp:.precision$}", vp = option.percent),
-								false => format!("{vp:.precision$}", vp = option.percent)
-									.trim_end_matches('0')
-									.trim_end_matches('.')
-									.to_string(),
+								true => &*percent,
+								// guard exists because trim_end_matches('0') on "0" eats everything
+								false if percent.contains(".") => {
+									percent
+										.trim_end_matches('0')
+										.trim_end_matches('.')
+								}
+								false => &*percent
 							};
 
-							current.push_str(&percent);
+							current.push_str(percent);
 							current.push_str("%");
 						}
 
