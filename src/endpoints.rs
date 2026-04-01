@@ -947,7 +947,7 @@ pub async fn get_chapter_preview_random(
 			let mut results = HashMap::new();
 			let mut rng = rand::rng();
 			for option in option_tuples.iter().peekable() {
-				let count = rng.random_range(current..=max_count);
+				let count = rng.random_range(0..=max_count - current);
 				results.insert(option.0.clone(), count);
 				current += count;
 			}
