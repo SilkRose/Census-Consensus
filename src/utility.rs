@@ -121,6 +121,7 @@ pub fn construct_question_data(
 				(percent, count)
 			}
 		};
+		let percent = if percent.is_nan() { 0.0 } else { percent };
 		let order = ordering
 			.iter()
 			.enumerate()
