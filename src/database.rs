@@ -1387,7 +1387,8 @@ pub trait DbExecutor {
 			"SELECT
 				voter_id, question_id, option_id, date_created
 			FROM Votes
-			WHERE question_id = $1;",
+			WHERE question_id = $1
+			ORDER BY option_id;",
 			question_id
 		)
 		.fetch_all(self.executor())
