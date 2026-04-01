@@ -11,6 +11,7 @@ use chrono::{NaiveDate, NaiveDateTime, NaiveTime, Utc};
 use lightningcss::stylesheet::{MinifyOptions, ParserOptions, PrinterOptions, StyleSheet};
 use pony::smart_map::SmartMap;
 use pony::time::format_milliseconds;
+use rand::RngExt;
 use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::time::Duration;
@@ -917,6 +918,57 @@ pub async fn get_chapter_preview(
 			texts.push(outro.trim().to_string());
 		}
 		let page = chapter_preview_html(session.user, theme, chapter, &texts.join("\n\n"));
+		Ok(HttpResponse::Ok()
+			.content_type("text/html; charset=utf-8")
+			.body(page))
+	} else {
+		Ok(HttpResponse::BadRequest().finish())
+	}
+}
+
+#[get("/chapters/{chapter_id}/preview-random")]
+pub async fn get_chapter_preview_random(
+	theme: Theme, path: Path<i32>, mut db: ThinData<Db>, session: WriterSessionInfo,
+) -> actix_web::Result<impl Responder> {
+	let chapter_id = path.into_inner();
+	if let Some(chapter) = db.get_latest_chapter_revision_opt(chapter_id).await? {
+		let settings = db.get_settings().await?;
+		let mut texts = Vec::new();
+		if let Some(ref intro) = chapter.intro_text {
+			texts.push(intro.trim().to_string());
+		}
+		let questions = db.get_questions_by_chapter(chapter_id).await?;
+		for question in questions {
+			let data = db.get_latest_question_revision(question.id).await?;
+			let options = data.option_writing.clone().unwrap_or_default();
+			let option_tuples = parse_options(&options, &data.question_type);
+			let max_count = 100_000;
+			let mut current = 0;
+			let mut results = HashMap::new();
+			let mut rng = rand::rng();
+			for option in option_tuples.iter().peekable() {
+				let count = rng.random_range(current..=max_count);
+				results.insert(option.0.clone(), count);
+				current += count;
+			}
+			let options = OptionType::Count((results, current));
+			let question_data = construct_question_data()
+				.meta(question)
+				.data(data)
+				.option_texts(option_tuples)
+				.option_data(options)
+				.population(settings.population)
+				.call();
+			let (preview, errors) = result_formatter::format(&question_data);
+			texts.push(preview.trim().to_string());
+			for error in errors {
+				eprintln!("Error in parsing question: {error}")
+			}
+		}
+		if let Some(ref outro) = chapter.outro_text {
+			texts.push(outro.trim().to_string());
+		}
+		let page = chapter_preview_random_html(session.user, theme, chapter, &texts.join("\n\n"));
 		Ok(HttpResponse::Ok()
 			.content_type("text/html; charset=utf-8")
 			.body(page))

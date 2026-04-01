@@ -151,6 +151,7 @@ async fn main() -> Result<()> {
 			.service(get_chapter_survey)
 			.service(set_chapter_submit)
 			.service(get_chapter_preview)
+			.service(get_chapter_preview_random)
 			.service(auth::dev_session)
 			.service(Files::new("/assets", "./assets"))
 			.app_data(db.clone())
