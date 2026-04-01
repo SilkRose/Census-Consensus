@@ -879,7 +879,7 @@ pub async fn get_chapter_preview(
 		if let Some(ref intro) = chapter.intro_text {
 			texts.push(intro.trim().to_string());
 		}
-		let questions = db.get_questions_by_chapter(chapter.id).await?;
+		let questions = db.get_questions_by_chapter(chapter_id).await?;
 		for question in questions {
 			let data = db.get_latest_question_revision(question.id).await?;
 			let options = data.option_writing.clone().unwrap_or_default();
