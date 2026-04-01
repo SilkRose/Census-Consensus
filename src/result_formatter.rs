@@ -378,7 +378,7 @@ fn map_option_to_array_index(option: char) -> Option<usize> {
 		.enumerate()
 		.find(|(_, i)| *i == option)?;
 
-	Some(i)
+	Some(i + 1)
 }
 
 mod result_parser {
