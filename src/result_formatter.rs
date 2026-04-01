@@ -9,11 +9,22 @@ use pony::number_format::{FormatType, format_number_unit_metric};
 pub fn format(input: &QuestionDataOption) -> (String, Vec<String>) {
 	use result_parser::*;
 
+	#[track_caller]
+	fn gen_unreachable_message() -> String {
+		let loc = core::panic::Location::caller();
+
+		let file = loc.file();
+		let line = loc.line();
+		let column = loc.column();
+
+		format!("entered unreachable code, blame meadowsys :3c (in {file}, at {line}:{column})")
+	}
+
 	macro_rules! unreachable {
 		() => {
 			return (
 				input.data.result_writing.clone().unwrap_or_default(),
-				vec!["entered unreachable code, blame meadowsys :3c".into()],
+				vec![gen_unreachable_message()],
 			)
 		};
 	}
