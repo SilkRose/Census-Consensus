@@ -266,16 +266,15 @@ pub fn format(input: &QuestionDataOption) -> (String, Vec<String>) {
 
 						Rule::text_vote_count_formatted => {
 							current_match_mut!().push_str(
-								format_number_unit_metric(
+								&format_number_unit_metric(
 									option.count as _,
 									FormatType::ShortScaleName,
 									precision,
+									true,
 								)
 								// analysed the function, and there is no codepath
 								// in which this function will return Err
-								.unwrap()
-								.trim_end_matches("0")
-								.trim_end_matches("."),
+								.unwrap(),
 							);
 						}
 
