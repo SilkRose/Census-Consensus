@@ -960,7 +960,7 @@ pub fn question_html(
 		p {
 			(question.chapter_order.unwrap_or_default())
 			". "
-			(data.question_text)
+			(PreEscaped (parse(&data.question_text, &WarningType::Quiet)))
 		}
 		@if options.is_empty() {
 			p { "No options found." }
@@ -968,13 +968,13 @@ pub fn question_html(
 			span class = (data.question_type) {
 				@for (id, opt) in options {
 					@let name = format!("{}-{id}", question.id);
-					span class = "question-option" {
+					span class = "question-option row" {
 						@if QuestionType::Multiselect == data.question_type {
-							input id = (name) type = "checkbox" name = (question.id) value = (id) {}
-							label for = (name) { (opt) }
+							span { input id = (name) type = "checkbox" name = (question.id) value = (id) {} }
+							label for = (name) { (PreEscaped (parse(opt, &WarningType::Quiet))) }
 						} @else {
-							input id = (name) type = "radio" name = (question.id) value = (id) {}
-							label for = (name) { (opt) }
+							span { input id = (name) type = "radio" name = (question.id) value = (id) {} }
+							label for = (name) { (PreEscaped (parse(opt, &WarningType::Quiet))) }
 						}
 					}
 				}
