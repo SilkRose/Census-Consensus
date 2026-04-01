@@ -101,10 +101,9 @@ pub fn format(input: &QuestionDataOption) -> (String, Vec<String>) {
 						}
 
 						let first_str = first.as_str();
-						let Some(vote) = get_count_from_str_maybe_ordinal(
+						let Some(vote) = get_count_from_str_maybe_scale(
 							first_str,
 							&votes,
-							&votes_sorted,
 							&mut errors,
 						) else {
 							errors.push(format!("{first_str} is not a valid option"));
@@ -136,10 +135,9 @@ pub fn format(input: &QuestionDataOption) -> (String, Vec<String>) {
 						let next = pairs.next().unwrap();
 						let other_percent = match next.as_rule() {
 							Rule::cond_option => {
-								let Some(other_vote) = get_count_from_str_maybe_ordinal(
-									next.as_str(),
+								let Some(other_vote) = get_count_from_str_maybe_scale(
+									dbg!(next.as_str()),
 									&votes,
-									&votes_sorted,
 									&mut errors,
 								) else {
 									errors.push(format!("{next} is not a valid option"));
@@ -328,13 +326,13 @@ enum SpecifiedOption {
 	Ordinal(usize),
 }
 
-fn get_count_from_str_maybe_ordinal<'h>(
-	str: &str, votes: &[&'h OptionData], votes_sorted: &[&'h OptionData], errors: &mut Vec<String>,
+fn get_count_from_str_maybe_scale<'h>(
+	str: &str, votes: &[&'h OptionData], errors: &mut Vec<String>,
 ) -> Option<&'h OptionData> {
-	let ordinal = str.parse();
+	let scale = str.parse();
 
-	if let Ok(ordinal) = ordinal {
-		get_count_from_index(ordinal, votes_sorted, errors)
+	if let Ok(scale) = scale {
+		get_count_from_index(scale, votes, errors)
 	} else {
 		get_count_from_str(str, votes, errors)
 	}
