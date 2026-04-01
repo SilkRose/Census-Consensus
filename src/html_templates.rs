@@ -1109,6 +1109,30 @@ pub fn home_event_complete_html(user: User, theme: Theme) -> String {
 		.call()
 }
 
+pub fn chapter_preview_html(
+	user: User, theme: Theme, chapter: ChapterRevision, text: &str,
+) -> String {
+	let heading = "Chapter Preview";
+	let title: String = format!("{heading} - {SITE_NAME}");
+	let description = "Chapter preview page.";
+	let link = format!("{SITE_LINK}/chapters/{}/preview", chapter.chapter_id);
+	let user_type = user.user_type;
+	let mane = html! {
+		h1 { (heading) }
+		p { (description) }
+		h2 { (chapter.title) }
+		pre class = "left-text" {
+			(PreEscaped (parse(text, &WarningType::Quiet)))
+		}
+	};
+	html_builder()
+		.theme(&theme)
+		.head(head_html(&title, description, &link, &theme))
+		.header(header_html(Some(user_type), Pages::Chapters, &theme))
+		.mane(mane)
+		.call()
+}
+
 // HTML components go below this comment:
 
 pub fn head_html(title: &str, description: &str, link: &str, theme: &Theme) -> PreEscaped<String> {
