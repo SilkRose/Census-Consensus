@@ -9,10 +9,10 @@ actix-files = "0.6.10"
 actix-web = { version = "4.13.0", features = ["macros"] }
 anyhow = "1.0.102"
 base64ct = { version = "1.8.3", features = ["std"] }
-bon = "3.9.0"
+bon = "3.9.1"
 chrono = { version = "0.4.44", features = ["serde"] }
 dotenvy = "0.15.7"
-lightningcss = "1.0.0-alpha.70"
+lightningcss = "1.0.0-alpha.71"
 maud = "0.27.0"
 pest = "~2.8.6"
 pest-derive = { package = "pest_derive", version = "~2.8.6" }
