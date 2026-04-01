@@ -101,11 +101,7 @@ pub fn format(input: &QuestionDataOption) -> (String, Vec<String>) {
 						}
 
 						let first_str = first.as_str();
-						let Some(vote) = get_count_from_id(
-							first_str,
-							&votes,
-							&mut errors,
-						) else {
+						let Some(vote) = get_count_from_id(first_str, &votes, &mut errors) else {
 							errors.push(format!("{first_str} is not a valid option"));
 							state = ParseState::None;
 							continue;
@@ -135,11 +131,9 @@ pub fn format(input: &QuestionDataOption) -> (String, Vec<String>) {
 						let next = pairs.next().unwrap();
 						let other_percent = match next.as_rule() {
 							Rule::cond_option => {
-								let Some(other_vote) = get_count_from_id(
-									dbg!(next.as_str()),
-									&votes,
-									&mut errors,
-								) else {
+								let Some(other_vote) =
+									get_count_from_id(dbg!(next.as_str()), &votes, &mut errors)
+								else {
 									errors.push(format!("{next} is not a valid option"));
 									state = ParseState::None;
 									continue;
@@ -205,13 +199,9 @@ pub fn format(input: &QuestionDataOption) -> (String, Vec<String>) {
 							continue;
 						}
 
-						Rule::text_option_letter => {
-							SpecifiedOption::OptionLetter(segment.as_str())
-						}
+						Rule::text_option_letter => SpecifiedOption::OptionLetter(segment.as_str()),
 
-						Rule::text_option_number => {
-							SpecifiedOption::OptionNumber(segment.as_str())
-						}
+						Rule::text_option_number => SpecifiedOption::OptionNumber(segment.as_str()),
 
 						_ => {
 							unreachable!()
@@ -265,11 +255,9 @@ pub fn format(input: &QuestionDataOption) -> (String, Vec<String>) {
 								true => &*percent,
 								// guard exists because trim_end_matches('0') on "0" eats everything
 								false if percent.contains(".") => {
-									percent
-										.trim_end_matches('0')
-										.trim_end_matches('.')
+									percent.trim_end_matches('0').trim_end_matches('.')
 								}
-								false => &*percent
+								false => &*percent,
 							};
 
 							current.push_str(percent);
@@ -331,23 +319,13 @@ enum SpecifiedOption<'h> {
 }
 
 fn get_count_from_id<'h>(
-	id: &str,
-	votes: &[&'h OptionData],
-	errors: &mut Vec<String>
+	id: &str, votes: &[&'h OptionData], errors: &mut Vec<String>,
 ) -> Option<&'h OptionData> {
-	process_option(
-		id,
-		votes
-			.iter()
-			.find(|v| *v.id == *id),
-		errors
-	)
+	process_option(id, votes.iter().find(|v| *v.id == *id), errors)
 }
 
 fn get_count_from_ordinal<'h>(
-	ordinal: &str,
-	votes: &[&'h OptionData],
-	errors: &mut Vec<String>
+	ordinal: &str, votes: &[&'h OptionData], errors: &mut Vec<String>,
 ) -> Option<&'h OptionData> {
 	process_option(
 		ordinal,
@@ -355,22 +333,19 @@ fn get_count_from_ordinal<'h>(
 			.parse::<usize>()
 			.ok()
 			.and_then(|ordinal| votes.get(ordinal - 1)),
-		errors
+		errors,
 	)
 }
 
-
 fn process_option<'h>(
-	orig: &str,
-	data: Option<&&'h OptionData>,
-	errors: &mut Vec<String>
+	orig: &str, data: Option<&&'h OptionData>, errors: &mut Vec<String>,
 ) -> Option<&'h OptionData> {
 	match data {
 		None => {
 			errors.push(format!("{orig} is not a valid option"));
 			None
 		}
-		Some(vote) => { Some(vote) }
+		Some(vote) => Some(vote),
 	}
 }
 
