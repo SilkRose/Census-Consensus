@@ -101,7 +101,7 @@ pub fn format(input: &QuestionDataOption) -> (String, Vec<String>) {
 						}
 
 						let first_str = first.as_str();
-						let Some(vote) = get_count_from_str_maybe_scale(
+						let Some(vote) = get_count_from_id(
 							first_str,
 							&votes,
 							&mut errors,
@@ -135,7 +135,7 @@ pub fn format(input: &QuestionDataOption) -> (String, Vec<String>) {
 						let next = pairs.next().unwrap();
 						let other_percent = match next.as_rule() {
 							Rule::cond_option => {
-								let Some(other_vote) = get_count_from_str_maybe_scale(
+								let Some(other_vote) = get_count_from_id(
 									dbg!(next.as_str()),
 									&votes,
 									&mut errors,
@@ -206,11 +206,11 @@ pub fn format(input: &QuestionDataOption) -> (String, Vec<String>) {
 						}
 
 						Rule::text_option_letter => {
-							SpecifiedOption::OptionLetter(segment.as_str().chars().next().unwrap())
+							SpecifiedOption::OptionLetter(segment.as_str())
 						}
 
 						Rule::text_option_number => {
-							SpecifiedOption::OptionNumber(segment.as_str().parse().unwrap())
+							SpecifiedOption::OptionNumber(segment.as_str())
 						}
 
 						_ => {
@@ -230,13 +230,13 @@ pub fn format(input: &QuestionDataOption) -> (String, Vec<String>) {
 
 					let Some(option) = (match option {
 						SpecifiedOption::OptionLetter(option) => {
-							get_count_from_char(option, &votes, &mut errors)
+							get_count_from_id(option, &votes, &mut errors)
 						}
 						SpecifiedOption::OptionNumber(option) => {
-							get_count_from_index(option, &votes, &mut errors)
+							get_count_from_id(option, &votes, &mut errors)
 						}
 						SpecifiedOption::Ordinal(option) => {
-							get_count_from_index(option, &votes_sorted, &mut errors)
+							get_count_from_ordinal(option, &votes_sorted, &mut errors)
 						}
 					}) else {
 						continue;
@@ -320,63 +320,54 @@ enum ParseState {
 	Matching,
 }
 
-enum SpecifiedOption {
-	OptionLetter(char),
-	OptionNumber(usize),
-	Ordinal(usize),
+enum SpecifiedOption<'h> {
+	OptionLetter(&'h str),
+	OptionNumber(&'h str),
+	Ordinal(&'h str),
 }
 
-fn get_count_from_str_maybe_scale<'h>(
-	str: &str, votes: &[&'h OptionData], errors: &mut Vec<String>,
+fn get_count_from_id<'h>(
+	id: &str,
+	votes: &[&'h OptionData],
+	errors: &mut Vec<String>
 ) -> Option<&'h OptionData> {
-	let scale = str.parse();
+	process_option(
+		id,
+		votes
+			.iter()
+			.find(|v| *v.id == *id),
+		errors
+	)
+}
 
-	if let Ok(scale) = scale {
-		get_count_from_index(scale, votes, errors)
-	} else {
-		get_count_from_str(str, votes, errors)
+fn get_count_from_ordinal<'h>(
+	ordinal: &str,
+	votes: &[&'h OptionData],
+	errors: &mut Vec<String>
+) -> Option<&'h OptionData> {
+	process_option(
+		ordinal,
+		ordinal
+			.parse::<usize>()
+			.ok()
+			.and_then(|ordinal| votes.get(ordinal - 1)),
+		errors
+	)
+}
+
+
+fn process_option<'h>(
+	orig: &str,
+	data: Option<&&'h OptionData>,
+	errors: &mut Vec<String>
+) -> Option<&'h OptionData> {
+	match data {
+		None => {
+			errors.push(format!("{orig} is not a valid option"));
+			None
+		}
+		Some(vote) => { Some(vote) }
 	}
-}
-
-fn get_count_from_str<'h>(
-	str: &str, votes: &[&'h OptionData], errors: &mut Vec<String>,
-) -> Option<&'h OptionData> {
-	get_count_from_char(str.chars().next().unwrap(), votes, errors)
-}
-
-fn get_count_from_char<'h>(
-	char: char, votes: &[&'h OptionData], errors: &mut Vec<String>,
-) -> Option<&'h OptionData> {
-	let index = map_option_to_array_index(char).unwrap();
-	get_count_from_impl(&char.to_string(), index, votes, errors)
-}
-
-fn get_count_from_index<'h>(
-	index: usize, votes: &[&'h OptionData], errors: &mut Vec<String>,
-) -> Option<&'h OptionData> {
-	get_count_from_impl(&index.to_string(), index, votes, errors)
-}
-
-fn get_count_from_impl<'h>(
-	orig: &'_ str, index: usize, votes: &[&'h OptionData], errors: &mut Vec<String>,
-) -> Option<&'h OptionData> {
-	// `index` starts at 1, but slice indexes start at 0, so we subtract 1
-	let vote = votes.get(index.saturating_sub(1));
-
-	if vote.is_none() {
-		errors.push(format!("{orig} is not a valid option"));
-	}
-
-	vote.copied()
-}
-
-fn map_option_to_array_index(option: char) -> Option<usize> {
-	let (i, _) = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-		.chars()
-		.enumerate()
-		.find(|(_, i)| *i == option)?;
-
-	Some(i + 1)
 }
 
 mod result_parser {
