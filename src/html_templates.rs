@@ -1100,6 +1100,10 @@ pub fn home_event_complete_html(user: User, theme: Theme) -> String {
 			"Thank you for (potentially) participating in this year's event." br;
 			"The event is currently over."
 		}
+		p {
+			"Now that it's over, consider providing feedback on the event and story below:"
+		}
+		(user_feedback_html(user))
 	};
 	html_builder()
 		.theme(&theme)
