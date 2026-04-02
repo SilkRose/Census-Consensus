@@ -348,8 +348,8 @@ async fn construct_story_json(
 			};
 			let data = db.get_latest_question_revision(question.id).await?;
 			let mut short_desc = format!("{} asked, \"{}\"", data.asked_by, data.question_text);
-			if short_desc.len() > 250 {
-				short_desc = format!("{}…", &short_desc[..=249])
+			if short_desc.len() > 225 {
+				short_desc = format!("{}…", &short_desc[..220])
 			}
 			story_json(settings.story_id, &title, &short_desc)
 		}
