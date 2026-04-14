@@ -6,7 +6,7 @@ use std::collections::HashMap;
 use std::time::Duration;
 
 use crate::endpoints::*;
-use crate::structs::{Chapter, ChapterRevision, OptionType, Settings, UserType};
+use crate::structs::{Chapter, ChapterRevision, OptionType, Settings, UserData, UserType};
 use crate::utility::{construct_question_data, parse_options};
 
 pub use self::database::*;
@@ -43,6 +43,8 @@ async fn main() -> Result<()> {
 	let db = Db::new(&env_vars::database_url()).await?;
 	let mut db = Data(db);
 	let db_clone = db.clone();
+
+	construct_event_stats(&mut db).await?;
 
 	let admin_id = env_vars::admin_id().parse::<i32>()?;
 	let bearer_token = env_vars::bearer_token();
@@ -372,4 +374,120 @@ async fn construct_story_json(
 		(false, true) => unreachable!(),
 	};
 	Ok(json)
+}
+
+async fn construct_event_stats(db: &mut Db) -> Result<()> {
+	let users = db.get_all_users().await?;
+	let logo_stats = db.get_all_logo_stats().await?;
+	let mut clicks = Vec::new();
+	for click in logo_stats.clone().into_iter() {
+		let user = users.iter().find(|user| user.id == click.user_id).unwrap();
+		if user.user_type == UserType::Voter {
+			clicks.push(click);
+		}
+	}
+	let mut user_data = Vec::with_capacity(users.len());
+	for user in users.clone() {
+		if user.user_type != UserType::Voter {
+			continue;
+		}
+		let census = db.get_logo_stats_census_count_by_user(user.id).await?;
+		let consensus = db.get_logo_stats_consensus_count_by_user(user.id).await?;
+		let data = UserData {
+			meta: user,
+			logo_census: census,
+			logo_consensus: consensus,
+		};
+		user_data.push(data);
+	}
+	user_data.sort_by_key(|user| user.logo_census);
+	user_data.reverse();
+	println!("Census Top 5 Stats:");
+	for (i, user) in user_data.iter().enumerate().take(5) {
+		println!("{i}: {} - {}", user.meta.name, user.logo_census);
+	}
+	user_data.sort_by_key(|user| user.logo_consensus);
+	user_data.reverse();
+	println!("Consensus Top 5 Stats:");
+	for (i, user) in user_data.iter().enumerate().take(5) {
+		println!("{i}: {} - {}", user.meta.name, user.logo_consensus);
+	}
+	user_data.sort_by_key(|user| user.logo_census + user.logo_consensus);
+	user_data.reverse();
+	println!("Logo Total Top 5 Stats:");
+	for (i, user) in user_data.iter().enumerate().take(5) {
+		println!(
+			"{i}: {} - {}",
+			user.meta.name,
+			user.logo_census + user.logo_consensus
+		);
+	}
+	println!("Total users: {}", users.len());
+	let mut votes = db.get_all_votes().await?;
+	println!("Total votes: {}", votes.len());
+	votes.sort_by_key(|vote| vote.voter_id);
+	let vote_buckets = votes
+		.chunk_by(|a, b| a.voter_id == b.voter_id)
+		.collect::<Vec<_>>();
+	println!("Total voters: {}", vote_buckets.len());
+	let chapter_rev = db.get_all_chapter_revisions().await?;
+	println!("Chapter Revisions: {}", chapter_rev.len());
+	let question_rev = db.get_all_question_revisions().await?;
+	println!("Question Revisions: {}", question_rev.len());
+	let chapters = db.get_all_chapters().await?;
+	let mut vote_buckets = vec![];
+	for chapter in &chapters {
+		let questions = db.get_questions_by_chapter(chapter.id).await?;
+		let mut bucket = vec![];
+		for question in questions {
+			let votes = db.get_all_votes_by_question(question.id).await?;
+			for vote in votes {
+				bucket.push(vote);
+			}
+		}
+		bucket.sort_by_key(|b| b.voter_id);
+		let voters = bucket
+			.chunk_by(|a, b| a.voter_id == b.voter_id)
+			.collect::<Vec<_>>();
+		println!(
+			"{:?} - Votes: {}, Voter Count: {}",
+			chapter.chapter_order,
+			bucket.len(),
+			voters.len()
+		);
+		vote_buckets.push(bucket);
+	}
+	let mut whole_event_voters = 0;
+	'user_loop: for user in &users {
+		for bucket in &vote_buckets {
+			if bucket.is_empty() {
+				continue;
+			}
+			let voted = bucket.iter().find(|vote| vote.voter_id == user.id);
+			if voted.is_none() {
+				continue 'user_loop;
+			}
+		}
+		whole_event_voters += 1;
+		println!("{}", user.name);
+	}
+	println!("Whole event voters: {whole_event_voters}");
+	let mut vote_counts = vec![];
+	for user in users {
+		let votes = db.get_all_votes_by_user(user.id).await?;
+		if !votes.is_empty() {
+			vote_counts.push((votes.len(), user))
+		}
+	}
+	vote_counts.sort_by_key(|c| c.0);
+	println!("Bottom 10 voters:");
+	for (count, user) in vote_counts.iter().take(10) {
+		println!("Votes: {count} - {}", user.name)
+	}
+	vote_counts.reverse();
+	println!("Top 10 voters:");
+	for (count, user) in vote_counts.iter().take(10) {
+		println!("Votes: {count} - {}", user.name)
+	}
+	Ok(())
 }

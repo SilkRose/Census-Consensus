@@ -1660,7 +1660,8 @@ pub trait DbExecutor {
 			LogoStat,
 			r#"SELECT
 				id, logo AS "logo: Logo", user_id, date_created
-			FROM Logo_stats;"#,
+			FROM Logo_stats
+			ORDER BY date_created;"#,
 		)
 		.fetch_all(self.executor())
 		.await
