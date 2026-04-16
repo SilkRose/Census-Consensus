@@ -244,14 +244,6 @@ pub enum Logo {
 	Consensus,
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct LogoStat {
-	pub id: i32,
-	pub logo: Logo,
-	pub user_id: i32,
-	pub date_created: DateTime<Utc>,
-}
-
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct OEmbed {
 	pub r#type: String,

@@ -1234,8 +1234,10 @@ fn icon_html(theme: &Theme) -> PreEscaped<String> {
 fn header_html(user_type: Option<UserType>, page: Pages, theme: &Theme) -> PreEscaped<String> {
 	html!(
 		fieldset class = "logo" {
-			(header_logo_html("census", "Census", user_type.is_some()))
-			(header_logo_html("consensus", "Consensus", user_type.is_some()))
+			input id = "census" type = "radio" name = "logo" {}
+			label for = "census" { "Census" }
+			input id = "consensus" type = "radio" name = "logo" {}
+			label for = "consensus" { "Consensus" }
 		}
 		nav {
 			span class = "nav" {
@@ -1262,18 +1264,6 @@ fn header_html(user_type: Option<UserType>, page: Pages, theme: &Theme) -> PreEs
 			span { "Theme:" }
 			(header_theme_html("light", "Celestia", theme == &Theme::Light))
 			(header_theme_html("dark", "Luna", theme == &Theme::Dark))
-		}
-	)
-}
-
-fn header_logo_html(id: &str, text: &str, logged_in: bool) -> PreEscaped<String> {
-	html!(
-		@if logged_in {
-			input id = (id) type = "radio" name = "logo" onclick = (format!("submitLogo('{id}')")) {}
-			label for = (id) { (text) }
-		} @ else {
-			input id = (id) type = "radio" name = "logo" {}
-			label for = (id) { (text) }
 		}
 	)
 }

@@ -53,20 +53,6 @@ pub async fn get_js() -> actix_web::Result<impl Responder> {
 		.body(fs::read_to_string("./src/mane.js")?))
 }
 
-#[post("/logo/{opt}")]
-pub async fn set_logo_submit(
-	path: Path<String>, mut db: ThinData<Db>, session: SessionInfo,
-) -> actix_web::Result<impl Responder> {
-	let opt = path.into_inner();
-	let logo = match opt.as_str() {
-		"census" => Logo::Census,
-		"consensus" => Logo::Consensus,
-		_ => return Ok(HttpResponse::BadRequest().finish()),
-	};
-	db.insert_logo_stat(logo, session.user_id).await?;
-	Ok(HttpResponse::Ok().finish())
-}
-
 #[get("/user")]
 pub async fn get_user(
 	theme: Theme, mut db: ThinData<Db>, session: SessionInfo,

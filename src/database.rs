@@ -1504,67 +1504,6 @@ pub trait DbExecutor {
 			.rows_affected())
 	}
 
-	async fn insert_logo_stat(&mut self, logo: Logo, user_id: i32) -> Result<LogoStat> {
-		Ok(sqlx::query_as!(
-			LogoStat,
-			r#"INSERT INTO Logo_stats
-				(logo, user_id)
-			VALUES
-				($1, $2)
-			RETURNING
-				id, logo AS "logo: Logo", user_id, date_created;"#,
-			logo as _,
-			user_id,
-		)
-		.fetch_one(self.executor())
-		.await
-		.map_err(insert_err)?)
-	}
-
-	async fn get_logo_stats_by_user(&mut self, user_id: i32) -> Result<Vec<LogoStat>> {
-		Ok(sqlx::query_as!(
-			LogoStat,
-			r#"SELECT
-				id, logo AS "logo: Logo", user_id, date_created
-			FROM Logo_stats
-			WHERE user_id = $1;"#,
-			user_id
-		)
-		.fetch_all(self.executor())
-		.await
-		.map_err(select_err)?)
-	}
-
-	async fn get_logo_stats_in_range(
-		&mut self, start: DateTime<Utc>, end: DateTime<Utc>,
-	) -> Result<Vec<LogoStat>> {
-		Ok(sqlx::query_as!(
-			LogoStat,
-			r#"SELECT
-				id, logo AS "logo: Logo", user_id, date_created
-			FROM Logo_stats
-			WHERE date_created > $1 AND date_created < $2;"#,
-			start,
-			end
-		)
-		.fetch_all(self.executor())
-		.await
-		.map_err(select_err)?)
-	}
-
-	async fn get_all_logo_stats(&mut self) -> Result<Vec<LogoStat>> {
-		Ok(sqlx::query_as!(
-			LogoStat,
-			r#"SELECT
-				id, logo AS "logo: Logo", user_id, date_created
-			FROM Logo_stats
-			ORDER BY date_created;"#,
-		)
-		.fetch_all(self.executor())
-		.await
-		.map_err(select_err)?)
-	}
-
 	async fn get_logo_stats_census_count_by_user(&mut self, user_id: i32) -> Result<i64> {
 		Ok(sqlx::query!(
 			"SELECT count(*) FROM Logo_stats WHERE logo = $1 AND user_id = $2;",
@@ -1589,55 +1528,6 @@ pub trait DbExecutor {
 		.map_err(select_err)?
 		.count
 		.ok_or_else(count_err)?)
-	}
-
-	async fn get_logo_stats_census_count(&mut self) -> Result<i64> {
-		Ok(sqlx::query!(
-			"SELECT count(*) FROM Logo_stats WHERE logo = $1;",
-			Logo::Census as _
-		)
-		.fetch_one(self.executor())
-		.await
-		.map_err(select_err)?
-		.count
-		.ok_or_else(count_err)?)
-	}
-
-	async fn get_logo_stats_consensus_count(&mut self) -> Result<i64> {
-		Ok(sqlx::query!(
-			"SELECT count(*) FROM Logo_stats WHERE logo = $1;",
-			Logo::Consensus as _
-		)
-		.fetch_one(self.executor())
-		.await
-		.map_err(select_err)?
-		.count
-		.ok_or_else(count_err)?)
-	}
-
-	async fn get_logo_stats_count(&mut self) -> Result<i64> {
-		Ok(sqlx::query!("SELECT count(*) FROM Logo_stats;")
-			.fetch_one(self.executor())
-			.await
-			.map_err(select_err)?
-			.count
-			.ok_or_else(count_err)?)
-	}
-
-	async fn delete_logo_stat(&mut self, id: i32) -> Result<u64> {
-		Ok(sqlx::query!("DELETE FROM Logo_stats WHERE id = $1;", id)
-			.execute(self.executor())
-			.await
-			.map_err(delete_err)?
-			.rows_affected())
-	}
-
-	async fn delete_all_logo_stats(&mut self) -> Result<u64> {
-		Ok(sqlx::query!("DELETE FROM Logo_stats;")
-			.execute(self.executor())
-			.await
-			.map_err(delete_err)?
-			.rows_affected())
 	}
 
 	async fn get_settings(&mut self) -> Result<Settings> {

@@ -107,7 +107,6 @@ async fn main() -> Result<()> {
 			.service(get_about)
 			.service(get_feedback)
 			.service(get_dashboard)
-			.service(set_logo_submit)
 			.service(auth::fimfic_auth)
 			.service(auth::fimfic_auth_logout)
 			.service(set_revoke_sessions)
