@@ -207,22 +207,6 @@ pub struct Vote {
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct StoryUpdate {
-	pub title: String,
-	pub short_description: String,
-	pub description: String,
-	pub views: i32,
-	pub total_views: i32,
-	pub words: i32,
-	pub chapters: i32,
-	pub comments: i32,
-	pub rating: i32,
-	pub likes: i32,
-	pub dislikes: i32,
-	pub date_cached: DateTime<Utc>,
-}
-
-#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct UserRoleUpdate {
 	pub id: i32,
 	pub role: UserType,

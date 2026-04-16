@@ -2,7 +2,6 @@ use crate::error::Result;
 use crate::structs::*;
 use crate::utility::{count_options, count_outcomes};
 use chrono::{DateTime, Utc};
-use pony::fimfiction_api::story::StoryData;
 use pony::fimfiction_api::user::UserData;
 use pony::smart_map::SmartMap;
 use sqlx::postgres::PgPoolOptions;
@@ -1499,108 +1498,6 @@ pub trait DbExecutor {
 
 	async fn delete_all_votes(&mut self) -> Result<u64> {
 		Ok(sqlx::query!("DELETE FROM Votes;")
-			.execute(self.executor())
-			.await
-			.map_err(delete_err)?
-			.rows_affected())
-	}
-
-	async fn insert_story_update(&mut self, data: StoryData<i32>) -> Result<StoryUpdate> {
-		Ok(sqlx::query_as!(
-			StoryUpdate,
-			"INSERT INTO Story_updates
-				(title, short_description, description, views, total_views,
-				words, chapters, comments, rating, likes, dislikes)
-			VALUES
-				($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-			RETURNING
-				title, short_description, description, views, total_views,
-				words, chapters, comments, rating, likes, dislikes, date_cached;",
-			data.attributes.title,
-			data.attributes.short_description,
-			data.attributes.description,
-			data.attributes.num_views,
-			data.attributes.total_num_views,
-			data.attributes.num_words,
-			data.attributes.num_chapters,
-			data.attributes.num_comments,
-			data.attributes.rating,
-			data.attributes.num_likes,
-			data.attributes.num_dislikes,
-		)
-		.fetch_one(self.executor())
-		.await
-		.map_err(insert_err)?)
-	}
-
-	async fn get_story_updates_in_range(
-		&mut self, start: DateTime<Utc>, end: DateTime<Utc>,
-	) -> Result<Vec<StoryUpdate>> {
-		Ok(sqlx::query_as!(
-			StoryUpdate,
-			"SELECT
-				title, short_description, description, views, total_views,
-				words, chapters, comments, rating, likes, dislikes, date_cached
-			FROM Story_updates
-			WHERE date_cached > $1 AND date_cached < $2;",
-			start,
-			end
-		)
-		.fetch_all(self.executor())
-		.await
-		.map_err(select_err)?)
-	}
-
-	async fn get_all_story_updates(&mut self) -> Result<Vec<StoryUpdate>> {
-		Ok(sqlx::query_as!(
-			StoryUpdate,
-			"SELECT
-				title, short_description, description, views, total_views,
-				words, chapters, comments, rating, likes, dislikes, date_cached
-			FROM Story_updates;",
-		)
-		.fetch_all(self.executor())
-		.await
-		.map_err(select_err)?)
-	}
-
-	async fn get_story_updates_count(&mut self) -> Result<i64> {
-		Ok(sqlx::query!("SELECT count(*) FROM Story_updates;")
-			.fetch_one(self.executor())
-			.await
-			.map_err(select_err)?
-			.count
-			.ok_or_else(count_err)?)
-	}
-
-	async fn delete_story_update(&mut self, date_cached: DateTime<Utc>) -> Result<u64> {
-		Ok(sqlx::query!(
-			"DELETE FROM Story_updates WHERE date_cached = $1;",
-			date_cached
-		)
-		.execute(self.executor())
-		.await
-		.map_err(delete_err)?
-		.rows_affected())
-	}
-
-	async fn delete_story_updates_in_range(
-		&mut self, start: DateTime<Utc>, end: DateTime<Utc>,
-	) -> Result<u64> {
-		Ok(sqlx::query!(
-			"DELETE FROM Story_updates
-			WHERE date_cached > $1 AND date_cached > $2;",
-			start,
-			end
-		)
-		.execute(self.executor())
-		.await
-		.map_err(delete_err)?
-		.rows_affected())
-	}
-
-	async fn delete_all_story_updates(&mut self) -> Result<u64> {
-		Ok(sqlx::query!("DELETE FROM Story_updates;")
 			.execute(self.executor())
 			.await
 			.map_err(delete_err)?
