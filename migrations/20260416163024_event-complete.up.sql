@@ -11,7 +11,7 @@ UPDATE Chapters SET fimfic_ch_id = 1891831 WHERE id = 1;
 CREATE TABLE IF NOT EXISTS Votes_complete (
 	voter_id     integer     NOT NULL,
 	question_id  integer     NOT NULL,
-	option_id    integer     NOT NULL,
+	option_id    text        NOT NULL,
 	date_created timestamptz NOT NULL DEFAULT now(),
 
 	CONSTRAINT Votes_complete_Users_fk FOREIGN KEY (voter_id)

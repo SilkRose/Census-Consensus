@@ -68,14 +68,6 @@ impl Db {
 		Ok(meta)
 	}
 
-	pub async fn get_active_chapter(&mut self) -> Result<Option<Chapter>> {
-		let chapters = self.get_all_chapters().await?;
-		let chapter = chapters
-			.into_iter()
-			.find(|c| c.chapter_order.is_some() && c.fimfic_ch_id.is_none());
-		Ok(chapter)
-	}
-
 	pub async fn get_chapters_table(&mut self) -> Result<Vec<ChapterTable>> {
 		let mut tx = self.transaction().await?;
 		let chapters = tx.get_all_chapters().await?;
@@ -1345,40 +1337,6 @@ pub trait DbExecutor {
 			.rows_affected())
 	}
 
-	async fn insert_vote(
-		&mut self, user_id: i32, question_id: i32, option_id: &str,
-	) -> Result<Vote> {
-		Ok(sqlx::query_as!(
-			Vote,
-			"INSERT INTO Votes
-				(voter_id, question_id, option_id)
-			VALUES
-				($1, $2, $3)
-			RETURNING
-				voter_id, question_id, option_id, date_created;",
-			user_id,
-			question_id,
-			option_id
-		)
-		.fetch_one(self.executor())
-		.await
-		.map_err(insert_err)?)
-	}
-
-	async fn get_all_votes_by_user(&mut self, user_id: i32) -> Result<Vec<Vote>> {
-		Ok(sqlx::query_as!(
-			Vote,
-			"SELECT
-				voter_id, question_id, option_id, date_created
-			FROM Votes
-			WHERE voter_id = $1;",
-			user_id
-		)
-		.fetch_all(self.executor())
-		.await
-		.map_err(select_err)?)
-	}
-
 	async fn get_all_votes_by_question(&mut self, question_id: i32) -> Result<Vec<Vote>> {
 		Ok(sqlx::query_as!(
 			Vote,
@@ -1394,94 +1352,46 @@ pub trait DbExecutor {
 		.map_err(select_err)?)
 	}
 
-	async fn get_all_votes_by_option(&mut self, option_id: &str) -> Result<Vec<Vote>> {
+	async fn insert_vote_complete(
+		&mut self, user_id: i32, question_id: i32, option_id: &str,
+	) -> Result<Vote> {
 		Ok(sqlx::query_as!(
 			Vote,
-			"SELECT
-				voter_id, question_id, option_id, date_created
-			FROM Votes
-			WHERE option_id = $1;",
+			"INSERT INTO Votes_complete
+				(voter_id, question_id, option_id)
+			VALUES
+				($1, $2, $3)
+			RETURNING
+				voter_id, question_id, option_id, date_created;",
+			user_id,
+			question_id,
 			option_id
 		)
-		.fetch_all(self.executor())
+		.fetch_one(self.executor())
 		.await
-		.map_err(select_err)?)
+		.map_err(insert_err)?)
 	}
 
-	async fn get_all_votes_by_question_and_user(
-		&mut self, question_id: i32, user_id: i32,
-	) -> Result<Vec<Vote>> {
+	async fn get_all_votes_complete_by_question(&mut self, question_id: i32) -> Result<Vec<Vote>> {
 		Ok(sqlx::query_as!(
 			Vote,
 			"SELECT
 				voter_id, question_id, option_id, date_created
-			FROM Votes
-			WHERE
-				question_id = $1
-			AND
-				voter_id = $2;",
-			question_id,
-			user_id
+			FROM Votes_complete
+			WHERE question_id = $1
+			ORDER BY option_id;",
+			question_id
 		)
 		.fetch_all(self.executor())
 		.await
 		.map_err(select_err)?)
 	}
 
-	async fn get_all_votes(&mut self) -> Result<Vec<Vote>> {
-		Ok(sqlx::query_as!(
-			Vote,
-			"SELECT voter_id, question_id, option_id, date_created FROM Votes;",
-		)
-		.fetch_all(self.executor())
-		.await
-		.map_err(select_err)?)
-	}
-
-	async fn get_votes_count(&mut self) -> Result<i64> {
-		Ok(sqlx::query!("SELECT count(*) FROM Votes;")
-			.fetch_one(self.executor())
-			.await
-			.map_err(select_err)?
-			.count
-			.ok_or_else(count_err)?)
-	}
-
-	async fn delete_votes_by_user(&mut self, user_id: i32) -> Result<u64> {
-		Ok(
-			sqlx::query!("DELETE FROM Votes WHERE voter_id = $1;", user_id)
-				.execute(self.executor())
-				.await
-				.map_err(delete_err)?
-				.rows_affected(),
-		)
-	}
-
-	async fn delete_votes_by_option(&mut self, question_id: i32) -> Result<u64> {
-		Ok(
-			sqlx::query!("DELETE FROM Votes WHERE question_id = $1;", question_id)
-				.execute(self.executor())
-				.await
-				.map_err(delete_err)?
-				.rows_affected(),
-		)
-	}
-
-	async fn delete_votes_by_question(&mut self, option_id: &str) -> Result<u64> {
-		Ok(
-			sqlx::query!("DELETE FROM Votes WHERE option_id = $1;", option_id)
-				.execute(self.executor())
-				.await
-				.map_err(delete_err)?
-				.rows_affected(),
-		)
-	}
-
-	async fn delete_votes_by_question_and_user(
+	async fn delete_votes_complete_by_question_and_user(
 		&mut self, question_id: i32, user_id: i32,
 	) -> Result<u64> {
 		Ok(sqlx::query!(
-			"DELETE FROM Votes
+			"DELETE FROM Votes_complete
 			WHERE
 				question_id = $1
 			AND
@@ -1493,14 +1403,6 @@ pub trait DbExecutor {
 		.await
 		.map_err(delete_err)?
 		.rows_affected())
-	}
-
-	async fn delete_all_votes(&mut self) -> Result<u64> {
-		Ok(sqlx::query!("DELETE FROM Votes;")
-			.execute(self.executor())
-			.await
-			.map_err(delete_err)?
-			.rows_affected())
 	}
 
 	async fn get_logo_stats_census_count_by_user(&mut self, user_id: i32) -> Result<i64> {

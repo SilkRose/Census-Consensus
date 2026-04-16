@@ -1,7 +1,3 @@
-use std::collections::HashMap;
-use std::fs;
-use std::time::Duration;
-
 use crate::endpoints::MIN_USER_UPDATE_TIME;
 use crate::theme::Theme;
 use crate::utility::{construct_question_data, count_words, parse_options};
@@ -14,6 +10,8 @@ use pony::markdown::html::parse;
 use pony::number_format::format_number_u128;
 use pony::smart_map::SmartMap;
 use pony::time::format_milliseconds;
+use std::collections::HashMap;
+use std::fs;
 use url::form_urlencoded;
 
 const SITE_NAME: &str = "Census Consensus";
@@ -939,78 +937,6 @@ pub fn chapter_survey_html(
 		.theme(&theme)
 		.head(head_html(&title, description, &link, &theme))
 		.header(header_html(Some(user_type), Pages::Chapters, &theme))
-		.mane(mane)
-		.call()
-}
-
-pub fn home_survey_complete_html(
-	user: User, theme: Theme, chapter: Chapter, questions: i64,
-) -> String {
-	let heading = "Census Consensus";
-	let title: String = format!("{heading} - {SITE_NAME}");
-	let description = "The Equestrian Census, redefined!";
-	let link = format!("{SITE_LINK}/");
-	let user_type = user.user_type.clone();
-	let start_time = Utc::now();
-	let minutes_left = Duration::from_mins(chapter.minutes_left.unwrap_or_default() as u64);
-	let end_time = start_time + minutes_left;
-	let millis_diff = Duration::from_millis((end_time.timestamp_millis() % 60_000) as u64);
-	let seconds_left = ((end_time - millis_diff) - start_time).num_seconds();
-	let mane = html! {
-		h1 { (heading) }
-		p { (description) }
-		p {
-			@if questions > 0 {
-				"The next survey will be available in: "
-			} @else {
-				"The final chapter will be published in: "
-			}
-			span id = "countdown" { "Countdown loading…" }
-			script defer {
-				(format!("countDown('{seconds_left}', 'Event is now live!')"))
-			}
-		}
-		p {
-			"While you wait, consider providing feedback on the event and story below:"
-		}
-		(user_feedback_html(user))
-	};
-	html_builder()
-		.theme(&theme)
-		.head(head_html(&title, description, &link, &theme))
-		.header(header_html(Some(user_type), Pages::Home, &theme))
-		.mane(mane)
-		.call()
-}
-
-pub fn home_survey_html(
-	user: User, theme: Theme, chapter: ChapterRevision,
-	questions: Vec<(Question, QuestionRevision)>,
-) -> String {
-	let heading = "Home";
-	let title: String = format!("{heading} - {SITE_NAME}");
-	let description = "The Equestrian Census, reimagined.";
-	let link = format!("{SITE_LINK}/chapters/{}/submit", chapter.chapter_id);
-	let user_type = user.user_type;
-	let mane = html! {
-		h1 { (heading) }
-		p { (description) }
-		h2 { (chapter.title) }
-		form method = "post" action = (link) {
-			@for (question, data) in questions {
-				@let opts = parse_options(
-					&data.option_writing.clone().unwrap_or_default(),
-					&data.question_type,
-				);
-				(question_html(&question, &data, &opts))
-			}
-			button type = "submit" { "Submit" }
-		}
-	};
-	html_builder()
-		.theme(&theme)
-		.head(head_html(&title, description, SITE_LINK, &theme))
-		.header(header_html(Some(user_type), Pages::Home, &theme))
 		.mane(mane)
 		.call()
 }

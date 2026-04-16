@@ -584,51 +584,7 @@ pub async fn get_home(
 				.body(home_html(None, theme)));
 		}
 	};
-	let setting = db.get_settings().await?;
-	let page = if let Some(chapter) = db.get_active_chapter().await?
-		&& chapter.minutes_left.is_some()
-	{
-		// event live
-		let question_count = db.get_question_count_by_chapter(chapter.id).await?;
-		if question_count > 0 {
-			// survey chapter
-			let questions = db.get_questions_by_chapter(chapter.id).await?;
-			for question in &questions {
-				let votes = db
-					.get_all_votes_by_question_and_user(question.id, user.id)
-					.await?;
-				if !votes.is_empty() {
-					// previously voted
-					let page = home_survey_complete_html(user, theme, chapter, question_count);
-					return Ok(HttpResponse::Ok()
-						.content_type("text/html; charset=utf-8")
-						.body(page));
-				}
-			}
-			// new voter
-			let mut data = Vec::with_capacity(questions.len());
-			for question in questions {
-				let question_data = db.get_latest_question_revision(question.id).await?;
-				data.push((question, question_data));
-			}
-			let chapter = db.get_latest_chapter_revision(chapter.id).await?;
-			home_survey_html(user, theme, chapter, data)
-		} else {
-			// final chapter
-			let page = home_survey_complete_html(user, theme, chapter, question_count);
-			return Ok(HttpResponse::Ok()
-				.content_type("text/html; charset=utf-8")
-				.body(page));
-		}
-	} else if let Some(start_time) = setting.start_time
-		&& start_time < Utc::now()
-	{
-		// event over
-		home_event_complete_html(user, theme)
-	} else {
-		// event hasn't started
-		home_html(Some(user), theme)
-	};
+	let page = home_event_complete_html(user, theme);
 	Ok(HttpResponse::Ok()
 		.content_type("text/html; charset=utf-8")
 		.body(page))
@@ -706,38 +662,30 @@ pub async fn set_chapter_submit(
 ) -> actix_web::Result<impl Responder> {
 	let chapter_id = path.into_inner();
 	let votes = serde_urlencoded::from_str::<HashMap<String, String>>(&body)?;
-	if let Some(chapter) = db.get_chapter(chapter_id).await?
-		&& chapter.chapter_order.is_some()
-		&& chapter.fimfic_ch_id.is_none()
-	{
+	if db.get_chapter(chapter_id).await?.is_some() {
 		let user = db.get_user(session.user_id).await?;
-		let active = db
-			.get_active_chapter()
-			.await?
-			.is_some_and(|ch| ch.id == chapter_id);
-		if active || user.user_type != UserType::Voter {
-			let questions = db.get_questions_by_chapter(chapter_id).await?;
-			for question in questions {
-				let Some(vote) = votes.get(&question.id.to_string()) else {
+		let questions = db.get_questions_by_chapter(chapter_id).await?;
+		for question in questions {
+			let Some(vote) = votes.get(&question.id.to_string()) else {
+				continue;
+			};
+			let data = db.get_latest_question_revision(question.id).await?;
+			let text = data.option_writing.unwrap_or_default();
+			let options = parse_options(&text, &data.question_type)
+				.into_iter()
+				.collect::<HashMap<_, _>>();
+			let answers: Vec<String> = match data.question_type {
+				QuestionType::Multiselect => vote.split("+").map(|v| v.to_string()).collect(),
+				_ => vec![vote.clone()],
+			};
+			db.delete_votes_complete_by_question_and_user(question.id, user.id)
+				.await?;
+			for answer in answers {
+				if !options.contains_key(&answer) {
 					continue;
-				};
-				let data = db.get_latest_question_revision(question.id).await?;
-				let text = data.option_writing.unwrap_or_default();
-				let options = parse_options(&text, &data.question_type)
-					.into_iter()
-					.collect::<HashMap<_, _>>();
-				let answers: Vec<String> = match data.question_type {
-					QuestionType::Multiselect => vote.split("+").map(|v| v.to_string()).collect(),
-					_ => vec![vote.clone()],
-				};
-				db.delete_votes_by_question_and_user(question.id, user.id)
-					.await?;
-				for answer in answers {
-					if !options.contains_key(&answer) {
-						continue;
-					}
-					db.insert_vote(user.id, question.id, &answer).await?;
 				}
+				db.insert_vote_complete(user.id, question.id, &answer)
+					.await?;
 			}
 		}
 		Ok(HttpResponse::SeeOther()
