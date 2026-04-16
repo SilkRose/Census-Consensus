@@ -133,7 +133,7 @@ pub struct ChapterData {
 #[derive(Clone, Debug)]
 pub enum QuestionChapter {
 	Questions(Option<(Chapter, ChapterRevision)>),
-	ChapterQuestions(Chapter),
+	ChapterQuestions,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -191,11 +191,6 @@ pub struct QuestionData {
 	pub meta: Question,
 	pub data: Vec<QuestionRevision>,
 	pub users: SmartMap<i32, User>,
-}
-
-#[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct QuestionChapterId {
-	pub chapter_id: Option<i32>,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]

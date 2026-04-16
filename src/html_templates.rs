@@ -189,7 +189,6 @@ pub fn chapters_html(user: User, theme: Theme, chapters: Vec<ChapterTable>) -> S
 	let description = "Chapter list and new chapter page.";
 	let link = format!("{SITE_LINK}/chapters");
 	let user_type = user.user_type.clone();
-	let admin = user_type == UserType::Admin;
 	let mane = html! {
 		h1 { (heading) }
 		p { (description) }
@@ -197,7 +196,7 @@ pub fn chapters_html(user: User, theme: Theme, chapters: Vec<ChapterTable>) -> S
 		@let mut prev_published = false;
 		@for chapter in chapters.iter() {
 			span class = "list-item" {
-				(chapter_list_item_html(chapter, &mut prev_published, admin))
+				(chapter_list_item_html(chapter, &mut prev_published))
 			}
 		}
 		(new_chapter_html())
@@ -210,9 +209,7 @@ pub fn chapters_html(user: User, theme: Theme, chapters: Vec<ChapterTable>) -> S
 		.call()
 }
 
-fn chapter_list_item_html(
-	chapter: &ChapterTable, prev_published: &mut bool, admin: bool,
-) -> PreEscaped<String> {
+fn chapter_list_item_html(chapter: &ChapterTable, prev_published: &mut bool) -> PreEscaped<String> {
 	let active = chapter.meta.fimfic_ch_id.is_some() || chapter.meta.minutes_left.is_some();
 	let first_number = !active && chapter.meta.chapter_order.is_some() && !*prev_published;
 	*prev_published = *prev_published || first_number;
@@ -222,44 +219,13 @@ fn chapter_list_item_html(
 			a href = (format!("/chapters/{}/survey", chapter.meta.id)) { b { "Preview Survey" } sup { "↗" } }
 			b { " Ch Order: " }
 			@if let Some(order) = chapter.meta.chapter_order {
-				@if !active && admin {
-					@if !first_number {
-						@let endpoint = format!("/chapters/{}/ordered/-1", chapter.meta.id);
-						(button_link("▲", &endpoint))
-					} @else {
-						(button_disabled("▲"))
-					}
-				}
 				(order)
-				@if !active && admin {
-					@let endpoint = format!("/chapters/{}/ordered/1", chapter.meta.id);
-					(button_link("▼", &endpoint))
-				}
-			} @else {
-				@let endpoint = format!("/chapters/{}/ordered", chapter.meta.id);
-				(button_link("Add", &endpoint))
 			}
 			b { " Vote Duration: " }
-			@if !active && admin {
-				@let endpoint = format!("/chapters/{}/vote-duration/1", chapter.meta.id);
-				(button_link("▲", &endpoint))
-			}
 			(chapter.meta.vote_duration)
-			@if !active && admin {
-				@let endpoint = format!("/chapters/{}/vote-duration/-1", chapter.meta.id);
-				(button_link("▼", &endpoint))
-			}
 			@if let Some(minutes_left) = chapter.meta.minutes_left {
 				b { " Min Left: " }
-				@if admin && minutes_left != 0 {
-					@let endpoint = format!("/chapters/{}/minutes-left/1", chapter.meta.id);
-					(button_link("▲", &endpoint))
-				}
 				(minutes_left)
-				@if admin && minutes_left != 0 {
-					@let endpoint = format!("/chapters/{}/minutes-left/-1", chapter.meta.id);
-					(button_link("▼", &endpoint))
-				}
 			}
 		}
 		p {
@@ -301,7 +267,7 @@ pub fn new_chapter_html() -> PreEscaped<String> {
 			@let name = "outro_text";
 			label for = (name) { "Outro:" }
 			(textarea(name, name, 1_000_000))
-			button type = "submit" { "Create Chapter" }
+			button type = "submit" disabled { "Create Chapter" }
 		}
 	}
 }
@@ -445,7 +411,7 @@ pub fn questions_html(
 					.map(|c| (**c).clone())
 			);
 			span class = "list-item" {
-				(question_list_item_html(question, population, &user, chapter))
+				(question_list_item_html(question, population, chapter))
 			}
 		}
 		(new_question_html(None))
@@ -472,7 +438,7 @@ pub fn chapter_questions_html(
 		h2 { "Question List" }
 		@for question in questions.into_iter() {
 			span class = "list-item" {
-				(question_list_item_html(question, population, &user, QuestionChapter::ChapterQuestions(chapter.clone())))
+				(question_list_item_html(question, population, QuestionChapter::ChapterQuestions))
 			}
 		}
 		(new_question_html(Some(&chapter)))
@@ -486,7 +452,7 @@ pub fn chapter_questions_html(
 }
 
 pub fn question_list_item_html(
-	question: QuestionTable, population: i32, user: &User, chapter: QuestionChapter,
+	question: QuestionTable, population: i32, chapter: QuestionChapter,
 ) -> PreEscaped<String> {
 	html! {
 		h3 { a href = (format!("/questions/{}", question.meta.id)) { (question.newest_data.question_text) sup { "↗" } } }
@@ -501,21 +467,10 @@ pub fn question_list_item_html(
 		}
 		p {
 			a href = (format!("/questions/{}/preview", question.meta.id)) { b { "Preview" } sup { "↗" } }
-			@if let QuestionChapter::ChapterQuestions(ref chapter) = chapter {
+			@if let QuestionChapter::ChapterQuestions = chapter {
 				b { " Ch Order: " }
 				@if let Some(order) = question.meta.chapter_order {
-					@if order > 1 {
-						@let endpoint = format!("/chapters/{}/questions/{}/ordered/-1", chapter.id, question.meta.id);
-						(button_link("▲", &endpoint))
-					} @else {
-						(button_disabled("▲"))
-					}
 					(order)
-					@let endpoint = format!("/chapters/{}/questions/{}/ordered/1", chapter.id, question.meta.id);
-					(button_link("▼", &endpoint))
-				} @else {
-					@let endpoint = format!("/chapters/{}/questions/{}/ordered", chapter.id, question.meta.id);
-					(button_link("Add", &endpoint))
 				}
 			} @else if let QuestionChapter::Questions(ref chapter) = chapter {
 				@if let Some((chapter, _)) = chapter
@@ -541,16 +496,6 @@ pub fn question_list_item_html(
 			@if let Some(claimant) = question.claimant {
 				b { " Claimant: " }
 				(user_inline_html(&claimant))
-				@if user.id == claimant.id {
-					@let endpoint = format!("/questions/{}/unclaim", question.meta.id);
-					(button_link("Un-Claim", &endpoint))
-				} @else if user.user_type == UserType::Admin {
-					@let endpoint = format!("/questions/{}/unclaim", question.meta.id);
-					(button_link("Revoke", &endpoint))
-				}
-			} @ else {
-				@let endpoint = format!("/questions/{}/claim", question.meta.id);
-				(button_link("Claim", &endpoint))
 			}
 		}
 		p {
@@ -607,7 +552,7 @@ pub fn new_question_html(chapter: Option<&Chapter>) -> PreEscaped<String> {
 			(results_explanation())
 			(markdown_preamble())
 			(textarea(name, name, 1_000_000))
-			button type = "submit" { "Create Question" }
+			button type = "submit" disabled { "Create Question" }
 		}
 	}
 }

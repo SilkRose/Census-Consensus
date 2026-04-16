@@ -173,17 +173,6 @@ pub async fn get_chapters(
 		.body(page))
 }
 
-#[post("/chapters")]
-pub async fn set_chapter_new(
-	body: String, mut db: ThinData<Db>, session: WriterSessionInfo,
-) -> actix_web::Result<impl Responder> {
-	let chapter_data = serde_urlencoded::from_str::<ChapterEdit>(&body)?;
-	let chapter = db.insert_chapter(chapter_data, session.user).await?;
-	Ok(HttpResponse::SeeOther()
-		.append_header(("Location", format!("/chapters/{}", chapter.id)))
-		.finish())
-}
-
 #[get("/chapters/{id}")]
 pub async fn get_chapter_edit(
 	path: Path<i32>, theme: Theme, mut db: ThinData<Db>, session: WriterSessionInfo,
@@ -215,97 +204,6 @@ pub async fn set_chapter_edit(
 			.await?;
 		Ok(HttpResponse::SeeOther()
 			.append_header(("Location", format!("/chapters/{id}")))
-			.finish())
-	} else {
-		Ok(HttpResponse::BadRequest().finish())
-	}
-}
-
-#[get("/chapters/{id}/ordered")]
-pub async fn set_chapter_order(
-	path: Path<i32>, mut db: ThinData<Db>, _: WriterSessionInfo,
-) -> actix_web::Result<impl Responder> {
-	let id = path.into_inner();
-	if let Some(chapter) = db.get_chapter(id).await?
-		&& chapter.chapter_order.is_none()
-		&& chapter.minutes_left.is_none()
-		&& chapter.fimfic_ch_id.is_none()
-	{
-		let chapters = db.get_all_chapters().await?;
-		let max = chapters.iter().filter_map(|c| c.chapter_order).max();
-		db.update_chapter_order(id, max.map_or(1, |i| i + 1))
-			.await?;
-		Ok(HttpResponse::SeeOther()
-			.append_header(("Location", "/chapters"))
-			.finish())
-	} else {
-		Ok(HttpResponse::BadRequest().finish())
-	}
-}
-
-#[get("/chapters/{id}/ordered/{movement}")]
-pub async fn set_chapter_order_move(
-	path: Path<(i32, i32)>, mut db: ThinData<Db>, _: WriterSessionInfo,
-) -> actix_web::Result<impl Responder> {
-	let (id, movement) = path.into_inner();
-	if movement.abs() == 1
-		&& let Some(chapter) = db.get_chapter(id).await?
-		&& let Some(order) = chapter.chapter_order
-		&& chapter.minutes_left.is_none()
-		&& chapter.fimfic_ch_id.is_none()
-		&& order + movement > 0
-	{
-		let chapter_above = db.get_chapter_by_order(order + movement).await?;
-		if let Some(above) = chapter_above {
-			db.swap_chapters_by_order(id, above.id, order, movement)
-				.await?;
-		} else {
-			db.update_chapter_order_none(id).await?;
-		}
-		Ok(HttpResponse::SeeOther()
-			.append_header(("Location", "/chapters"))
-			.finish())
-	} else {
-		Ok(HttpResponse::BadRequest().finish())
-	}
-}
-
-#[get("/chapters/{id}/vote-duration/{movement}")]
-pub async fn set_chapter_vote_duration_move(
-	path: Path<(i32, i32)>, mut db: ThinData<Db>, _: AdminSessionInfo,
-) -> actix_web::Result<impl Responder> {
-	let (id, movement) = path.into_inner();
-	if movement.abs() == 1
-		&& let Some(chapter) = db.get_chapter(id).await?
-		&& chapter.minutes_left.is_none()
-		&& chapter.fimfic_ch_id.is_none()
-		&& chapter.vote_duration + movement > 0
-	{
-		let new_duration = chapter.vote_duration + movement;
-		db.update_chapter_vote_duration(id, new_duration).await?;
-		Ok(HttpResponse::SeeOther()
-			.append_header(("Location", "/chapters"))
-			.finish())
-	} else {
-		Ok(HttpResponse::BadRequest().finish())
-	}
-}
-
-#[get("/chapters/{id}/minutes-left/{movement}")]
-pub async fn set_chapter_minutes_left_move(
-	path: Path<(i32, i32)>, mut db: ThinData<Db>, _: AdminSessionInfo,
-) -> actix_web::Result<impl Responder> {
-	let (id, movement) = path.into_inner();
-	if movement.abs() == 1
-		&& let Some(chapter) = db.get_chapter(id).await?
-		&& let Some(minutes_left) = chapter.minutes_left
-		&& chapter.fimfic_ch_id.is_none()
-		&& minutes_left + movement > 0
-	{
-		let new_left = minutes_left + movement;
-		db.update_chapter_minutes_left(id, Some(new_left)).await?;
-		Ok(HttpResponse::SeeOther()
-			.append_header(("Location", "/chapters"))
 			.finish())
 	} else {
 		Ok(HttpResponse::BadRequest().finish())
@@ -361,21 +259,6 @@ pub async fn get_feedback(
 	} else {
 		Ok(HttpResponse::InternalServerError().finish())
 	}
-}
-
-#[post("/questions")]
-pub async fn set_question_new(
-	params: Query<QuestionChapterId>, body: String, mut db: ThinData<Db>,
-	session: WriterSessionInfo,
-) -> actix_web::Result<impl Responder> {
-	let chapter_id = params.chapter_id;
-	let question_data = serde_urlencoded::from_str::<QuestionEdit>(&body)?;
-	let question = db
-		.insert_question(question_data, session.user, chapter_id)
-		.await?;
-	Ok(HttpResponse::SeeOther()
-		.append_header(("Location", format!("/questions/{}", question.id)))
-		.finish())
 }
 
 #[get("/questions/{id}")]
@@ -463,83 +346,6 @@ pub async fn get_chapter_questions(
 	}
 }
 
-#[get("/questions/{id}/claim")]
-pub async fn set_question_claim(
-	path: Path<i32>, req: HttpRequest, mut db: ThinData<Db>, session: WriterSessionInfo,
-) -> actix_web::Result<impl Responder> {
-	let id = path.into_inner();
-	if let Some(question) = db.get_question(id).await?
-		&& question.claimed_by.is_none()
-	{
-		db.update_question_claimed_by(id, Some(session.user.id))
-			.await?;
-		Ok(HttpResponse::SeeOther()
-			.append_header(("Location", redirect(req)))
-			.finish())
-	} else {
-		Ok(HttpResponse::BadRequest().finish())
-	}
-}
-
-#[get("/questions/{id}/unclaim")]
-pub async fn set_question_unclaim(
-	path: Path<i32>, req: HttpRequest, mut db: ThinData<Db>, session: WriterSessionInfo,
-) -> actix_web::Result<impl Responder> {
-	let id = path.into_inner();
-	if let Some(question) = db.get_question(id).await?
-		&& let Some(claimant) = question.claimed_by
-		&& (claimant == session.user.id || session.user.user_type == UserType::Admin)
-	{
-		db.update_question_claimed_by(id, None).await?;
-		Ok(HttpResponse::SeeOther()
-			.append_header(("Location", redirect(req)))
-			.finish())
-	} else {
-		Ok(HttpResponse::BadRequest().finish())
-	}
-}
-
-#[get("/chapters/{chapter_id}/questions/{question_id}/ordered")]
-pub async fn set_chapter_question_order(
-	path: Path<(i32, i32)>, req: HttpRequest, mut db: ThinData<Db>, _: WriterSessionInfo,
-) -> actix_web::Result<impl Responder> {
-	let (chapter_id, question_id) = path.into_inner();
-	db.add_question_to_chapter(question_id, chapter_id).await?;
-	Ok(HttpResponse::SeeOther()
-		.append_header(("Location", redirect(req)))
-		.finish())
-}
-
-#[get("/chapters/{chapter_id}/questions/{question_id}/ordered/{movement}")]
-pub async fn set_chapter_question_order_move(
-	path: Path<(i32, i32, i32)>, req: HttpRequest, mut db: ThinData<Db>, _: WriterSessionInfo,
-) -> actix_web::Result<impl Responder> {
-	let (chapter_id, question_id, movement) = path.into_inner();
-	if movement.abs() == 1
-		&& let Some(question) = db.get_question(question_id).await?
-		&& let Some(ch_id) = question.chapter_id
-		&& let Some(order) = question.chapter_order
-		&& chapter_id == ch_id
-		&& order + movement != 0
-	{
-		let question_above = db
-			.get_question_by_chapter_and_order(chapter_id, order + movement)
-			.await?;
-		if let Some(above) = question_above {
-			db.swap_questions_by_order(question_id, above.id, order, movement)
-				.await?;
-		} else {
-			db.update_question_chapter_id_order_none(question_id)
-				.await?;
-		}
-		Ok(HttpResponse::SeeOther()
-			.append_header(("Location", redirect(req)))
-			.finish())
-	} else {
-		Ok(HttpResponse::BadRequest().finish())
-	}
-}
-
 #[get("/questions")]
 pub async fn get_questions(
 	theme: Theme, mut db: ThinData<Db>, session: WriterSessionInfo,
@@ -614,21 +420,6 @@ pub async fn get_question_preview(
 		Ok(HttpResponse::Ok()
 			.content_type("text/html; charset=utf-8")
 			.body(page))
-	} else {
-		Ok(HttpResponse::BadRequest().finish())
-	}
-}
-
-#[post("/vote-duration")]
-pub async fn set_vote_duration(
-	body: String, mut db: ThinData<Db>, _: AdminSessionInfo,
-) -> actix_web::Result<impl Responder> {
-	let data = serde_urlencoded::from_str::<HashMap<String, i32>>(&body)?;
-	if let Some(vote_duration) = data.get("vote-duration") {
-		db.update_chapter_vote_durations(*vote_duration).await?;
-		Ok(HttpResponse::SeeOther()
-			.append_header(("Location", "/dashboard"))
-			.finish())
 	} else {
 		Ok(HttpResponse::BadRequest().finish())
 	}
