@@ -10,7 +10,6 @@ pub use self::database::*;
 pub use self::error::Result;
 pub use self::fimfic_cfg::FimficCfg;
 pub use self::http::HttpClient;
-pub use self::json::{chapter_json, story_json, story_json_completed};
 
 pub use actix_files::Files;
 pub use actix_web::middleware::Compress;
@@ -147,6 +146,7 @@ async fn main() -> Result<()> {
 			.service(set_chapter_submit)
 			.service(get_chapter_preview)
 			.service(get_chapter_preview_random)
+			.service(set_chapter_fimfic_update)
 			.service(auth::dev_session)
 			.service(Files::new("/assets", "./assets"))
 			.app_data(db.clone())

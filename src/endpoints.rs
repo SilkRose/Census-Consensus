@@ -2,7 +2,7 @@ use crate::auth::{AdminSessionInfo, MaybeSessionInfo, SessionInfo, WriterSession
 use crate::html_templates::*;
 use crate::structs::*;
 use crate::theme::Theme;
-use crate::utility::{construct_question_data, parse_options, redirect};
+use crate::utility::{construct_chapter_json, construct_question_data, parse_options, redirect};
 use crate::{FimficCfg, HttpClient};
 use crate::{database::*, result_formatter};
 use actix_web::web::{Path, Query, ThinData};
@@ -977,6 +977,37 @@ pub async fn get_chapter_preview_random(
 		Ok(HttpResponse::Ok()
 			.content_type("text/html; charset=utf-8")
 			.body(page))
+	} else {
+		Ok(HttpResponse::BadRequest().finish())
+	}
+}
+
+#[get("/chapters/{id}/update")]
+pub async fn set_chapter_fimfic_update(
+	path: Path<i32>, req: HttpRequest, mut db: ThinData<Db>, http_client: ThinData<HttpClient>,
+	fimfic_cfg: ThinData<FimficCfg>, _: WriterSessionInfo,
+) -> actix_web::Result<impl Responder> {
+	let id = path.into_inner();
+	let chapter = db.get_chapter(id).await?;
+	let data = db.get_latest_chapter_revision(id).await?;
+	let question_count = db.get_question_count_by_chapter(id).await?;
+	let settings = db.get_settings().await?;
+	if let Some(chapter) = chapter
+		&& let Some(fimfic_id) = chapter.fimfic_ch_id
+	{
+		let json = construct_chapter_json()
+			.db(&mut db)
+			.settings(&settings)
+			.data(data)
+			.question_count(question_count)
+			.call()
+			.await?;
+		http_client
+			.patch_chapter(&fimfic_cfg, fimfic_id, json)
+			.await?;
+		Ok(HttpResponse::SeeOther()
+			.append_header(("Location", redirect(req)))
+			.finish())
 	} else {
 		Ok(HttpResponse::BadRequest().finish())
 	}
