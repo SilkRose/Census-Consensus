@@ -1,7 +1,6 @@
 use crate::error::Result;
 use crate::structs::*;
 use crate::utility::{count_options, count_outcomes};
-use chrono::{DateTime, Utc};
 use pony::fimfiction_api::user::UserData;
 use pony::smart_map::SmartMap;
 use sqlx::postgres::PgPoolOptions;
@@ -1542,33 +1541,5 @@ pub trait DbExecutor {
 		.fetch_one(self.executor())
 		.await
 		.map_err(select_err)?)
-	}
-
-	async fn update_story_id(&mut self, story_id: i32) -> Result<u64> {
-		Ok(sqlx::query!("UPDATE Settings SET story_id = $1;", story_id)
-			.execute(self.executor())
-			.await
-			.map_err(update_err)?
-			.rows_affected())
-	}
-
-	async fn update_population(&mut self, population: i32) -> Result<u64> {
-		Ok(
-			sqlx::query!("UPDATE Settings SET population = $1;", population)
-				.execute(self.executor())
-				.await
-				.map_err(update_err)?
-				.rows_affected(),
-		)
-	}
-
-	async fn update_start_time(&mut self, start_time: Option<DateTime<Utc>>) -> Result<u64> {
-		Ok(
-			sqlx::query!("UPDATE Settings SET start_time = $1;", start_time)
-				.execute(self.executor())
-				.await
-				.map_err(update_err)?
-				.rows_affected(),
-		)
 	}
 }

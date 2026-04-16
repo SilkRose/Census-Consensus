@@ -881,78 +881,6 @@ pub fn question_preview_html(
 		.call()
 }
 
-pub fn dashboard_html(user: User, theme: Theme, settings: Settings) -> String {
-	let heading = "Event Dashboard";
-	let title: String = format!("{heading} - {SITE_NAME}");
-	let description = "Event control dashboard.";
-	let link = format!("{SITE_LINK}/dashboard");
-	let mane = html! {
-		h1 { (heading) }
-		p { (description) }
-		form method = "post" action = "/story-id" class = "row" {
-			label for = "story-id" { "Story ID: " }
-			(input_text_numeric_value_required("story-id", "story-id", 1, 8, settings.story_id))
-			button type = "submit" { "Update" }
-		}
-		form method = "post" action = "/population" class = "row" {
-			label for = "population" { "Population: " }
-			(input_text_numeric_value_required("population", "population", 1, 8, settings.population))
-			button type = "submit" { "Update" }
-		}
-		form method = "post" action = "/vote-duration" class = "row" {
-			label for = "vote-duration" { "Vote Durations: " }
-			(input_text_numeric_required("vote-duration", "vote-duration", 1, 8))
-			button type = "submit" { "Update" }
-		}
-		form method = "post" action = "/reset" class = "row" {
-			label { "Reset Event: " }
-			span class = "column" {
-				span class = "row" {
-					input type = "checkbox" id = "reset-1" name = "reset-1" value = "true" {}
-					label for = "reset-1" { "Are you sure?" }
-				}
-				span class = "row" {
-					input type = "checkbox" id = "reset-2" name = "reset-2" value = "true" {}
-					label for = "reset-2" { "Are you super sure?" }
-				}
-				span class = "row" {
-					input type = "checkbox" id = "reset-3" name = "reset-3" value = "true" {}
-					label for = "reset-3" { "Are you super-duper sure?" }
-				}
-			}
-			button type = "submit" { "Reset" }
-		}
-		form method = "post" action = "/start-time" class = "row" {
-			label { "Event Date/Time (UTC): " }
-			@if let Some(start_time) = settings.start_time {
-				@let date = start_time.format("%Y-%m-%d");
-				@let time = start_time.format("%H:%M");
-				input type = "date" id = "date" name = "date" value = (date) required {}
-				input type = "time" id = "time" name = "time" value = (time) required {}
-			} @else {
-				input type = "date" id = "date" name = "date" required {}
-				input type = "time" id = "time" name = "time" required {}
-			}
-			button type = "submit" { "Update" }
-			(button_link("Reset", "/start-time/reset"))
-		}
-		@if let Some(start_time) = settings.start_time {
-			h2 { "Event Start Countdown" }
-			span id = "countdown" { "Countdown loading…" }
-			script defer {
-				(format!("countDown('{}', 'Event is now live!')",
-				(start_time - Utc::now()).num_seconds().max(0)))
-			}
-		}
-	};
-	html_builder()
-		.theme(&theme)
-		.head(head_html(&title, description, &link, &theme))
-		.header(header_html(Some(user.user_type), Pages::Dashboard, &theme))
-		.mane(mane)
-		.call()
-}
-
 pub fn question_html(
 	question: &Question, data: &QuestionRevision, options: &Vec<(String, String)>,
 ) -> PreEscaped<String> {
@@ -1247,16 +1175,11 @@ fn header_html(user_type: Option<UserType>, page: Pages, theme: &Theme) -> PreEs
 				}
 				(header_link_html("/about", "About", page == Pages::About))
 			}
-			@if let Some(user_type) = user_type && user_type != UserType::Voter {
-				span class = "nav" {
-					(header_link_html("/chapters", "Chapters", page == Pages::Chapters))
-					(header_link_html("/questions", "Questions", page == Pages::Questions))
+			span class = "nav" {
+				(header_link_html("/chapters", "Chapters", page == Pages::Chapters))
+				(header_link_html("/questions", "Questions", page == Pages::Questions))
+				@if let Some(user_type) = user_type && user_type != UserType::Voter {
 					(header_link_html("/feedback", "Feedback", page == Pages::Feedback))
-				}
-				@if user_type == UserType::Admin {
-					span class = "nav" {
-						(header_link_html("/dashboard", "Dashboard", page == Pages::Dashboard))
-					}
 				}
 			}
 		}
@@ -1358,23 +1281,6 @@ fn input_text_numeric_required(id: &str, name: &str, min: u32, max: u32) -> PreE
 			minlength = (min)
 			maxlength = (max)
 			required {}
-	)
-}
-
-fn input_text_numeric_value_required(
-	id: &str, name: &str, min: u32, max: u32, value: i32,
-) -> PreEscaped<String> {
-	html!	(
-		input
-			id = (id)
-			type = "text"
-			name = (name)
-			inputmode = "numeric"
-			pattern = r"\d*"
-			minlength = (min)
-			maxlength = (max)
-			required
-			value = (value) {}
 	)
 }
 

@@ -7,7 +7,7 @@ use crate::{FimficCfg, HttpClient};
 use crate::{database::*, result_formatter};
 use actix_web::web::{Path, Query, ThinData};
 use actix_web::{HttpRequest, HttpResponse, Responder, get, post};
-use chrono::{NaiveDate, NaiveDateTime, NaiveTime, Utc};
+use chrono::Utc;
 use lightningcss::stylesheet::{MinifyOptions, ParserOptions, PrinterOptions, StyleSheet};
 use pony::smart_map::SmartMap;
 use pony::time::format_milliseconds;
@@ -663,50 +663,6 @@ pub async fn get_question_preview(
 	}
 }
 
-#[get("/dashboard")]
-pub async fn get_dashboard(
-	theme: Theme, mut db: ThinData<Db>, session: AdminSessionInfo,
-) -> actix_web::Result<impl Responder> {
-	if let Ok(settings) = db.get_settings().await {
-		let page = dashboard_html(session.user, theme, settings);
-		Ok(HttpResponse::Ok()
-			.content_type("text/html; charset=utf-8")
-			.body(page))
-	} else {
-		Ok(HttpResponse::InternalServerError().finish())
-	}
-}
-
-#[post("/story-id")]
-pub async fn set_story_id(
-	body: String, mut db: ThinData<Db>, _: AdminSessionInfo,
-) -> actix_web::Result<impl Responder> {
-	let data = serde_urlencoded::from_str::<HashMap<String, i32>>(&body)?;
-	if let Some(story_id) = data.get("story-id") {
-		db.update_story_id(*story_id).await?;
-		Ok(HttpResponse::SeeOther()
-			.append_header(("Location", "/dashboard"))
-			.finish())
-	} else {
-		Ok(HttpResponse::BadRequest().finish())
-	}
-}
-
-#[post("/population")]
-pub async fn set_population(
-	body: String, mut db: ThinData<Db>, _: AdminSessionInfo,
-) -> actix_web::Result<impl Responder> {
-	let data = serde_urlencoded::from_str::<HashMap<String, i32>>(&body)?;
-	if let Some(population) = data.get("population") {
-		db.update_population(*population).await?;
-		Ok(HttpResponse::SeeOther()
-			.append_header(("Location", "/dashboard"))
-			.finish())
-	} else {
-		Ok(HttpResponse::BadRequest().finish())
-	}
-}
-
 #[post("/vote-duration")]
 pub async fn set_vote_duration(
 	body: String, mut db: ThinData<Db>, _: AdminSessionInfo,
@@ -719,69 +675,6 @@ pub async fn set_vote_duration(
 			.finish())
 	} else {
 		Ok(HttpResponse::BadRequest().finish())
-	}
-}
-
-#[post("/reset")]
-pub async fn set_reset(
-	body: String, mut db: ThinData<Db>, _: AdminSessionInfo,
-) -> actix_web::Result<impl Responder> {
-	let data = serde_urlencoded::from_str::<HashMap<String, String>>(&body)?;
-	if data.contains_key("reset-1") && data.contains_key("reset-2") && data.contains_key("reset-3")
-	{
-		if db.update_start_time(None).await.is_ok()
-			&& db.delete_all_votes().await.is_ok()
-			&& let Ok(chapters) = db.get_all_chapters().await
-		{
-			for chapter in chapters {
-				db.update_chapter_minutes_left(chapter.id, None).await?;
-				// Todo: Unpublish or delete fimfic chapters using id from chapter.
-				db.update_chapter_fimfic_id(chapter.id, None).await?;
-			}
-			Ok(HttpResponse::SeeOther()
-				.append_header(("Location", "/dashboard"))
-				.finish())
-		} else {
-			Ok(HttpResponse::InternalServerError().finish())
-		}
-	} else {
-		Ok(HttpResponse::BadRequest().finish())
-	}
-}
-
-#[post("/start-time")]
-pub async fn set_start_time(
-	body: String, mut db: ThinData<Db>, _: AdminSessionInfo,
-) -> actix_web::Result<impl Responder> {
-	let data = serde_urlencoded::from_str::<HashMap<String, String>>(&body)?;
-	if let Some(date) = data.get("date")
-		&& let Some(time) = data.get("time")
-		&& let Ok(date) = NaiveDate::parse_from_str(date, "%Y-%m-%d")
-		&& let Ok(time) = NaiveTime::parse_from_str(time, "%H:%M")
-	{
-		let date_time = NaiveDateTime::new(date, time).and_utc();
-		if db.update_start_time(Some(date_time)).await.is_ok() {
-			Ok(HttpResponse::SeeOther()
-				.append_header(("Location", "/dashboard"))
-				.finish())
-		} else {
-			Ok(HttpResponse::InternalServerError().finish())
-		}
-	} else {
-		Ok(HttpResponse::BadRequest().finish())
-	}
-}
-
-#[get("/start-time/reset")]
-pub async fn set_start_time_reset(
-	mut db: ThinData<Db>, _: AdminSessionInfo,
-) -> actix_web::Result<impl Responder> {
-	if db.update_start_time(None).await.is_ok() {
-		Ok(HttpResponse::SeeOther()
-			.append_header(("Location", "/dashboard"))
-			.finish())
-	} else {
-		Ok(HttpResponse::InternalServerError().finish())
 	}
 }
 
