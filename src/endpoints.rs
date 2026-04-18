@@ -503,7 +503,7 @@ pub async fn get_chapter_preview(
 			let data = db.get_latest_question_revision(question.id).await?;
 			let options = data.option_writing.clone().unwrap_or_default();
 			let option_tuples = parse_options(&options, &data.question_type);
-			let votes = db.get_all_votes_by_question(question.id).await?;
+			let votes = db.get_all_votes_complete_by_question(question.id).await?;
 			let buckets = votes.chunk_by(|a, b| a.option_id == b.option_id);
 			let mut results = HashMap::new();
 			let mut total_count = 0;
@@ -618,6 +618,7 @@ pub async fn set_chapter_fimfic_update(
 			.settings(&settings)
 			.data(data)
 			.question_count(question_count)
+			.event_data(true)
 			.call()
 			.await?;
 		http_client

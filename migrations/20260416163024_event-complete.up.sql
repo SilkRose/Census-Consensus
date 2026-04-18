@@ -2,7 +2,7 @@ DROP TABLE IF EXISTS Story_updates;
 
 UPDATE Settings SET start_time = NULL;
 
-ALTER TABLE Chapters DROP CONSTRAINT Order_minimum;
+ALTER TABLE Chapters DROP CONSTRAINT IF EXISTS Order_minimum;
 
 UPDATE Chapters SET chapter_order = 0 WHERE id = 1;
 
@@ -22,3 +22,10 @@ CREATE TABLE IF NOT EXISTS Votes_complete (
 
 	CONSTRAINT Votes_complete_pk PRIMARY KEY (voter_id, question_id, option_id)
 );
+
+INSERT INTO Votes_complete
+	(voter_id, question_id, option_id, date_created)
+SELECT
+	voter_id, question_id, option_id, date_created
+FROM
+	Votes;

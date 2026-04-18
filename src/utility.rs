@@ -149,7 +149,7 @@ pub fn construct_question_data(
 
 #[bon::builder]
 pub async fn construct_chapter_json(
-	db: &mut Db, settings: &Settings, data: ChapterRevision, question_count: i64,
+	db: &mut Db, settings: &Settings, data: ChapterRevision, question_count: i64, event_data: bool,
 ) -> Result<Value> {
 	let json = match question_count == 0 {
 		true => chapter_json(&data.title, &data.outro_text.ok_or("Missing outro!")?, None),
@@ -163,7 +163,10 @@ pub async fn construct_chapter_json(
 				let data = db.get_latest_question_revision(question.id).await?;
 				let options = data.option_writing.clone().ok_or("Missing options!")?;
 				let option_tuples = parse_options(&options, &data.question_type);
-				let votes = db.get_all_votes_by_question(question.id).await?;
+				let votes = match event_data {
+					true => db.get_all_votes_by_question(question.id).await?,
+					false => db.get_all_votes_complete_by_question(question.id).await?,
+				};
 				let buckets = votes.chunk_by(|a, b| a.option_id == b.option_id);
 				let mut results = HashMap::new();
 				let mut total_count = 0;
