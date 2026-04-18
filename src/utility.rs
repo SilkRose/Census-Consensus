@@ -149,63 +149,70 @@ pub fn construct_question_data(
 
 #[bon::builder]
 pub async fn construct_chapter_json(
-	db: &mut Db, settings: &Settings, data: ChapterRevision, question_count: i64, event_data: bool,
+	db: &mut Db, settings: &Settings, data: ChapterRevision, question_count: i64,
 ) -> Result<Value> {
 	let json = match question_count == 0 {
 		true => chapter_json(&data.title, &data.outro_text.ok_or("Missing outro!")?, None),
 		false => {
-			let mut texts = Vec::new();
-			if let Some(ref intro) = data.intro_text {
-				texts.push(intro.trim().to_string());
-			}
-			let questions = db.get_questions_by_chapter(data.chapter_id).await?;
-			for question in questions {
-				let data = db.get_latest_question_revision(question.id).await?;
-				let options = data.option_writing.clone().ok_or("Missing options!")?;
-				let option_tuples = parse_options(&options, &data.question_type);
-				let votes = match event_data {
-					true => db.get_all_votes_by_question(question.id).await?,
-					false => db.get_all_votes_complete_by_question(question.id).await?,
-				};
-				let buckets = votes.chunk_by(|a, b| a.option_id == b.option_id);
-				let mut results = HashMap::new();
-				let mut total_count = 0;
-				for bucket in buckets {
-					let mut count = 0;
-					for vote in bucket {
-						let banned = db.get_banned_user(vote.voter_id).await?;
-						if banned.is_none() {
-							count += 1;
-						}
-					}
-					results.insert(bucket[0].option_id.clone(), count);
-					total_count += count;
-				}
-				for (id, _) in &option_tuples {
-					if !results.contains_key(id) {
-						results.insert(id.clone(), 0);
-					}
-				}
-				let options = OptionType::Count((results, total_count));
-				let question_data = construct_question_data()
-					.meta(question)
-					.data(data)
-					.option_texts(option_tuples)
-					.option_data(options)
-					.population(settings.population)
-					.call();
-				let (preview, errors) = result_formatter::format(&question_data);
-				texts.push(preview.trim().to_string());
-				for error in errors {
-					eprintln!("Error in parsing question: {error}")
-				}
-			}
-			if let Some(ref outro) = data.outro_text {
-				texts.push(outro.trim().to_string());
-			}
+			let text = construct_chapter_data(db, settings, &data, true).await?;
 			let authors_note = "To participate in this event, please visit our [url=https://census.silkrose.dev/]custom survey site[/url].";
-			chapter_json(&data.title, &texts.join("\n\n"), Some(authors_note))
+			chapter_json(&data.title, &text, Some(authors_note))
 		}
 	};
 	Ok(json)
+}
+
+pub async fn construct_chapter_data(
+	db: &mut Db, settings: &Settings, data: &ChapterRevision, event_data: bool,
+) -> Result<String> {
+	let mut texts = Vec::new();
+	if let Some(ref intro) = data.intro_text {
+		texts.push(intro.trim().to_string());
+	}
+	let questions = db.get_questions_by_chapter(data.chapter_id).await?;
+	for question in questions {
+		let data = db.get_latest_question_revision(question.id).await?;
+		let options = data.option_writing.clone().ok_or("Missing options!")?;
+		let option_tuples = parse_options(&options, &data.question_type);
+		let votes = match event_data {
+			true => db.get_all_votes_by_question(question.id).await?,
+			false => db.get_all_votes_complete_by_question(question.id).await?,
+		};
+		let buckets = votes.chunk_by(|a, b| a.option_id == b.option_id);
+		let mut results = HashMap::new();
+		let mut total_count = 0;
+		for bucket in buckets {
+			let mut count = 0;
+			for vote in bucket {
+				let banned = db.get_banned_user(vote.voter_id).await?;
+				if banned.is_none() {
+					count += 1;
+				}
+			}
+			results.insert(bucket[0].option_id.clone(), count);
+			total_count += count;
+		}
+		for (id, _) in &option_tuples {
+			if !results.contains_key(id) {
+				results.insert(id.clone(), 0);
+			}
+		}
+		let options = OptionType::Count((results, total_count));
+		let question_data = construct_question_data()
+			.meta(question)
+			.data(data)
+			.option_texts(option_tuples)
+			.option_data(options)
+			.population(settings.population)
+			.call();
+		let (preview, errors) = result_formatter::format(&question_data);
+		texts.push(preview.trim().to_string());
+		for error in errors {
+			eprintln!("Error in parsing question: {error}")
+		}
+	}
+	if let Some(ref outro) = data.outro_text {
+		texts.push(outro.trim().to_string());
+	}
+	Ok(texts.join("\n\n"))
 }

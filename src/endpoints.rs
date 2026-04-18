@@ -2,7 +2,10 @@ use crate::auth::{AdminSessionInfo, MaybeSessionInfo, SessionInfo, WriterSession
 use crate::html_templates::*;
 use crate::structs::*;
 use crate::theme::Theme;
-use crate::utility::{construct_chapter_json, construct_question_data, parse_options, redirect};
+use crate::utility::{
+	construct_chapter_data, construct_chapter_json, construct_question_data, parse_options,
+	redirect,
+};
 use crate::{FimficCfg, HttpClient};
 use crate::{database::*, result_formatter};
 use actix_web::web::{Path, Query, ThinData};
@@ -494,53 +497,8 @@ pub async fn get_chapter_preview(
 	let chapter_id = path.into_inner();
 	if let Some(chapter) = db.get_latest_chapter_revision_opt(chapter_id).await? {
 		let settings = db.get_settings().await?;
-		let mut texts = Vec::new();
-		if let Some(ref intro) = chapter.intro_text {
-			texts.push(intro.trim().to_string());
-		}
-		let questions = db.get_questions_by_chapter(chapter_id).await?;
-		for question in questions {
-			let data = db.get_latest_question_revision(question.id).await?;
-			let options = data.option_writing.clone().unwrap_or_default();
-			let option_tuples = parse_options(&options, &data.question_type);
-			let votes = db.get_all_votes_complete_by_question(question.id).await?;
-			let buckets = votes.chunk_by(|a, b| a.option_id == b.option_id);
-			let mut results = HashMap::new();
-			let mut total_count = 0;
-			for bucket in buckets {
-				let mut count = 0;
-				for vote in bucket {
-					let banned = db.get_banned_user(vote.voter_id).await?;
-					if banned.is_none() {
-						count += 1;
-					}
-				}
-				results.insert(bucket[0].option_id.clone(), count);
-				total_count += count;
-			}
-			for (id, _) in &option_tuples {
-				if !results.contains_key(id) {
-					results.insert(id.clone(), 0);
-				}
-			}
-			let options = OptionType::Count((results, total_count));
-			let question_data = construct_question_data()
-				.meta(question)
-				.data(data)
-				.option_texts(option_tuples)
-				.option_data(options)
-				.population(settings.population)
-				.call();
-			let (preview, errors) = result_formatter::format(&question_data);
-			texts.push(preview.trim().to_string());
-			for error in errors {
-				eprintln!("Error in parsing question: {error}")
-			}
-		}
-		if let Some(ref outro) = chapter.outro_text {
-			texts.push(outro.trim().to_string());
-		}
-		let page = chapter_preview_html(session.user, theme, chapter, &texts.join("\n\n"));
+		let text = construct_chapter_data(&mut db, &settings, &chapter, false).await?;
+		let page = chapter_preview_html(session.user, theme, chapter, &text);
 		Ok(HttpResponse::Ok()
 			.content_type("text/html; charset=utf-8")
 			.body(page))
@@ -618,7 +576,6 @@ pub async fn set_chapter_fimfic_update(
 			.settings(&settings)
 			.data(data)
 			.question_count(question_count)
-			.event_data(true)
 			.call()
 			.await?;
 		http_client
