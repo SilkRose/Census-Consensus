@@ -2,10 +2,7 @@ use crate::auth::{AdminSessionInfo, MaybeSessionInfo, SessionInfo, WriterSession
 use crate::html_templates::*;
 use crate::structs::*;
 use crate::theme::Theme;
-use crate::utility::{
-	construct_chapter_data, construct_chapter_json, construct_question_data, parse_options,
-	redirect,
-};
+use crate::utility::*;
 use crate::{FimficCfg, HttpClient};
 use crate::{database::*, result_formatter};
 use actix_web::web::{Path, Query, ThinData};
@@ -167,10 +164,11 @@ pub async fn set_revoke_sessions(
 
 #[get("/chapters")]
 pub async fn get_chapters(
-	theme: Theme, mut db: ThinData<Db>, session: WriterSessionInfo,
+	theme: Theme, mut db: ThinData<Db>, session: SessionInfo,
 ) -> actix_web::Result<impl Responder> {
+	let user = db.get_user(session.user_id).await?;
 	let chapters = db.get_chapters_table().await?;
-	let page = chapters_html(session.user, theme, chapters);
+	let page = chapters_html(user, theme, chapters);
 	Ok(HttpResponse::Ok()
 		.content_type("text/html; charset=utf-8")
 		.body(page))
@@ -178,13 +176,14 @@ pub async fn get_chapters(
 
 #[get("/chapters/{id}")]
 pub async fn get_chapter_edit(
-	path: Path<i32>, theme: Theme, mut db: ThinData<Db>, session: WriterSessionInfo,
+	path: Path<i32>, theme: Theme, mut db: ThinData<Db>, session: SessionInfo,
 ) -> actix_web::Result<impl Responder> {
 	let id = path.into_inner();
 	let chapter = db.get_chapter(id).await?;
 	if let Some(chapter) = chapter {
+		let user = db.get_user(session.user_id).await?;
 		let data = db.get_latest_chapter_revision(chapter.id).await?;
-		let page = edit_chapter_html(session.user, theme, chapter, data);
+		let page = edit_chapter_html(user, theme, chapter, data);
 		Ok(HttpResponse::Ok()
 			.content_type("text/html; charset=utf-8")
 			.body(page))
@@ -200,9 +199,7 @@ pub async fn set_chapter_edit(
 	let id = path.into_inner();
 	let chapter_rev = serde_urlencoded::from_str::<ChapterEdit>(&body)?;
 	let chapter = db.get_chapter(id).await?;
-	if let Some(chapter) = chapter
-		&& chapter.fimfic_ch_id.is_none()
-	{
+	if let Some(chapter) = chapter {
 		db.insert_chapter_revision(chapter_rev, session.user.id, chapter.id)
 			.await?;
 		Ok(HttpResponse::SeeOther()
@@ -215,10 +212,11 @@ pub async fn set_chapter_edit(
 
 #[get("/chapters/{id}/revisions")]
 pub async fn get_chapter_revisions(
-	path: Path<i32>, theme: Theme, mut db: ThinData<Db>, session: WriterSessionInfo,
+	path: Path<i32>, theme: Theme, mut db: ThinData<Db>, session: SessionInfo,
 ) -> actix_web::Result<impl Responder> {
 	let id = path.into_inner();
 	if let Some(chapter) = db.get_chapter(id).await? {
+		let user = db.get_user(session.user_id).await?;
 		let revisions = db.get_all_chapter_revisions_by_chapter(id).await?;
 		let mut users = SmartMap::default();
 		for revision in &revisions {
@@ -230,7 +228,7 @@ pub async fn get_chapter_revisions(
 			data: revisions,
 			users,
 		};
-		let page = chapter_history_html(session.user, theme, chapter_data);
+		let page = chapter_history_html(user, theme, chapter_data);
 		Ok(HttpResponse::Ok()
 			.content_type("text/html; charset=utf-8")
 			.body(page))
@@ -266,15 +264,16 @@ pub async fn get_feedback(
 
 #[get("/questions/{id}")]
 pub async fn get_question_edit(
-	path: Path<i32>, theme: Theme, mut db: ThinData<Db>, session: WriterSessionInfo,
+	path: Path<i32>, theme: Theme, mut db: ThinData<Db>, session: SessionInfo,
 ) -> actix_web::Result<impl Responder> {
 	let id = path.into_inner();
 	if let Some(question) = db.get_question(id).await?
 		&& let Ok(settings) = db.get_settings().await
 	{
 		let population = settings.population;
+		let user = db.get_user(session.user_id).await?;
 		let data = db.get_latest_question_revision(question.id).await?;
-		let page = edit_question_html(session.user, theme, question, data, population);
+		let page = edit_question_html(user, theme, question, data, population);
 		Ok(HttpResponse::Ok()
 			.content_type("text/html; charset=utf-8")
 			.body(page))
@@ -303,13 +302,14 @@ pub async fn set_question_edit(
 
 #[get("/questions/{id}/revisions")]
 pub async fn get_question_revisions(
-	path: Path<i32>, theme: Theme, mut db: ThinData<Db>, session: WriterSessionInfo,
+	path: Path<i32>, theme: Theme, mut db: ThinData<Db>, session: SessionInfo,
 ) -> actix_web::Result<impl Responder> {
 	let id = path.into_inner();
 	if let Some(question) = db.get_question(id).await?
 		&& let Ok(settings) = db.get_settings().await
 	{
 		let population = settings.population;
+		let user = db.get_user(session.user_id).await?;
 		let revisions = db.get_all_question_revisions_by_question(id).await?;
 		let mut users = SmartMap::default();
 		for revision in &revisions {
@@ -321,7 +321,7 @@ pub async fn get_question_revisions(
 			data: revisions,
 			users,
 		};
-		let page = question_history_html(session.user, theme, question_data, population);
+		let page = question_history_html(user, theme, question_data, population);
 		Ok(HttpResponse::Ok()
 			.content_type("text/html; charset=utf-8")
 			.body(page))
@@ -332,15 +332,16 @@ pub async fn get_question_revisions(
 
 #[get("/chapters/{chapter_id}/questions")]
 pub async fn get_chapter_questions(
-	theme: Theme, path: Path<i32>, mut db: ThinData<Db>, session: WriterSessionInfo,
+	theme: Theme, path: Path<i32>, mut db: ThinData<Db>, session: SessionInfo,
 ) -> actix_web::Result<impl Responder> {
 	let chapter_id = path.into_inner();
 	if let Some(chapter) = db.get_chapter(chapter_id).await?
 		&& let Ok(settings) = db.get_settings().await
 	{
 		let population = settings.population;
+		let user = db.get_user(session.user_id).await?;
 		let (data, _) = db.get_questions_table(Some(chapter_id)).await?;
-		let page = chapter_questions_html(session.user, theme, chapter, data, population);
+		let page = chapter_questions_html(user, theme, chapter, data, population);
 		Ok(HttpResponse::Ok()
 			.content_type("text/html; charset=utf-8")
 			.body(page))
@@ -351,13 +352,14 @@ pub async fn get_chapter_questions(
 
 #[get("/questions")]
 pub async fn get_questions(
-	theme: Theme, mut db: ThinData<Db>, session: WriterSessionInfo,
+	theme: Theme, mut db: ThinData<Db>, session: SessionInfo,
 ) -> actix_web::Result<impl Responder> {
 	if let Ok((data, chapters)) = db.get_questions_table(None).await
 		&& let Ok(settings) = db.get_settings().await
 	{
 		let population = settings.population;
-		let page = questions_html(session.user, theme, data, chapters, population);
+		let user = db.get_user(session.user_id).await?;
+		let page = questions_html(user, theme, data, chapters, population);
 		Ok(HttpResponse::Ok()
 			.content_type("text/html; charset=utf-8")
 			.body(page))
@@ -410,16 +412,17 @@ async fn oembed(query: Query<OEmbed>) -> actix_web::Result<impl Responder> {
 #[get("/questions/{id}/preview")]
 pub async fn get_question_preview(
 	theme: Theme, path: Path<i32>, query: Query<HashMap<String, f64>>, mut db: ThinData<Db>,
-	session: WriterSessionInfo,
+	session: SessionInfo,
 ) -> actix_web::Result<impl Responder> {
 	let id = path.into_inner();
 	let options = query.into_inner();
 	if let Some(question) = db.get_question(id).await?
 		&& let Ok(settings) = db.get_settings().await
 	{
-		let data = db.get_latest_question_revision(question.id).await?;
 		let population = settings.population;
-		let page = question_preview_html(session.user, theme, question, data, options, population);
+		let user = db.get_user(session.user_id).await?;
+		let data = db.get_latest_question_revision(question.id).await?;
+		let page = question_preview_html(user, theme, question, data, options, population);
 		Ok(HttpResponse::Ok()
 			.content_type("text/html; charset=utf-8")
 			.body(page))
@@ -430,7 +433,7 @@ pub async fn get_question_preview(
 
 #[get("/chapters/{chapter_id}/survey")]
 pub async fn get_chapter_survey(
-	theme: Theme, path: Path<i32>, mut db: ThinData<Db>, session: WriterSessionInfo,
+	theme: Theme, path: Path<i32>, mut db: ThinData<Db>, session: SessionInfo,
 ) -> actix_web::Result<impl Responder> {
 	let chapter_id = path.into_inner();
 	if let Some(chapter) = db.get_latest_chapter_revision_opt(chapter_id).await?
@@ -441,7 +444,8 @@ pub async fn get_chapter_survey(
 			let question_data = db.get_latest_question_revision(question.id).await?;
 			data.push((question, question_data));
 		}
-		let page = chapter_survey_html(session.user, theme, chapter, data);
+		let user = db.get_user(session.user_id).await?;
+		let page = chapter_survey_html(user, theme, chapter, data);
 		Ok(HttpResponse::Ok()
 			.content_type("text/html; charset=utf-8")
 			.body(page))
@@ -492,7 +496,7 @@ pub async fn set_chapter_submit(
 
 #[get("/chapters/{chapter_id}/event-results")]
 pub async fn get_chapter_preview_event(
-	theme: Theme, path: Path<i32>, mut db: ThinData<Db>, session: WriterSessionInfo,
+	theme: Theme, path: Path<i32>, mut db: ThinData<Db>, session: SessionInfo,
 ) -> actix_web::Result<impl Responder> {
 	let chapter_id = path.into_inner();
 	if let Some(chapter) = db.get_latest_chapter_revision_opt(chapter_id).await? {
@@ -504,7 +508,8 @@ pub async fn get_chapter_preview_event(
 				construct_chapter_data(&mut db, &settings, &chapter, true).await?
 			}
 		};
-		let page = chapter_preview_event_html(session.user, theme, chapter, &text);
+		let user = db.get_user(session.user_id).await?;
+		let page = chapter_preview_event_html(user, theme, chapter, &text);
 		Ok(HttpResponse::Ok()
 			.content_type("text/html; charset=utf-8")
 			.body(page))
@@ -515,7 +520,7 @@ pub async fn get_chapter_preview_event(
 
 #[get("/chapters/{chapter_id}/live-results")]
 pub async fn get_chapter_preview_live(
-	theme: Theme, path: Path<i32>, mut db: ThinData<Db>, session: WriterSessionInfo,
+	theme: Theme, path: Path<i32>, mut db: ThinData<Db>, session: SessionInfo,
 ) -> actix_web::Result<impl Responder> {
 	let chapter_id = path.into_inner();
 	if let Some(chapter) = db.get_latest_chapter_revision_opt(chapter_id).await? {
@@ -527,7 +532,8 @@ pub async fn get_chapter_preview_live(
 				construct_chapter_data(&mut db, &settings, &chapter, true).await?
 			}
 		};
-		let page = chapter_preview_live_html(session.user, theme, chapter, &text);
+		let user = db.get_user(session.user_id).await?;
+		let page = chapter_preview_live_html(user, theme, chapter, &text);
 		Ok(HttpResponse::Ok()
 			.content_type("text/html; charset=utf-8")
 			.body(page))
@@ -538,7 +544,7 @@ pub async fn get_chapter_preview_live(
 
 #[get("/chapters/{chapter_id}/random-results")]
 pub async fn get_chapter_preview_random(
-	theme: Theme, path: Path<i32>, mut db: ThinData<Db>, session: WriterSessionInfo,
+	theme: Theme, path: Path<i32>, mut db: ThinData<Db>, session: SessionInfo,
 ) -> actix_web::Result<impl Responder> {
 	let chapter_id = path.into_inner();
 	if let Some(chapter) = db.get_latest_chapter_revision_opt(chapter_id).await? {
@@ -578,7 +584,8 @@ pub async fn get_chapter_preview_random(
 		if let Some(ref outro) = chapter.outro_text {
 			texts.push(outro.trim().to_string());
 		}
-		let page = chapter_preview_random_html(session.user, theme, chapter, &texts.join("\n\n"));
+		let user = db.get_user(session.user_id).await?;
+		let page = chapter_preview_random_html(user, theme, chapter, &texts.join("\n\n"));
 		Ok(HttpResponse::Ok()
 			.content_type("text/html; charset=utf-8")
 			.body(page))

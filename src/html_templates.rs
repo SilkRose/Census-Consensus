@@ -238,11 +238,8 @@ fn chapter_list_item_html(
 			}
 			@if chapter.meta.fimfic_ch_id.is_some() {
 				" "
-				@if user.user_type == UserType::Voter {
-					(button_disabled("Update Fimfic Chapter"))
-				} @else {
-					@let link = format!("{SITE_LINK}/chapters/{}/update", chapter.meta.id);
-					(button_link("Update Fimfic Chapter", &link))
+				@if user.user_type != UserType::Voter {
+					a href = (format!("/chapters/{}/update", chapter.meta.id)) { b { "Update fimfic Chapter" } sup { "↗" } }
 				}
 			}
 		}
@@ -318,7 +315,11 @@ pub fn edit_chapter_html(
 			@let name = "outro_text";
 			label for = (name) { "Outro:" }
 			(textarea_value(name, name, 1_000_000, &data.outro_text.unwrap_or_default()))
-			button type = "submit" { "Save Chapter" }
+			@if user.user_type == UserType::Voter {
+				button type = "submit" disabled { "Save Chapter" }
+			} @else {
+				button type = "submit" { "Save Chapter" }
+			}
 		}
 	};
 	html_builder()
@@ -621,7 +622,11 @@ pub fn edit_question_html(
 			(results_explanation())
 			(markdown_preamble())
 			(textarea_value(name, name, 1_000_000, &data.result_writing.unwrap_or_default()))
-			button type = "submit" { "Save Question" }
+			@if user.user_type == UserType::Voter {
+				button type = "submit" disabled { "Save Question" }
+			} @else {
+				button type = "submit" { "Save Question" }
+			}
 		}
 	};
 	html_builder()
