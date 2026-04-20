@@ -496,8 +496,14 @@ pub async fn get_chapter_preview_event(
 ) -> actix_web::Result<impl Responder> {
 	let chapter_id = path.into_inner();
 	if let Some(chapter) = db.get_latest_chapter_revision_opt(chapter_id).await? {
-		let settings = db.get_settings().await?;
-		let text = construct_chapter_data(&mut db, &settings, &chapter, true).await?;
+		let question_count = db.get_question_count_by_chapter(chapter_id).await?;
+		let text = match question_count > 0 {
+			false => chapter.outro_text.clone().expect("Missing outro!"),
+			true => {
+				let settings = db.get_settings().await?;
+				construct_chapter_data(&mut db, &settings, &chapter, true).await?
+			}
+		};
 		let page = chapter_preview_event_html(session.user, theme, chapter, &text);
 		Ok(HttpResponse::Ok()
 			.content_type("text/html; charset=utf-8")
@@ -513,8 +519,14 @@ pub async fn get_chapter_preview_live(
 ) -> actix_web::Result<impl Responder> {
 	let chapter_id = path.into_inner();
 	if let Some(chapter) = db.get_latest_chapter_revision_opt(chapter_id).await? {
-		let settings = db.get_settings().await?;
-		let text = construct_chapter_data(&mut db, &settings, &chapter, false).await?;
+		let question_count = db.get_question_count_by_chapter(chapter_id).await?;
+		let text = match question_count > 0 {
+			false => chapter.outro_text.clone().expect("Missing outro!"),
+			true => {
+				let settings = db.get_settings().await?;
+				construct_chapter_data(&mut db, &settings, &chapter, true).await?
+			}
+		};
 		let page = chapter_preview_live_html(session.user, theme, chapter, &text);
 		Ok(HttpResponse::Ok()
 			.content_type("text/html; charset=utf-8")
