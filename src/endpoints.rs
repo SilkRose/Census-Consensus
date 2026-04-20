@@ -596,7 +596,7 @@ pub async fn get_chapter_preview_random(
 
 #[get("/chapters/{id}/update")]
 pub async fn set_chapter_fimfic_update(
-	path: Path<i32>, req: HttpRequest, mut db: ThinData<Db>, http_client: ThinData<HttpClient>,
+	path: Path<i32>, mut db: ThinData<Db>, http_client: ThinData<HttpClient>,
 	fimfic_cfg: ThinData<FimficCfg>, _: WriterSessionInfo,
 ) -> actix_web::Result<impl Responder> {
 	let id = path.into_inner();
@@ -617,8 +617,9 @@ pub async fn set_chapter_fimfic_update(
 		http_client
 			.patch_chapter(&fimfic_cfg, fimfic_id, json)
 			.await?;
+		let link = format!("https://www.fimfiction.net/chapter/{fimfic_id}");
 		Ok(HttpResponse::SeeOther()
-			.append_header(("Location", redirect(req)))
+			.append_header(("Location", link))
 			.finish())
 	} else {
 		Ok(HttpResponse::BadRequest().finish())
