@@ -728,28 +728,17 @@ pub fn home_html(user: Option<User>, theme: Theme) -> String {
 			" event manager: "
 			a href = ("https://www.fimfiction.net/user/237915/Silk+Rose") { "Silk Rose" sup { "↗" } }
 			". She will help you get started and explain any questions you may have."
+                }
+		p {
+			"The census is over, but you are welcome to explore the site,"
+			" view all the chapters and questions, and try voting. To get started,"
+			" create an account or sign in to an existing account by clicking the"
+			" button below."
 		}
-		@if let Some(ref user) = user {
-			@if user.user_type == UserType::Voter {
-				p {
-					"This year's census is still in the works, please check back later."
-				}
-			} @else {
-				p {
-					"Feel free to explore the site. New chapters and questions can be made from"
-					" their respective pages in the navigation bar. If you have any questions,"
-					" feel free to talk with Silk Rose for an explanation."
-				}
-			}
-		} @else {
-			p {
-				"To sign up for this year's census, or to sign in to your account, please click the button below."
-			}
-			blockquote {
-				"We do not store email addresses or API access tokens."
-			}
-			(button_link("Sign Up or Sign In", "/login/fimfic"))
+		blockquote {
+		        "We do not store email addresses or API access tokens."
 		}
+		(button_link("Sign Up or Sign In", "/login/fimfic"))
 	};
 	let user_type = user.map(|user| user.user_type);
 	html_builder()
@@ -924,14 +913,11 @@ pub fn home_event_complete_html(user: User, theme: Theme) -> String {
 	let mane = html! {
 		h1 { (heading) }
 		p { (description) }
+		p { "Thank you for (potentially) participating in this year's event." }
 		p {
-			"Thank you for (potentially) participating in this year's event." br;
-			"The event is currently over."
+			"The census is over, but you are welcome to explore the site,"
+			" view all the chapters and questions, and try voting."
 		}
-		p {
-			"Now that it's over, consider providing feedback on the event and story below:"
-		}
-		(user_feedback_html(user))
 	};
 	html_builder()
 		.theme(&theme)
