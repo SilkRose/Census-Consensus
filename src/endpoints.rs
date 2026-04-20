@@ -529,7 +529,7 @@ pub async fn get_chapter_preview_live(
 			false => chapter.outro_text.clone().expect("Missing outro!"),
 			true => {
 				let settings = db.get_settings().await?;
-				construct_chapter_data(&mut db, &settings, &chapter, true).await?
+				construct_chapter_data(&mut db, &settings, &chapter, false).await?
 			}
 		};
 		let user = db.get_user(session.user_id).await?;
