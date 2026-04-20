@@ -45,33 +45,3 @@ function updateTheme(theme) {
 }
 
 window.onload = setTheme;
-
-function countDown(seconds, message) {
-	let span = document.getElementById("countdown");
-	if (!span) return;
-	let target = new Date(Date.now() + seconds * 1000);
-	let int = setInterval(function () {
-		let remaining = Math.max(0, (target - new Date()) / 1000);
-		let days = Math.floor(remaining / 86400);
-		let hours = Math.floor((remaining % 86400) / 3600);
-		let minutes = Math.floor((remaining % 3600) / 60);
-		let secs = Math.floor(remaining % 60);
-		let parts = [];
-		if (days) parts.push(format_plural(days, "day"));
-		if (hours) parts.push(format_plural(hours, "hour"));
-		if (minutes) parts.push(format_plural(minutes, "minute"));
-		if (secs) parts.push(format_plural(secs, "second"));
-		if (parts.length === 0) {
-			parts.push("0 seconds");
-		}
-		span.innerHTML = parts.join(", ");
-		if (remaining <= 0) {
-			clearInterval(int);
-			span.innerHTML = message;
-		}
-	}, 1000);
-}
-
-function format_plural(value, unit) {
-	return `${value} ${unit}${value !== 1 ? "s" : ""}`;
-}
