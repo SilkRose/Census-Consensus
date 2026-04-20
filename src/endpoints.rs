@@ -602,16 +602,26 @@ pub async fn set_chapter_fimfic_update(
 	let id = path.into_inner();
 	let chapter = db.get_chapter(id).await?;
 	let data = db.get_latest_chapter_revision(id).await?;
-	let question_count = db.get_question_count_by_chapter(id).await?;
 	let settings = db.get_settings().await?;
 	if let Some(chapter) = chapter
 		&& let Some(fimfic_id) = chapter.fimfic_ch_id
 	{
+		let mut vote_count = 0;
+		let mut voters = HashSet::new();
+		let questions = db.get_questions_by_chapter(id).await?;
+		for question in questions {
+			let votes = db.get_all_votes_by_question(question.id).await?;
+			for vote in votes {
+				voters.insert(vote.voter_id);
+				vote_count += 1;
+			}
+		}
 		let json = construct_chapter_json()
 			.db(&mut db)
 			.settings(&settings)
 			.data(data)
-			.question_count(question_count)
+			.vote_count(vote_count)
+			.voters(voters.len())
 			.call()
 			.await?;
 		http_client

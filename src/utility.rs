@@ -149,14 +149,14 @@ pub fn construct_question_data(
 
 #[bon::builder]
 pub async fn construct_chapter_json(
-	db: &mut Db, settings: &Settings, data: ChapterRevision, question_count: i64,
+	db: &mut Db, settings: &Settings, data: ChapterRevision, vote_count: usize, voters: usize,
 ) -> Result<Value> {
-	let json = match question_count == 0 {
+	let json = match vote_count == 0 {
 		true => chapter_json(&data.title, &data.outro_text.ok_or("Missing outro!")?, None),
 		false => {
 			let text = construct_chapter_data(db, settings, &data, true).await?;
-			let authors_note = "To participate in this event, please visit our [url=https://census.silkrose.dev/]custom survey site[/url].";
-			chapter_json(&data.title, &text, Some(authors_note))
+			let authors_note = format!("This chapter had {vote_count} votes from {voters} voters.");
+			chapter_json(&data.title, &text, Some(&authors_note))
 		}
 	};
 	Ok(json)
