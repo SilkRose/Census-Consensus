@@ -1,27 +1,17 @@
 use crate::error::Result;
 use crate::fimfic_cfg::FimficCfg;
-use chrono::{DateTime, Utc};
 use pony::fimfiction_api::chapter::ChapterApi;
 use pony::fimfiction_api::story::StoryApi;
 use pony::fimfiction_api::user::UserApi;
-use reqwest::header::{AUTHORIZATION, COOKIE, USER_AGENT};
+use reqwest::header::{AUTHORIZATION, USER_AGENT};
 use reqwest::{Client as ReqwestClient, IntoUrl, RequestBuilder};
-use serde::{Deserialize, Serialize};
-use serde_json::{Value, json};
+use serde::Deserialize;
+use serde_json::Value;
 use std::borrow::Cow;
 
 #[derive(Clone)]
 pub struct HttpClient {
 	inner: ReqwestClient,
-	local: ReqwestClient,
-	pub cf_data: CloudFlareData,
-}
-
-#[derive(Clone)]
-pub struct CloudFlareData {
-	pub user_agent: String,
-	pub cookies: Vec<String>,
-	pub created: DateTime<Utc>,
 }
 
 pub struct FimficTokenExchangeResponse {
@@ -30,60 +20,10 @@ pub struct FimficTokenExchangeResponse {
 	pub access_token: String,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct FlareSolverr {
-	status: String,
-	message: String,
-	solution: SolverrSolution,
-	start_timestamp: i64,
-	end_timestamp: i64,
-	version: String,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct SolverrSolution {
-	url: String,
-	status: i32,
-	cookies: Vec<Cookie>,
-	user_agent: String,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct Cookie {
-	domain: String,
-	expiry: u64,
-	http_only: bool,
-	name: String,
-	path: String,
-	same_site: String,
-	secure: bool,
-	value: String,
-}
-
-impl Cookie {
-	fn to_cookie_string(&self) -> String {
-		format!("name={}; value={}", self.name, self.value)
-	}
-}
-
 impl HttpClient {
 	pub async fn new() -> Result<Self> {
 		let inner = ReqwestClient::builder().https_only(true).build()?;
-		let local = ReqwestClient::builder().build()?;
-		let cf_data = get_cookie(&local).await?;
-		Ok(Self {
-			inner,
-			local,
-			cf_data,
-		})
-	}
-
-	pub async fn refresh_cookie(&mut self) -> Result<()> {
-		self.cf_data = get_cookie(&self.local).await?;
-		Ok(())
+		Ok(Self { inner })
 	}
 
 	// if we ever need to fetch more user data than only a
@@ -193,20 +133,12 @@ impl HttpClient {
 }
 
 // internal only helper functions
-fn common_setup(
-	mut builder: RequestBuilder, cf_data: CloudFlareData, token: Option<&str>,
-) -> RequestBuilder {
+fn common_setup(mut builder: RequestBuilder, token: Option<&str>) -> RequestBuilder {
 	// todo need real header
-	builder = builder.header(USER_AGENT, cf_data.user_agent);
-
-	for cookie in cf_data.cookies {
-		builder = builder.header(COOKIE, cookie);
-	}
-
+	builder = builder.header(USER_AGENT, "Census Consensus");
 	if let Some(token) = token {
 		builder = builder.header(AUTHORIZATION, format!("Bearer {token}"));
 	}
-
 	builder
 }
 
@@ -214,7 +146,7 @@ macro_rules! http_methods {
 	($($method:ident)*) => {
 		$(
 			pub fn $method(&self, url: impl IntoUrl, token: Option<&str>) -> RequestBuilder {
-				common_setup(self.inner.$method(url), self.cf_data.clone(), token)
+				common_setup(self.inner.$method(url), token)
 			}
 		)*
 	}
@@ -222,37 +154,4 @@ macro_rules! http_methods {
 
 impl HttpClient {
 	http_methods!(get post patch);
-}
-
-async fn get_cookie(local: &ReqwestClient) -> Result<CloudFlareData> {
-	let json = json!({
-	  "cmd": "request.get",
-	  "url": "https://www.fimfiction.net/privacy-policy",
-	  "returnOnlyCookies": true,
-	  "maxTimeout": 60000
-	});
-	let res = local
-		.post("http://localhost:8191/v1")
-		.header("Content-Type", "application/json")
-		.body(json.to_string())
-		.send()
-		.await?
-		.json::<FlareSolverr>()
-		.await?;
-	println!(
-		"{}: Cookie Message: {}",
-		Utc::now().format("%y-%m-%d %H:%M"),
-		res.message
-	);
-	let cf_data = CloudFlareData {
-		user_agent: res.solution.user_agent,
-		cookies: res
-			.solution
-			.cookies
-			.iter()
-			.map(|cookie| cookie.to_cookie_string())
-			.collect(),
-		created: Utc::now(),
-	};
-	Ok(cf_data)
 }

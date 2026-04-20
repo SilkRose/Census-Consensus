@@ -1,8 +1,5 @@
 #![feature(impl_trait_in_assoc_type)]
 
-use chrono::Utc;
-use std::time::Duration;
-
 use crate::endpoints::*;
 use crate::structs::UserType;
 
@@ -56,8 +53,6 @@ async fn main() -> Result<()> {
 
 	let http_client = HttpClient::new().await?;
 	let http_client = Data(http_client);
-	let http_clone = http_client.clone();
-	let http_clone_clone = http_clone.clone();
 
 	let admin = match db.get_user_opt(admin_id).await? {
 		Some(admin) => {
@@ -137,18 +132,6 @@ async fn main() -> Result<()> {
 			.app_data(http_client.clone())
 			.app_data(dev_session.clone())
 			.wrap(Compress::default())
-	});
-
-	tokio::task::spawn_local(async move {
-		let mut http_client = http_clone_clone.clone();
-		loop {
-			let time = Utc::now();
-			let diff = 60_000 - (time.timestamp_millis() % 60_000) as u64;
-			tokio::time::sleep(Duration::from_millis(diff)).await;
-			if http_client.cf_data.created + Duration::from_mins(30) <= time {
-				let _ = http_client.refresh_cookie().await;
-			}
-		}
 	});
 
 	//                      mane
