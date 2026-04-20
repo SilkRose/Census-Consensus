@@ -196,7 +196,7 @@ pub fn chapters_html(user: User, theme: Theme, chapters: Vec<ChapterTable>) -> S
 		@let mut prev_published = false;
 		@for chapter in chapters.iter() {
 			span class = "list-item" {
-				(chapter_list_item_html(chapter, &mut prev_published))
+				(chapter_list_item_html(chapter, &mut prev_published, &user))
 			}
 		}
 		(new_chapter_html())
@@ -209,15 +209,24 @@ pub fn chapters_html(user: User, theme: Theme, chapters: Vec<ChapterTable>) -> S
 		.call()
 }
 
-fn chapter_list_item_html(chapter: &ChapterTable, prev_published: &mut bool) -> PreEscaped<String> {
+fn chapter_list_item_html(
+	chapter: &ChapterTable, prev_published: &mut bool, user: &User,
+) -> PreEscaped<String> {
 	let active = chapter.meta.fimfic_ch_id.is_some() || chapter.meta.minutes_left.is_some();
 	let first_number = !active && chapter.meta.chapter_order.is_some() && !*prev_published;
 	*prev_published = *prev_published || first_number;
 	html! (
 		h3 { a href = (format!("/chapters/{}", chapter.meta.id)) { (chapter.newest_data.title) sup { "↗" } } }
+		@if chapter.questions > 0 && chapter.meta.fimfic_ch_id.is_some() {
+			p {
+				a href = (format!("/chapters/{}/survey", chapter.meta.id)) { b { "Survey" } sup { "↗" } } " "
+				a href = (format!("/chapters/{}/event-results", chapter.meta.id)) { b { "Event Results" } sup { "↗" } } " "
+				a href = (format!("/chapters/{}/live-results", chapter.meta.id)) { b { "Live Results" } sup { "↗" } } " "
+				a href = (format!("/chapters/{}/random-results", chapter.meta.id)) { b { "Random Results" } sup { "↗" } }
+			}
+		}
 		p {
-			a href = (format!("/chapters/{}/survey", chapter.meta.id)) { b { "Preview Survey" } sup { "↗" } }
-			b { " Ch Order: " }
+			b { "Ch Order: " }
 			@if let Some(order) = chapter.meta.chapter_order {
 				(order)
 			}
@@ -227,10 +236,21 @@ fn chapter_list_item_html(chapter: &ChapterTable, prev_published: &mut bool) -> 
 				b { " Min Left: " }
 				(minutes_left)
 			}
+			@if chapter.meta.fimfic_ch_id.is_some() {
+				" "
+				@if user.user_type == UserType::Voter {
+					(button_disabled("Update Fimfic Chapter"))
+				} @else {
+					@let link = format!("{SITE_LINK}/chapters/{}/update", chapter.meta.id);
+					(button_link("Update Fimfic Chapter", &link))
+				}
+			}
 		}
 		p {
-			b { "Questions: " }
-			a href = (format!("/chapters/{}/questions", chapter.meta.id)) { (chapter.questions) sup { "↗" } }
+			@if chapter.questions > 0 {
+				b { "Questions: " }
+				a href = (format!("/chapters/{}/questions", chapter.meta.id)) { (chapter.questions) sup { "↗" } }
+			}
 			b { " Revisions: " }
 			a href = (format!("/chapters/{}/revisions", chapter.meta.id)) { (chapter.revisions) sup { "↗" } }
 			@if let Some(id) = chapter.meta.fimfic_ch_id {
@@ -238,9 +258,13 @@ fn chapter_list_item_html(chapter: &ChapterTable, prev_published: &mut bool) -> 
 				a href = (format!("https://www.fimfiction.net/chapter/{id}")) { (id) sup { "↗" } }
 			}
 			b { " Intro/Outro Word Count: " }
-			(chapter.newest_data.intro_text.clone().map(|text| count_words(&text)).unwrap_or_default())
+			(format_number_u128(
+				chapter.newest_data.intro_text.clone().map(|text| count_words(&text)).unwrap_or_default()
+				as u128).unwrap())
 			"/"
-			(chapter.newest_data.outro_text.clone().map(|text| count_words(&text)).unwrap_or_default())
+			(format_number_u128(
+				chapter.newest_data.outro_text.clone().map(|text| count_words(&text)).unwrap_or_default()
+				as u128).unwrap())
 		}
 		p {
 			b { "Last Edit: " }
@@ -861,13 +885,13 @@ pub fn chapter_survey_html(
 	let heading = "Census Survey";
 	let title: String = format!("{heading} - {SITE_NAME}");
 	let description = "Chapter survey page.";
-	let link = format!("{SITE_LINK}/chapters/{}/submit", chapter.chapter_id);
+	let link = format!("{SITE_LINK}/chapters/{}/survey", chapter.chapter_id);
 	let user_type = user.user_type;
 	let mane = html! {
 		h1 { (heading) }
 		p { (description) }
 		h2 { (chapter.title) }
-		form method = "post" action = (link) {
+		form method = "post" action = (format!("{SITE_LINK}/chapters/{}/submit", chapter.chapter_id)) {
 			@for (question, data) in questions {
 				@let opts = parse_options(
 					&data.option_writing.clone().unwrap_or_default(),
@@ -912,13 +936,37 @@ pub fn home_event_complete_html(user: User, theme: Theme) -> String {
 		.call()
 }
 
-pub fn chapter_preview_html(
+pub fn chapter_preview_event_html(
 	user: User, theme: Theme, chapter: ChapterRevision, text: &str,
 ) -> String {
-	let heading = "Chapter Preview";
+	let heading = "Chapter Results (Event)";
 	let title: String = format!("{heading} - {SITE_NAME}");
 	let description = "Chapter preview page.";
-	let link = format!("{SITE_LINK}/chapters/{}/preview", chapter.chapter_id);
+	let link = format!("{SITE_LINK}/chapters/{}/event-results", chapter.chapter_id);
+	let user_type = user.user_type;
+	let mane = html! {
+		h1 { (heading) }
+		p { (description) }
+		h2 { (chapter.title) }
+		pre class = "left-text" {
+			(PreEscaped (parse(text, &WarningType::Quiet)))
+		}
+	};
+	html_builder()
+		.theme(&theme)
+		.head(head_html(&title, description, &link, &theme))
+		.header(header_html(Some(user_type), Pages::Chapters, &theme))
+		.mane(mane)
+		.call()
+}
+
+pub fn chapter_preview_live_html(
+	user: User, theme: Theme, chapter: ChapterRevision, text: &str,
+) -> String {
+	let heading = "Chapter Results (Live)";
+	let title: String = format!("{heading} - {SITE_NAME}");
+	let description = "Chapter preview page.";
+	let link = format!("{SITE_LINK}/chapters/{}/live-results", chapter.chapter_id);
 	let user_type = user.user_type;
 	let mane = html! {
 		h1 { (heading) }
@@ -939,10 +987,10 @@ pub fn chapter_preview_html(
 pub fn chapter_preview_random_html(
 	user: User, theme: Theme, chapter: ChapterRevision, text: &str,
 ) -> String {
-	let heading = "Chapter Preview (Random)";
+	let heading = "Chapter Results (Random)";
 	let title: String = format!("{heading} - {SITE_NAME}");
 	let description = "Chapter preview page.";
-	let link = format!("{SITE_LINK}/chapters/{}/preview-random", chapter.chapter_id);
+	let link = format!("{SITE_LINK}/chapters/{}/results-random", chapter.chapter_id);
 	let user_type = user.user_type;
 	let mane = html! {
 		h1 { (heading) }

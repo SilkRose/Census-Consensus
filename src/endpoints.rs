@@ -490,15 +490,15 @@ pub async fn set_chapter_submit(
 	}
 }
 
-#[get("/chapters/{chapter_id}/preview")]
-pub async fn get_chapter_preview(
+#[get("/chapters/{chapter_id}/event-results")]
+pub async fn get_chapter_preview_event(
 	theme: Theme, path: Path<i32>, mut db: ThinData<Db>, session: WriterSessionInfo,
 ) -> actix_web::Result<impl Responder> {
 	let chapter_id = path.into_inner();
 	if let Some(chapter) = db.get_latest_chapter_revision_opt(chapter_id).await? {
 		let settings = db.get_settings().await?;
-		let text = construct_chapter_data(&mut db, &settings, &chapter, false).await?;
-		let page = chapter_preview_html(session.user, theme, chapter, &text);
+		let text = construct_chapter_data(&mut db, &settings, &chapter, true).await?;
+		let page = chapter_preview_event_html(session.user, theme, chapter, &text);
 		Ok(HttpResponse::Ok()
 			.content_type("text/html; charset=utf-8")
 			.body(page))
@@ -507,7 +507,24 @@ pub async fn get_chapter_preview(
 	}
 }
 
-#[get("/chapters/{chapter_id}/preview-random")]
+#[get("/chapters/{chapter_id}/live-results")]
+pub async fn get_chapter_preview_live(
+	theme: Theme, path: Path<i32>, mut db: ThinData<Db>, session: WriterSessionInfo,
+) -> actix_web::Result<impl Responder> {
+	let chapter_id = path.into_inner();
+	if let Some(chapter) = db.get_latest_chapter_revision_opt(chapter_id).await? {
+		let settings = db.get_settings().await?;
+		let text = construct_chapter_data(&mut db, &settings, &chapter, false).await?;
+		let page = chapter_preview_live_html(session.user, theme, chapter, &text);
+		Ok(HttpResponse::Ok()
+			.content_type("text/html; charset=utf-8")
+			.body(page))
+	} else {
+		Ok(HttpResponse::BadRequest().finish())
+	}
+}
+
+#[get("/chapters/{chapter_id}/random-results")]
 pub async fn get_chapter_preview_random(
 	theme: Theme, path: Path<i32>, mut db: ThinData<Db>, session: WriterSessionInfo,
 ) -> actix_web::Result<impl Responder> {
