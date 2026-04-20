@@ -1,6 +1,6 @@
 use crate::structs::{OptionData, QuestionDataOption};
 use pest::Parser;
-use pony::number_format::{FormatType, format_number_unit_metric};
+use pony::number_format::{FormatType, format_number_u128, format_number_unit_metric};
 
 #[expect(
 	clippy::single_char_add_str,
@@ -234,7 +234,10 @@ pub fn format(input: &QuestionDataOption) -> (String, Vec<String>) {
 
 					let next = pairs.next().unwrap();
 					if matches!(next.as_rule(), Rule::text_vote_count) {
-						current_match_mut!().push_str(&option.count.to_string());
+						current_match_mut!()
+							// analysed the function, and there is no codepath
+							// in which this function will return Err
+							.push_str(&format_number_u128(option.count as u128).unwrap());
 						continue;
 					}
 
