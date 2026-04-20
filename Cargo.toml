@@ -1,7 +1,11 @@
 [package]
-name = "april-fools-2026-backend"
-version = "0.1.0"
+name = "census-consensus"
+version = "1.0.2"
+description = "Silk Rose's 2026 April Fools event code."
+repository = "https://github.com/SilkRose/Census-Consensus"
+authors = ["Silk Rose", "Meadowsys"]
 edition = "2024"
+license = "MIT"
 publish = false
 
 [dependencies]
@@ -36,5 +40,15 @@ sqlx = { version = "0.8.6", default-features = false, features = [
 tokio = { version = "1.50.0", default-features = false }
 url = "2.5.8"
 
-[profile.dev.package."*"]
+[profile.dev]
+opt-level = 0
+debug-assertions = true
+debug = true
+incremental = true
+
+[profile.release]
+strip = true
 opt-level = 3
+debug-assertions = false
+lto = true
+codegen-units = 1

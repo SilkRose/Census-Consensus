@@ -302,32 +302,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7f202df86484c868dbad7eaa557ef785d5c66295e41b460ef922eca0723b842c"
 
 [[package]]
-name = "april-fools-2026-backend"
-version = "0.1.0"
-dependencies = [
- "actix-files",
- "actix-web",
- "anyhow",
- "base64ct",
- "bon",
- "chrono",
- "dotenvy",
- "lightningcss",
- "maud",
- "pest",
- "pest_derive",
- "pony",
- "rand 0.10.0",
- "reqwest",
- "serde",
- "serde_json",
- "serde_urlencoded",
- "sqlx",
- "tokio",
- "url",
-]
-
-[[package]]
 name = "arbitrary"
 version = "1.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -660,6 +634,32 @@ dependencies = [
  "jobserver",
  "libc",
  "shlex",
+]
+
+[[package]]
+name = "census-consensus"
+version = "1.0.2"
+dependencies = [
+ "actix-files",
+ "actix-web",
+ "anyhow",
+ "base64ct",
+ "bon",
+ "chrono",
+ "dotenvy",
+ "lightningcss",
+ "maud",
+ "pest",
+ "pest_derive",
+ "pony",
+ "rand 0.10.0",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "serde_urlencoded",
+ "sqlx",
+ "tokio",
+ "url",
 ]
 
 [[package]]
