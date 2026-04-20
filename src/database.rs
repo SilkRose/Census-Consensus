@@ -26,10 +26,6 @@ fn count_err() -> &'static str {
 	"database counting error"
 }
 
-fn exist_err() -> &'static str {
-	"database exist error"
-}
-
 fn db_expect() -> &'static str {
 	"database constraints means this resource will always be present in the database."
 }
@@ -60,14 +56,6 @@ impl Db {
 		Ok(DbTransaction { tx })
 	}
 
-	pub async fn insert_chapter(&mut self, data: ChapterEdit, user: User) -> Result<Chapter> {
-		let mut tx = self.transaction().await?;
-		let meta = tx.create_chapter().await?;
-		tx.insert_chapter_revision(data, user.id, meta.id).await?;
-		tx.commit().await?;
-		Ok(meta)
-	}
-
 	pub async fn get_chapters_table(&mut self) -> Result<Vec<ChapterTable>> {
 		let mut tx = self.transaction().await?;
 		let chapters = tx.get_all_chapters().await?;
@@ -92,44 +80,6 @@ impl Db {
 		}
 		tx.commit().await?;
 		Ok(data)
-	}
-
-	pub async fn swap_chapters_by_order(
-		&mut self, self_id: i32, other_id: i32, order: i32, movement: i32,
-	) -> Result<()> {
-		let mut tx = self.transaction().await?;
-		tx.update_chapter_order_none(self_id).await?;
-		tx.update_chapter_order(other_id, order).await?;
-		tx.update_chapter_order(self_id, order + movement).await?;
-		tx.commit().await
-	}
-
-	pub async fn remove_chapter_order(&mut self, id: i32, mut order: i32) -> Result<()> {
-		let mut tx = self.transaction().await?;
-		tx.update_chapter_order_none(id).await?;
-		let chapters = tx.get_chapters_after_order(order).await?;
-		for chapter in chapters {
-			tx.update_chapter_order(chapter.id, order).await?;
-			order += 1;
-		}
-		tx.commit().await
-	}
-
-	pub async fn insert_question(
-		&mut self, data: QuestionEdit, user: User, chapter_id: Option<i32>,
-	) -> Result<Question> {
-		let mut tx = self.transaction().await?;
-		let meta = tx.create_question().await?;
-		if data.claimed {
-			tx.update_question_claimed_by(meta.id, Some(user.id))
-				.await?;
-		}
-		if let Some(chapter_id) = chapter_id {
-			tx.add_question_to_chapter(meta.id, chapter_id).await?;
-		}
-		tx.insert_question_revision(data, meta.id, user.id).await?;
-		tx.commit().await?;
-		Ok(meta)
 	}
 
 	pub async fn get_questions_table(
@@ -181,17 +131,6 @@ impl Db {
 		}
 		tx.commit().await?;
 		Ok((data, chapters))
-	}
-
-	pub async fn swap_questions_by_order(
-		&mut self, self_id: i32, other_id: i32, order: i32, movement: i32,
-	) -> Result<()> {
-		let mut tx = self.transaction().await?;
-		tx.update_question_chapter_order(self_id, 0).await?;
-		tx.update_question_chapter_order(other_id, order).await?;
-		tx.update_question_chapter_order(self_id, order + movement)
-			.await?;
-		tx.commit().await
 	}
 }
 
@@ -317,15 +256,6 @@ pub trait DbExecutor {
 		.map_err(select_err)?)
 	}
 
-	async fn get_users_count(&mut self) -> Result<i64> {
-		Ok(sqlx::query!("SELECT count(*) FROM Users;")
-			.fetch_one(self.executor())
-			.await
-			.map_err(select_err)?
-			.count
-			.ok_or_else(count_err)?)
-	}
-
 	async fn update_user_role(&mut self, id: i32, role: UserType) -> Result<u64> {
 		Ok(sqlx::query!(
 			"UPDATE Users
@@ -358,22 +288,6 @@ pub trait DbExecutor {
 		.await
 		.map_err(update_err)?
 		.rows_affected())
-	}
-
-	async fn delete_user(&mut self, id: i32) -> Result<u64> {
-		Ok(sqlx::query!("DELETE FROM Users WHERE id = $1;", id)
-			.execute(self.executor())
-			.await
-			.map_err(delete_err)?
-			.rows_affected())
-	}
-
-	async fn delete_all_users(&mut self) -> Result<u64> {
-		Ok(sqlx::query!("DELETE FROM Users;")
-			.execute(self.executor())
-			.await
-			.map_err(delete_err)?
-			.rows_affected())
 	}
 
 	async fn insert_session(
@@ -437,25 +351,6 @@ pub trait DbExecutor {
 		.map_err(select_err)?)
 	}
 
-	async fn get_all_sessions(&mut self) -> Result<Vec<Session>> {
-		Ok(sqlx::query_as!(
-			Session,
-			"SELECT token, user_id, user_agent, last_seen, date_created FROM Tokens;",
-		)
-		.fetch_all(self.executor())
-		.await
-		.map_err(select_err)?)
-	}
-
-	async fn get_sessions_count(&mut self) -> Result<i64> {
-		Ok(sqlx::query!("SELECT count(*) FROM Tokens;")
-			.fetch_one(self.executor())
-			.await
-			.map_err(select_err)?
-			.count
-			.ok_or_else(count_err)?)
-	}
-
 	async fn delete_session(&mut self, token: &str) -> Result<u64> {
 		Ok(sqlx::query!("DELETE FROM Tokens WHERE token = $1;", token)
 			.execute(self.executor())
@@ -472,14 +367,6 @@ pub trait DbExecutor {
 				.map_err(delete_err)?
 				.rows_affected(),
 		)
-	}
-
-	async fn delete_all_sessions(&mut self) -> Result<u64> {
-		Ok(sqlx::query!("DELETE FROM Tokens;")
-			.execute(self.executor())
-			.await
-			.map_err(delete_err)?
-			.rows_affected())
 	}
 
 	async fn insert_banned_user(&mut self, user_id: i32, reason: &str) -> Result<BannedUser> {
@@ -517,56 +404,6 @@ pub trait DbExecutor {
 		.map_err(select_err)?)
 	}
 
-	async fn get_all_banned_users(&mut self) -> Result<Vec<BannedUser>> {
-		Ok(sqlx::query_as!(
-			BannedUser,
-			"SELECT id, reason, date_banned FROM Banned_users;",
-		)
-		.fetch_all(self.executor())
-		.await
-		.map_err(select_err)?)
-	}
-
-	async fn get_banned_users_count(&mut self) -> Result<i64> {
-		Ok(sqlx::query!("SELECT count(*) FROM Banned_users;")
-			.fetch_one(self.executor())
-			.await
-			.map_err(select_err)?
-			.count
-			.ok_or_else(count_err)?)
-	}
-
-	async fn update_banned_user_reason(&mut self, id: i32, reason: &str) -> Result<u64> {
-		Ok(sqlx::query!(
-			"UPDATE Banned_users
-			SET
-				reason = $2
-			WHERE id = $1;",
-			id,
-			reason
-		)
-		.execute(self.executor())
-		.await
-		.map_err(update_err)?
-		.rows_affected())
-	}
-
-	async fn delete_banned_user(&mut self, id: i32) -> Result<u64> {
-		Ok(sqlx::query!("DELETE FROM Banned_users WHERE id = $1;", id)
-			.execute(self.executor())
-			.await
-			.map_err(delete_err)?
-			.rows_affected())
-	}
-
-	async fn delete_all_banned_users(&mut self) -> Result<u64> {
-		Ok(sqlx::query!("DELETE FROM Banned_users;")
-			.execute(self.executor())
-			.await
-			.map_err(delete_err)?
-			.rows_affected())
-	}
-
 	async fn insert_chapter_revision(
 		&mut self, revision: ChapterEdit, created_by: i32, chapter_id: i32,
 	) -> Result<ChapterRevision> {
@@ -588,22 +425,6 @@ pub trait DbExecutor {
 		.fetch_one(self.executor())
 		.await
 		.map_err(insert_err)?)
-	}
-
-	async fn get_chapter_revision(&mut self, id: i32) -> Result<Option<ChapterRevision>> {
-		Ok(sqlx::query_as!(
-			ChapterRevision,
-			"SELECT
-				id, title, intro_text, outro_text,
-				created_by, chapter_id, date_created
-			FROM Chapter_revisions
-			WHERE id = $1
-			LIMIT 1;",
-			id
-		)
-		.fetch_optional(self.executor())
-		.await
-		.map_err(select_err)?)
 	}
 
 	async fn get_latest_chapter_revision_opt(
@@ -676,19 +497,6 @@ pub trait DbExecutor {
 		.map_err(select_err)?)
 	}
 
-	async fn get_all_chapter_revisions(&mut self) -> Result<Vec<ChapterRevision>> {
-		Ok(sqlx::query_as!(
-			ChapterRevision,
-			"SELECT
-				id, title, intro_text, outro_text,
-				created_by, chapter_id, date_created
-			FROM Chapter_revisions;",
-		)
-		.fetch_all(self.executor())
-		.await
-		.map_err(select_err)?)
-	}
-
 	async fn get_chapter_revisions_count_by_id(&mut self, id: i32) -> Result<i64> {
 		Ok(sqlx::query!(
 			"SELECT count(*) FROM Chapter_revisions WHERE chapter_id = $1;",
@@ -699,45 +507,6 @@ pub trait DbExecutor {
 		.map_err(select_err)?
 		.count
 		.ok_or_else(count_err)?)
-	}
-
-	async fn get_chapter_revisions_count(&mut self) -> Result<i64> {
-		Ok(sqlx::query!("SELECT count(*) FROM Chapter_revisions;")
-			.fetch_one(self.executor())
-			.await
-			.map_err(select_err)?
-			.count
-			.ok_or_else(count_err)?)
-	}
-
-	async fn delete_chapter_revision(&mut self, id: i32) -> Result<u64> {
-		Ok(
-			sqlx::query!("DELETE FROM Chapter_revisions WHERE id = $1;", id)
-				.execute(self.executor())
-				.await
-				.map_err(delete_err)?
-				.rows_affected(),
-		)
-	}
-
-	async fn delete_all_chapter_revisions(&mut self) -> Result<u64> {
-		Ok(sqlx::query!("DELETE FROM Chapter_revisions;")
-			.execute(self.executor())
-			.await
-			.map_err(delete_err)?
-			.rows_affected())
-	}
-
-	async fn create_chapter(&mut self) -> Result<Chapter> {
-		Ok(sqlx::query_as!(
-			Chapter,
-			"INSERT INTO Chapters DEFAULT VALUES
-			RETURNING
-				id, vote_duration, minutes_left, fimfic_ch_id, chapter_order, last_edit;",
-		)
-		.fetch_one(self.executor())
-		.await
-		.map_err(insert_err)?)
 	}
 
 	async fn get_chapter(&mut self, id: i32) -> Result<Option<Chapter>> {
@@ -753,45 +522,6 @@ pub trait DbExecutor {
 		.map_err(select_err)?)
 	}
 
-	async fn get_chapter_exists(&mut self, id: i32) -> Result<bool> {
-		Ok(
-			sqlx::query!("SELECT EXISTS(SELECT 1 FROM Chapters WHERE id = $1);", id)
-				.fetch_one(self.executor())
-				.await
-				.map_err(select_err)?
-				.exists
-				.ok_or_else(exist_err)?,
-		)
-	}
-
-	async fn get_chapter_by_order(&mut self, order: i32) -> Result<Option<Chapter>> {
-		Ok(sqlx::query_as!(
-			Chapter,
-			"SELECT
-				id, vote_duration, minutes_left, fimfic_ch_id, chapter_order, last_edit
-			FROM Chapters WHERE chapter_order = $1 LIMIT 1;",
-			order,
-		)
-		.fetch_optional(self.executor())
-		.await
-		.map_err(select_err)?)
-	}
-
-	async fn get_chapters_after_order(&mut self, order: i32) -> Result<Vec<Chapter>> {
-		Ok(sqlx::query_as!(
-			Chapter,
-			"SELECT
-				id, vote_duration, minutes_left, fimfic_ch_id, chapter_order, last_edit
-			FROM Chapters
-			WHERE chapter_order > $1
-			ORDER BY chapter_order;",
-			order,
-		)
-		.fetch_all(self.executor())
-		.await
-		.map_err(select_err)?)
-	}
-
 	async fn get_all_chapters(&mut self) -> Result<Vec<Chapter>> {
 		Ok(sqlx::query_as!(
 			Chapter,
@@ -803,124 +533,6 @@ pub trait DbExecutor {
 		.fetch_all(self.executor())
 		.await
 		.map_err(select_err)?)
-	}
-
-	async fn get_chapters_count(&mut self) -> Result<i64> {
-		Ok(sqlx::query!("SELECT count(*) FROM Chapters;")
-			.fetch_one(self.executor())
-			.await
-			.map_err(select_err)?
-			.count
-			.ok_or_else(count_err)?)
-	}
-
-	async fn update_chapter_vote_duration(&mut self, id: i32, duration: i32) -> Result<u64> {
-		Ok(sqlx::query!(
-			"UPDATE Chapters
-			SET
-				vote_duration = $2,
-				last_edit = now()
-			WHERE id = $1;",
-			id,
-			duration
-		)
-		.execute(self.executor())
-		.await
-		.map_err(update_err)?
-		.rows_affected())
-	}
-
-	async fn update_chapter_vote_durations(&mut self, vote_duration: i32) -> Result<u64> {
-		Ok(sqlx::query!(
-			"UPDATE Chapters
-			SET
-				vote_duration = $1,
-				last_edit = now();",
-			vote_duration
-		)
-		.execute(self.executor())
-		.await
-		.map_err(update_err)?
-		.rows_affected())
-	}
-
-	async fn update_chapter_minutes_left(&mut self, id: i32, minutes: Option<i32>) -> Result<u64> {
-		Ok(sqlx::query!(
-			"UPDATE Chapters
-			SET
-				minutes_left = $2,
-				last_edit = now()
-			WHERE id = $1;",
-			id,
-			minutes
-		)
-		.execute(self.executor())
-		.await
-		.map_err(update_err)?
-		.rows_affected())
-	}
-
-	async fn update_chapter_fimfic_id(&mut self, id: i32, fimfic_id: Option<i32>) -> Result<u64> {
-		Ok(sqlx::query!(
-			"UPDATE Chapters
-			SET
-				fimfic_ch_id = $2,
-				last_edit = now()
-			WHERE id = $1;",
-			id,
-			fimfic_id
-		)
-		.execute(self.executor())
-		.await
-		.map_err(update_err)?
-		.rows_affected())
-	}
-
-	async fn update_chapter_order(&mut self, id: i32, order: i32) -> Result<u64> {
-		Ok(sqlx::query!(
-			"UPDATE Chapters
-			SET
-				chapter_order = $2,
-				last_edit = now()
-			WHERE id = $1;",
-			id,
-			order
-		)
-		.execute(self.executor())
-		.await
-		.map_err(update_err)?
-		.rows_affected())
-	}
-
-	async fn update_chapter_order_none(&mut self, id: i32) -> Result<u64> {
-		Ok(sqlx::query!(
-			"UPDATE Chapters
-			SET
-				chapter_order = NULL,
-				last_edit = now()
-			WHERE id = $1;",
-			id,
-		)
-		.execute(self.executor())
-		.await
-		.map_err(update_err)?
-		.rows_affected())
-	}
-
-	async fn delete_chapter(&mut self, id: i32) -> Result<u64> {
-		Ok(sqlx::query!("DELETE FROM Chapters WHERE id = $1;", id)
-			.execute(self.executor())
-			.await
-			.map_err(delete_err)?
-			.rows_affected())
-	}
-
-	async fn delete_all_chapters(&mut self) -> Result<u64> {
-		Ok(sqlx::query!("DELETE FROM Chapters;")
-			.execute(self.executor())
-			.await
-			.map_err(delete_err)?
-			.rows_affected())
 	}
 
 	async fn insert_question_revision(
@@ -948,20 +560,6 @@ pub trait DbExecutor {
 		.fetch_one(self.executor())
 		.await
 		.map_err(insert_err)?)
-	}
-
-	async fn get_question_revision(&mut self, id: i32) -> Result<Option<QuestionRevision>> {
-		Ok(sqlx::query_as!(
-			QuestionRevision,
-			r#"SELECT
-				id, question_text, type AS "question_type: QuestionType", asked_by, response_percent,
-				option_writing, result_writing, question_id, created_by, date_created
-			FROM Question_revisions WHERE id = $1 LIMIT 1;"#,
-			id,
-		)
-		.fetch_optional(self.executor())
-		.await
-		.map_err(select_err)?)
 	}
 
 	async fn get_latest_question_revision_opt(
@@ -1034,19 +632,6 @@ pub trait DbExecutor {
 		.map_err(select_err)?)
 	}
 
-	async fn get_all_question_revisions(&mut self) -> Result<Vec<QuestionRevision>> {
-		Ok(sqlx::query_as!(
-			QuestionRevision,
-			r#"SELECT
-				id, question_text, type AS "question_type: QuestionType", asked_by, response_percent,
-				option_writing, result_writing, question_id, created_by, date_created
-			FROM Question_revisions;"#,
-		)
-		.fetch_all(self.executor())
-		.await
-		.map_err(select_err)?)
-	}
-
 	async fn get_question_revision_count(&mut self, question_id: i32) -> Result<i64> {
 		Ok(sqlx::query!(
 			"SELECT count(*) FROM Question_revisions WHERE question_id = $1;",
@@ -1057,45 +642,6 @@ pub trait DbExecutor {
 		.map_err(select_err)?
 		.count
 		.ok_or_else(count_err)?)
-	}
-
-	async fn get_question_revisions_count(&mut self) -> Result<i64> {
-		Ok(sqlx::query!("SELECT count(*) FROM Question_revisions;")
-			.fetch_one(self.executor())
-			.await
-			.map_err(select_err)?
-			.count
-			.ok_or_else(count_err)?)
-	}
-
-	async fn delete_question_writing(&mut self, id: i32) -> Result<u64> {
-		Ok(
-			sqlx::query!("DELETE FROM Question_revisions WHERE id = $1;", id)
-				.execute(self.executor())
-				.await
-				.map_err(delete_err)?
-				.rows_affected(),
-		)
-	}
-
-	async fn delete_all_question_revisions(&mut self) -> Result<u64> {
-		Ok(sqlx::query!("DELETE FROM Question_revisions;")
-			.execute(self.executor())
-			.await
-			.map_err(delete_err)?
-			.rows_affected())
-	}
-
-	async fn create_question(&mut self) -> Result<Question> {
-		Ok(sqlx::query_as!(
-			Question,
-			"INSERT INTO Questions DEFAULT VALUES
-			RETURNING
-				id, claimed_by, chapter_id, chapter_order, last_edit;"
-		)
-		.fetch_one(self.executor())
-		.await
-		.map_err(insert_err)?)
 	}
 
 	async fn get_question(&mut self, id: i32) -> Result<Option<Question>> {
@@ -1111,25 +657,6 @@ pub trait DbExecutor {
 		.map_err(select_err)?)
 	}
 
-	async fn get_question_by_chapter_and_order(
-		&mut self, chapter_id: i32, order: i32,
-	) -> Result<Option<Question>> {
-		Ok(sqlx::query_as!(
-			Question,
-			"SELECT
-				id, claimed_by, chapter_id, chapter_order, last_edit
-			FROM Questions
-			WHERE
-				chapter_id = $1 AND chapter_order = $2
-			LIMIT 1;",
-			chapter_id,
-			order
-		)
-		.fetch_optional(self.executor())
-		.await
-		.map_err(select_err)?)
-	}
-
 	async fn get_questions_by_chapter(&mut self, chapter_id: i32) -> Result<Vec<Question>> {
 		Ok(sqlx::query_as!(
 			Question,
@@ -1139,21 +666,6 @@ pub trait DbExecutor {
 			WHERE chapter_id = $1
 			ORDER BY chapter_order;",
 			chapter_id
-		)
-		.fetch_all(self.executor())
-		.await
-		.map_err(select_err)?)
-	}
-
-	async fn get_questions_by_claimant(
-		&mut self, claimant_id: Option<i32>,
-	) -> Result<Vec<Question>> {
-		Ok(sqlx::query_as!(
-			Question,
-			"SELECT
-				id, claimed_by, chapter_id, chapter_order, last_edit
-			FROM Questions WHERE claimed_by = $1;",
-			claimant_id
 		)
 		.fetch_all(self.executor())
 		.await
@@ -1199,142 +711,6 @@ pub trait DbExecutor {
 		.map_err(select_err)?
 		.count
 		.ok_or_else(count_err)?)
-	}
-
-	async fn get_questions_count(&mut self) -> Result<i64> {
-		Ok(sqlx::query!("SELECT count(*) FROM Questions;")
-			.fetch_one(self.executor())
-			.await
-			.map_err(select_err)?
-			.count
-			.ok_or_else(count_err)?)
-	}
-
-	async fn update_question_claimed_by(
-		&mut self, id: i32, claimed_by: Option<i32>,
-	) -> Result<u64> {
-		Ok(sqlx::query!(
-			"UPDATE Questions
-			SET
-				claimed_by = $2,
-				last_edit = now()
-			WHERE id = $1;",
-			id,
-			claimed_by
-		)
-		.execute(self.executor())
-		.await
-		.map_err(update_err)?
-		.rows_affected())
-	}
-
-	async fn update_question_chapter_id(
-		&mut self, id: i32, chapter_id: Option<i32>,
-	) -> Result<u64> {
-		Ok(sqlx::query!(
-			"UPDATE Questions
-			SET
-				chapter_id = $2,
-				last_edit = now()
-			WHERE id = $1;",
-			id,
-			chapter_id
-		)
-		.execute(self.executor())
-		.await
-		.map_err(update_err)?
-		.rows_affected())
-	}
-
-	async fn add_question_to_chapter(&mut self, question_id: i32, chapter_id: i32) -> Result<()> {
-		let questions = self.get_questions_by_chapter(chapter_id).await?;
-		let max = questions.iter().filter_map(|q| q.chapter_order).max();
-		self.update_question_chapter_id_order(question_id, chapter_id, max.map_or(1, |i| i + 1))
-			.await?;
-		Ok(())
-	}
-
-	async fn update_question_chapter_order(&mut self, id: i32, chapter_order: i32) -> Result<u64> {
-		Ok(sqlx::query!(
-			"UPDATE Questions
-			SET
-				chapter_order = $2,
-				last_edit = now()
-			WHERE id = $1;",
-			id,
-			chapter_order
-		)
-		.execute(self.executor())
-		.await
-		.map_err(update_err)?
-		.rows_affected())
-	}
-
-	async fn update_question_chapter_order_none(&mut self, id: i32) -> Result<u64> {
-		Ok(sqlx::query!(
-			"UPDATE Questions
-			SET
-				chapter_order = NULL,
-				last_edit = now()
-			WHERE id = $1;",
-			id,
-		)
-		.execute(self.executor())
-		.await
-		.map_err(update_err)?
-		.rows_affected())
-	}
-
-	async fn update_question_chapter_id_order(
-		&mut self, id: i32, chapter_id: i32, chapter_order: i32,
-	) -> Result<u64> {
-		Ok(sqlx::query!(
-			"UPDATE Questions
-			SET
-				chapter_id = $2,
-				chapter_order = $3,
-				last_edit = now()
-			WHERE id = $1;",
-			id,
-			chapter_id,
-			chapter_order
-		)
-		.execute(self.executor())
-		.await
-		.map_err(update_err)?
-		.rows_affected())
-	}
-
-	async fn update_question_chapter_id_order_none(&mut self, id: i32) -> Result<u64> {
-		Ok(sqlx::query!(
-			"UPDATE Questions
-			SET
-				chapter_id = NULL,
-				chapter_order = NULL,
-				last_edit = now()
-			WHERE id = $1;",
-			id,
-		)
-		.execute(self.executor())
-		.await
-		.map_err(update_err)?
-		.rows_affected())
-	}
-
-	async fn delete_question(&mut self, id: i32) -> Result<u64> {
-		Ok(sqlx::query!("DELETE FROM Questions WHERE id = $1;", id)
-			.execute(self.executor())
-			.await
-			.map_err(delete_err)?
-			.rows_affected())
-	}
-
-	async fn delete_all_questions(&mut self) -> Result<u64> {
-		Ok(sqlx::query!("DELETE FROM Questions;")
-			.execute(self.executor())
-			.await
-			.map_err(delete_err)?
-			.rows_affected())
 	}
 
 	async fn get_all_votes_by_question(&mut self, question_id: i32) -> Result<Vec<Vote>> {
