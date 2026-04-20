@@ -728,7 +728,7 @@ pub fn home_html(user: Option<User>, theme: Theme) -> String {
 			" event manager: "
 			a href = ("https://www.fimfiction.net/user/237915/Silk+Rose") { "Silk Rose" sup { "↗" } }
 			". She will help you get started and explain any questions you may have."
-                }
+		}
 		p {
 			"The census is over, but you are welcome to explore the site,"
 			" view all the chapters and questions, and try voting. To get started,"
@@ -736,7 +736,7 @@ pub fn home_html(user: Option<User>, theme: Theme) -> String {
 			" button below."
 		}
 		blockquote {
-		        "We do not store email addresses or API access tokens."
+			"We do not store email addresses or API access tokens."
 		}
 		(button_link("Sign Up or Sign In", "/login/fimfic"))
 	};
