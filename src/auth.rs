@@ -192,7 +192,6 @@ async fn fimfic_auth_return(
 /// Session info extractor
 pub struct SessionInfo {
 	pub user_id: i32,
-	pub pfp_url: String,
 	pub token: String,
 }
 
@@ -236,10 +235,7 @@ impl FromRequest for MaybeSessionInfo {
 }
 
 /// Session info extractor requiring user to be logged in and an admin
-pub struct AdminSessionInfo {
-	pub session_info: SessionInfo,
-	pub user: User,
-}
+pub struct AdminSessionInfo;
 
 impl FromRequest for AdminSessionInfo {
 	type Error = Error;
@@ -257,14 +253,13 @@ impl FromRequest for AdminSessionInfo {
 				.then_some(())
 				.context("User must be an admin")?;
 
-			Ok(Self { session_info, user })
+			Ok(Self)
 		}
 	}
 }
 
 /// Session info extractor requiring user to be logged in and an admin or writer
 pub struct WriterSessionInfo {
-	pub session_info: SessionInfo,
 	pub user: User,
 }
 
@@ -284,7 +279,7 @@ impl FromRequest for WriterSessionInfo {
 				.then_some(())
 				.context("User must be an admin or a writer")?;
 
-			Ok(Self { session_info, user })
+			Ok(Self { user })
 		}
 	}
 }
@@ -295,7 +290,6 @@ fn get_unverified_session_info(req: &HttpRequest) -> Option<SessionInfo> {
 
 	Some(SessionInfo {
 		user_id: session_info.user_id,
-		pfp_url: session_info.pfp_url.into_owned(),
 		token: session.value().into(),
 	})
 }
