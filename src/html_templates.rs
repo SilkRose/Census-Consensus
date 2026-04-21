@@ -1,7 +1,8 @@
 use crate::endpoints::MIN_USER_UPDATE_TIME;
+use crate::structs::*;
 use crate::theme::Theme;
 use crate::utility::{construct_question_data, count_words, parse_options};
-use crate::{result_formatter, structs::*};
+use crate::{SITE_LINK, SITE_NAME, result_formatter};
 use bon::builder;
 use chrono::Utc;
 use maud::{DOCTYPE, PreEscaped, html};
@@ -13,9 +14,6 @@ use pony::time::format_milliseconds;
 use std::collections::HashMap;
 use std::fs;
 use url::form_urlencoded;
-
-const SITE_NAME: &str = "Census Consensus";
-const SITE_LINK: &str = "https://census.silkrose.dev";
 
 #[builder]
 fn html_builder(

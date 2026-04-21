@@ -28,10 +28,25 @@ mod structs;
 mod theme;
 mod utility;
 
+pub const PORT: u16 = 6263; // mane
+pub const SITE_NAME: &str = "Census Consensus";
+pub const SITE_LINK: &str = if cfg!(debug_assertions) {
+	"http://127.0.0.1:6263"
+} else {
+	"https://census.silkrose.dev"
+};
+
 #[actix_web::main]
 async fn main() -> Result<()> {
 	env_vars::load_dotenv();
 	env_vars::check();
+
+	if cfg!(debug_assertions) {
+		assert!(
+			SITE_LINK.ends_with(&PORT.to_string()),
+			"Port mismatched with site link in dev!"
+		)
+	}
 
 	let db = Db::new(&env_vars::database_url()).await?;
 	let mut db = Data(db);
@@ -83,7 +98,7 @@ async fn main() -> Result<()> {
 	});
 	let dev_session = Data(dev_session);
 
-	println!("listening at http://localhost:6263");
+	println!("listening at http://localhost:{PORT}");
 
 	if create_dev_session {
 		println!();
@@ -134,8 +149,7 @@ async fn main() -> Result<()> {
 			.wrap(Compress::default())
 	});
 
-	//                      mane
-	server.bind(("0.0.0.0", 6263))?.run().await?;
+	server.bind(("0.0.0.0", PORT))?.run().await?;
 
 	Ok(())
 }
