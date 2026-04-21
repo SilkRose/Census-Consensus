@@ -1,5 +1,7 @@
 #![feature(impl_trait_in_assoc_type)]
 
+use std::collections::HashSet;
+
 use crate::endpoints::*;
 use crate::structs::UserType;
 
@@ -50,6 +52,8 @@ async fn main() -> Result<()> {
 
 	let db = Db::new(&env_vars::database_url()).await?;
 	let mut db = Data(db);
+
+	get_non_voters(&mut db).await?;
 
 	let admin_id = env_vars::admin_id().parse::<i32>()?;
 	let bearer_token = env_vars::bearer_token();
@@ -151,5 +155,24 @@ async fn main() -> Result<()> {
 
 	server.bind(("0.0.0.0", PORT))?.run().await?;
 
+	Ok(())
+}
+
+async fn get_non_voters(db: &mut Db) -> Result<()> {
+	let users = db.get_all_users().await?;
+	let questions = db.get_all_questions().await?;
+	let mut votes = Vec::new();
+	for question in questions {
+		let question_votes = db.get_all_votes_by_question(question.id).await?;
+		votes.extend(question_votes);
+	}
+	let mut voters = HashSet::new();
+	for voter in users {
+		let voted = votes.iter().find(|vote| voter.id == vote.voter_id);
+		if voted.is_none() {
+			voters.insert(voter.id);
+		}
+	}
+	println!("{voters:?}");
 	Ok(())
 }
