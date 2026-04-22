@@ -135,7 +135,10 @@ impl HttpClient {
 // internal only helper functions
 fn common_setup(mut builder: RequestBuilder, token: Option<&str>) -> RequestBuilder {
 	// todo need real header
-	builder = builder.header(USER_AGENT, "Census Consensus");
+	builder = builder.header(
+		USER_AGENT,
+		format!("Census Consensus/{}", env!("CARGO_PKG_VERSION")),
+	);
 	if let Some(token) = token {
 		builder = builder.header(AUTHORIZATION, format!("Bearer {token}"));
 	}
