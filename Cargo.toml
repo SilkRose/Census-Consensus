@@ -1,6 +1,6 @@
 [package]
 name = "census-consensus"
-version = "1.1.0"
+version = "1.2.0"
 description = "Silk Rose's 2026 April Fools event code."
 repository = "https://github.com/SilkRose/Census-Consensus"
 authors = ["Silk Rose", "Meadowsys"]
