@@ -1,7 +1,5 @@
 #![feature(impl_trait_in_assoc_type)]
 
-use std::io::Write;
-
 use crate::endpoints::*;
 use crate::structs::UserType;
 
@@ -14,7 +12,6 @@ pub use actix_files::Files;
 pub use actix_web::middleware::Compress;
 pub use actix_web::web::ThinData as Data;
 pub use actix_web::{App as ActixApp, HttpServer};
-use pony::json::{JsonFormat, format_json};
 
 mod auth;
 mod database;
@@ -53,8 +50,6 @@ async fn main() -> Result<()> {
 
 	let db = Db::new(&env_vars::database_url()).await?;
 	let mut db = Data(db);
-
-	get_non_voters(&mut db).await?;
 
 	let admin_id = env_vars::admin_id().parse::<i32>()?;
 	let bearer_token = env_vars::bearer_token();
@@ -156,42 +151,5 @@ async fn main() -> Result<()> {
 
 	server.bind(("0.0.0.0", PORT))?.run().await?;
 
-	Ok(())
-}
-
-async fn get_non_voters(db: &mut Db) -> Result<()> {
-	let users = db.get_all_users().await?;
-	let questions = db.get_all_questions().await?;
-	let mut question_rev = Vec::new();
-	for question in questions {
-		let revs = db
-			.get_all_question_revisions_by_question(question.id)
-			.await?;
-		question_rev.extend(revs);
-	}
-	let chapters = db.get_all_chapters().await?;
-	let mut chapter_rev = Vec::new();
-	for chapter in chapters {
-		let revs = db.get_all_chapter_revisions_by_chapter(chapter.id).await?;
-		chapter_rev.extend(revs);
-	}
-	let user_timestamps = users
-		.iter()
-		.map(|user| user.date_joined)
-		.collect::<Vec<_>>();
-	std::fs::File::create("./users.json")?
-		.write_all(format_json(&user_timestamps, &JsonFormat::Minify)?.as_bytes())?;
-	let question_timestamps = question_rev
-		.iter()
-		.map(|rev| rev.date_created)
-		.collect::<Vec<_>>();
-	std::fs::File::create("./questions.json")?
-		.write_all(format_json(&question_timestamps, &JsonFormat::Minify)?.as_bytes())?;
-	let chapter_timestamps = chapter_rev
-		.iter()
-		.map(|rev| rev.date_created)
-		.collect::<Vec<_>>();
-	std::fs::File::create("./chapters.json")?
-		.write_all(format_json(&chapter_timestamps, &JsonFormat::Minify)?.as_bytes())?;
 	Ok(())
 }
