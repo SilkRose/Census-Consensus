@@ -1,6 +1,6 @@
-# April Fools 2026
+# Census Consensus
 
-Hi .3c
+Census Consensus is Silk Rose's 2026 April Fools event. The site is live at: https://census.silkrose.dev/
 
 ## Dependencies setup
 
@@ -27,3 +27,10 @@ For environment variables, you may use a `.env` file in the root of the project 
 
 - `DATABASE_URL`: postgres connection URL, in the format of `postgres://<username>:<password>@<hostname>:<port>/<databasename>`
   - ex. `postgres://postgres:root@localhost:5432/aprilfools`, with username "postgres", password "root", hostname "localhost", port "5432", database name "aprilfools"
+- `ADMIN_ID`: The Fimfiction user ID of the person running the event. They will be fetched from the API and automatically made an admin on startup.
+- `BEARER_TOKEN`: Fimfiction API token to control and update the story.
+- `FIMFIC_CLIENT_ID`: The client ID of the Fimfiction App used for registering users for the site.
+- `FIMFIC_CLIENT_SECRET`: The client secret for authentication during user token generation.
+- `FIMFIC_OAUTH_REDIRECT_URL`: The URL to redirect users to after Fimfiction app authorization. This must be present in the App's settings on Fimfiction.
+- `CREATE_DEV_SESSION`: (Optional) Creates a development session with a link that when opened sets them to a new session for the admin set above.
+
