@@ -1,6 +1,6 @@
 # Census Consensus
 
-Census Consensus is Silk Rose's 2026 April Fools event. The site is live at: https://census.silkrose.dev/
+Census Consensus is Silk Rose's 2026 April Fools event. The site is live [here](https://census.silkrose.dev/), and the story can be read [here](https://www.fimfiction.net/story/589323/census-consensus).
 
 ## Dependencies setup
 
