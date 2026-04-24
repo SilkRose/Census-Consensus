@@ -1083,11 +1083,13 @@ fn header_html(user_type: Option<UserType>, page: Pages, theme: &Theme) -> PreEs
 				}
 				(header_link_html("/about", "About", page == Pages::About))
 			}
-			span class = "nav" {
-				(header_link_html("/chapters", "Chapters", page == Pages::Chapters))
-				(header_link_html("/questions", "Questions", page == Pages::Questions))
-				@if let Some(user_type) = user_type && user_type != UserType::Voter {
-					(header_link_html("/feedback", "Feedback", page == Pages::Feedback))
+			@if let Some(user_type) = user_type {
+				span class = "nav" {
+						(header_link_html("/chapters", "Chapters", page == Pages::Chapters))
+						(header_link_html("/questions", "Questions", page == Pages::Questions))
+					@if user_type != UserType::Voter {
+						(header_link_html("/feedback", "Feedback", page == Pages::Feedback))
+					}
 				}
 			}
 		}
